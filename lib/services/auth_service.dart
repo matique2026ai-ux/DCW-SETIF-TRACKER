@@ -24,10 +24,10 @@ class AuthService extends ChangeNotifier {
       final userData = result['user'];
 
       _currentUser = User(
-        id: userData['id'],
-        username: userData['username'],
+        id: userData['id'] as int?,
+        username: (userData['username'] ?? '') as String,
         passwordHash: '',
-        role: userData['role'],
+        role: (userData['role'] ?? 'inspector') as String,
         employeeId: null,
       );
 

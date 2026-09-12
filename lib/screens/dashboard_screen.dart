@@ -105,26 +105,26 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     StatCard(
                       title: 'إجمالي المفتشين',
-                      value: stats['totalInspectors'] ?? 0,
+                      value: (stats['totalInspectors'] ?? 0) as int,
                       icon: Icons.people,
                       iconColor: AppTheme.PrimaryColor,
                     ),
                     StatCard(
                       title: 'حاضرون اليوم',
-                      value: stats['presentToday'] ?? 0,
+                      value: (stats['presentToday'] ?? 0) as int,
                       icon: Icons.check_circle,
                       iconColor: AppTheme.SuccessColor,
                     ),
                     StatCard(
                       title: 'غائبين اليوم',
-                      value: stats['absentToday'] ?? 0,
+                      value: (stats['absentToday'] ?? 0) as int,
                       icon: Icons.cancel,
                       iconColor: AppTheme.DangerColor,
                       backgroundColor: AppTheme.BackgroundColor,
                     ),
                     StatCard(
                       title: 'برامج نشطة',
-                      value: stats['activePrograms'] ?? 0,
+                      value: (stats['activePrograms'] ?? 0) as int,
                       icon: Icons.list_alt,
                       iconColor: AppTheme.AccentColor,
                     ),
@@ -195,7 +195,7 @@ class DashboardScreen extends StatelessWidget {
                                 ),
                               ),
                               title: Text(
-                                a['employeeName'] ?? '',
+                                (a['employeeName'] ?? '') as String,
                                 style: TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontSize: 14,

@@ -46,7 +46,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _checkIn(Map<String, dynamic> emp) async {
     try {
       final api = context.read<AuthService>().api;
-      await api.checkIn(emp['Id']);
+      await api.checkIn(emp['Id'] as int);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -71,7 +71,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _checkOut(Map<String, dynamic> emp) async {
     try {
       final api = context.read<AuthService>().api;
-      await api.checkOut(emp['Id']);
+      await api.checkOut(emp['Id'] as int);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -184,7 +184,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             textDirection: TextDirection.rtl,
                           ),
                           subtitle: Text(
-                            emp['Service'] ?? '',
+                            (emp['Service'] ?? '') as String,
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 12,
