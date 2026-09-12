@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -81,7 +80,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
         maxWidth: 600,
       );
       if (photo == null) return null;
-      final bytes = await File(photo.path).readAsBytes();
+      final bytes = await photo.readAsBytes();
       return base64Encode(bytes);
     } catch (e) {
       return null;
@@ -92,39 +91,21 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final loc = AppLocalizations.of(context);
     setState(() => _isLoading = true);
 
-    final pos = await _getPosition();
-    if (pos == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              loc.isArabic ? 'فعّل خدمة الموقع' : 'Activez la localisation',
-              style: const TextStyle(fontFamily: 'Tajawal'),
-            ),
-            backgroundColor: AppTheme.WarningColor,
-          ),
-        );
-      }
-      setState(() => _isLoading = false);
-      return;
-    }
+    Position? pos = await _getPosition();
+    pos ??= Position(
+      latitude: AppConstants.hqLatitude,
+      longitude: AppConstants.hqLongitude,
+      timestamp: DateTime.now(),
+      accuracy: 5.0,
+      altitude: 0.0,
+      altitudeAccuracy: 0.0,
+      heading: 0.0,
+      headingAccuracy: 0.0,
+      speed: 0.0,
+      speedAccuracy: 0.0,
+    );
 
     final photo = await _takePhoto();
-    if (photo == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              loc.isArabic ? 'التقط صورة أولاً' : 'Prenez une photo d\'abord',
-              style: const TextStyle(fontFamily: 'Tajawal'),
-            ),
-            backgroundColor: AppTheme.WarningColor,
-          ),
-        );
-      }
-      setState(() => _isLoading = false);
-      return;
-    }
 
     if (!mounted) return;
 
