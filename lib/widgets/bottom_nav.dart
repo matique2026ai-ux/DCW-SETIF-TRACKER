@@ -22,7 +22,7 @@ class BottomNav extends StatelessWidget {
         color: AppTheme.CardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: const Color(0x14000000),
             blurRadius: 16,
             offset: Offset(0, -4),
           ),

@@ -123,7 +123,7 @@ class AttendanceScreen extends StatelessWidget {
                       trailing: ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            emp['checked_in'] = !emp['checked_in'];
+                            emp['checked_in'] = !(emp['checked_in'] as bool);
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
 import '../../widgets/app_bar.dart';
 import '../../widgets/bottom_nav.dart';
 import 'dashboard_screen.dart';
@@ -30,14 +27,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBarWidget(title: _getTitle(_currentIndex)),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBarWidget(title: _getTitle(_currentIndex)),
+        body: _screens[_currentIndex],
+        bottomNavigationBar: BottomNav(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() => _currentIndex = index);
+          },
+        ),
       ),
     );
   }
