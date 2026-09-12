@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
-import '../../providers/language_provider.dart';
-import '../auth/login_screen.dart';
-import 'director_map_tab.dart';
-import 'director_reports_tab.dart';
-import 'director_deductions_tab.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/providers/language_provider.dart';
+import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
+import 'package:drh_setif_tracker/screens/director/director_map_tab.dart';
+import 'package:drh_setif_tracker/screens/director/director_reports_tab.dart';
+import 'package:drh_setif_tracker/screens/director/director_deductions_tab.dart';
 
 class DirectorScreen extends StatefulWidget {
   const DirectorScreen({super.key});
@@ -22,14 +22,13 @@ class _DirectorScreenState extends State<DirectorScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final user = context.watch<AuthService>().currentUser;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
-          backgroundColor: Color(0xFF2D1035),
+          backgroundColor: const Color(0xFF2D1035),
           automaticallyImplyLeading: false,
           title: Row(
             mainAxisSize: MainAxisSize.min,
@@ -37,13 +36,13 @@ class _DirectorScreenState extends State<DirectorScreen> {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [Color(0xFFD4AF37), Color(0xFF92400E)],
                   ),
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(
                     Icons.shield_outlined,
                     size: 20,
@@ -51,19 +50,19 @@ class _DirectorScreenState extends State<DirectorScreen> {
                   ),
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     loc.roleDirector,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
+                  const Text(
                     'DCW SETIF',
                     style: TextStyle(
                       fontFamily: 'Tajawal',
@@ -77,19 +76,19 @@ class _DirectorScreenState extends State<DirectorScreen> {
           ),
           actions: [
             IconButton(
-              icon: Icon(Icons.language, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.language, color: Color(0xFFD4AF37)),
               onPressed: () =>
                   context.read<LanguageProvider>().toggleLanguage(),
             ),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.white70),
+              icon: const Icon(Icons.logout, color: Colors.white70),
               onPressed: () => _showLogoutDialog(),
             ),
           ],
         ),
         body: IndexedStack(
           index: _currentIndex,
-          children: [
+          children: const [
             DirectorMapTab(),
             DirectorReportsTab(),
             DirectorDeductionsTab(),
@@ -97,7 +96,7 @@ class _DirectorScreenState extends State<DirectorScreen> {
         ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            color: Color(0xFF2D1035),
+            color: const Color(0xFF2D1035),
             border: Border(
               top: BorderSide(
                 color: AppTheme.BorderColor.withValues(alpha: 0.3),
@@ -106,7 +105,7 @@ class _DirectorScreenState extends State<DirectorScreen> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -137,11 +136,11 @@ class _DirectorScreenState extends State<DirectorScreen> {
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? Color(0xFFD4AF37).withValues(alpha: 0.15)
+              ? const Color(0xFFD4AF37).withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
@@ -151,15 +150,15 @@ class _DirectorScreenState extends State<DirectorScreen> {
             Icon(
               isSelected ? activeIcon : icon,
               size: 22,
-              color: isSelected ? Color(0xFFD4AF37) : AppTheme.TextSecondary,
+              color: isSelected ? const Color(0xFFD4AF37) : AppTheme.TextSecondary,
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 10,
-                color: isSelected ? Color(0xFFD4AF37) : AppTheme.TextSecondary,
+                color: isSelected ? const Color(0xFFD4AF37) : AppTheme.TextSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -178,29 +177,29 @@ class _DirectorScreenState extends State<DirectorScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           loc.logout,
-          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+          style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
         ),
         content: Text(
           loc.logoutConfirm,
-          style: TextStyle(fontFamily: 'Tajawal'),
+          style: const TextStyle(fontFamily: 'Tajawal'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel, style: TextStyle(fontFamily: 'Tajawal')),
+            child: Text(loc.cancel, style: const TextStyle(fontFamily: 'Tajawal')),
           ),
           ElevatedButton(
             onPressed: () {
               context.read<AuthService>().logout();
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => LoginScreen()),
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.DangerColor,
             ),
-            child: Text(loc.logout, style: TextStyle(fontFamily: 'Tajawal')),
+            child: Text(loc.logout, style: const TextStyle(fontFamily: 'Tajawal')),
           ),
         ],
       ),

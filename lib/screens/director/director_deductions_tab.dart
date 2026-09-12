@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
 
 class DirectorDeductionsTab extends StatefulWidget {
   const DirectorDeductionsTab({super.key});
@@ -27,12 +27,13 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       final api = context.read<AuthService>().api;
       final emp = await api.getEmployees();
       final ded = await api.getDeductions();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _employees = emp;
           _deductions = ded;
           _isLoading = false;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -51,7 +52,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         title: Text(
           loc.requestDeduction,
           textDirection: TextDirection.rtl,
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'Tajawalal',
             fontWeight: FontWeight.bold,
           ),
@@ -60,18 +61,18 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.AccentColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.person, color: AppTheme.AccentColor, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.person, color: AppTheme.AccentColor, size: 20),
+                  const SizedBox(width: 8),
                   Text(
                     '${employee['NomAr'] ?? employee['Nom']} ${employee['PrenomAr'] ?? employee['Prenom']}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
                     ),
@@ -79,7 +80,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: reasonCtrl,
               textDirection: TextDirection.rtl,
@@ -90,7 +91,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 ),
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             TextField(
               controller: daysCtrl,
               keyboardType: TextInputType.number,
@@ -107,7 +108,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel, style: TextStyle(fontFamily: 'Tajawal')),
+            child: Text(loc.cancel, style: const TextStyle(fontFamily: 'Tajawal')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -123,7 +124,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 );
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text('✅'),
                     backgroundColor: AppTheme.SuccessColor,
                   ),
@@ -141,7 +142,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.DangerColor,
             ),
-            child: Text(loc.submit, style: TextStyle(fontFamily: 'Tajawal')),
+            child: Text(loc.submit, style: const TextStyle(fontFamily: 'Tajawal')),
           ),
         ],
       ),
@@ -151,30 +152,31 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    if (_isLoading)
-      return Center(
+    if (_isLoading) {
+      return const Center(
         child: CircularProgressIndicator(color: AppTheme.AccentColor),
       );
+    }
 
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _showEmployeePicker(),
-              icon: Icon(Icons.person_remove),
+              icon: const Icon(Icons.person_remove),
               label: Text(
                 loc.requestDeduction,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
                 ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.DangerColor,
-                padding: EdgeInsets.all(14),
+                padding: const EdgeInsets.all(14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -183,12 +185,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
               loc.pendingDeductions,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -196,22 +198,22 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             ),
           ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Expanded(
           child: _deductions.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.check_circle_outline,
                         size: 48,
                         color: AppTheme.SuccessColor,
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       Text(
                         loc.noDeductions,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
                           color: AppTheme.TextSecondary,
                         ),
@@ -220,7 +222,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   ),
                 )
               : ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: _deductions.length,
                   itemBuilder: (context, index) {
                     final d = _deductions[index];
@@ -239,8 +241,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         ? loc.rejected
                         : loc.pending;
                     return Container(
-                      margin: EdgeInsets.only(bottom: 10),
-                      padding: EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppTheme.CardColor,
                         borderRadius: BorderRadius.circular(14),
@@ -263,31 +265,31 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               size: 20,
                             ),
                           ),
-                          SizedBox(width: 12),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   name,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
                                   '${d['Reason']}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 11,
                                     color: AppTheme.TextSecondary,
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Container(
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
                                     vertical: 2,
                                   ),
@@ -310,7 +312,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                           ),
                           if (d['DaysCount'] != null)
                             Container(
-                              padding: EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: AppTheme.DangerColor.withValues(
                                   alpha: 0.1,
@@ -319,7 +321,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               ),
                               child: Text(
                                 '${d['DaysCount']} ${loc.days}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.DangerColor,
@@ -345,14 +347,14 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       isScrollControlled: true,
       builder: (ctx) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppTheme.CardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -364,15 +366,15 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 children: [
                   Text(
                     loc.selectEmployee,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   IconButton(
-                    icon: Icon(Icons.close),
+                    icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
@@ -391,7 +393,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                       backgroundColor: AppTheme.PrimaryColor.withValues(
                         alpha: 0.2,
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.person,
                         color: AppTheme.PrimaryColor,
                         size: 18,
@@ -399,14 +401,14 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     ),
                     title: Text(
                       name,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       '${e['Service'] ?? ''}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 11,
                         color: AppTheme.TextSecondary,

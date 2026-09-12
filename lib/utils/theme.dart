@@ -23,7 +23,7 @@ class AppTheme {
       primaryColor: PrimaryColor,
       scaffoldBackgroundColor: BackgroundColor,
       fontFamily: 'Tajawal',
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: PrimaryColor,
         secondary: AccentColor,
         surface: CardColor,
@@ -32,7 +32,7 @@ class AppTheme {
         onSecondary: Colors.black,
         onSurface: Colors.white,
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF2D1035),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -56,11 +56,11 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: PrimaryColor,
           foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: TextStyle(
+          textStyle: const TextStyle(
             fontFamily: 'Tajawal',
             fontWeight: FontWeight.bold,
           ),
@@ -71,23 +71,23 @@ class AppTheme {
         fillColor: SurfaceColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: BorderColor),
+          borderSide: const BorderSide(color: BorderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: BorderColor),
+          borderSide: const BorderSide(color: BorderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AccentColor, width: 2),
+          borderSide: const BorderSide(color: AccentColor, width: 2),
         ),
-        labelStyle: TextStyle(fontFamily: 'Tajawal', color: TextSecondary),
+        labelStyle: const TextStyle(fontFamily: 'Tajawal', color: TextSecondary),
         hintStyle: TextStyle(
           fontFamily: 'Tajawal',
           color: TextSecondary.withValues(alpha: 0.6),
         ),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Color(0xFF2D1035),
         selectedItemColor: AccentColor,
         unselectedItemColor: TextSecondary,

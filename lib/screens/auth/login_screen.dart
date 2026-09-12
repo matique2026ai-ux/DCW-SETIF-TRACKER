@@ -1,14 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
-import '../../providers/language_provider.dart';
-import '../director/director_screen.dart';
-import '../head/head_screen.dart';
-import '../bureau/bureau_screen.dart';
-import '../inspector/inspector_screen.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/providers/language_provider.dart';
+import 'package:drh_setif_tracker/screens/director/director_screen.dart';
+import 'package:drh_setif_tracker/screens/head/head_screen.dart';
+import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
+import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,14 +34,14 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _slideController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 800),
     );
     _shakeController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 500),
     );
 
-    _slideAnimation = Tween<Offset>(begin: Offset(0, 0.3), end: Offset.zero)
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
         .animate(
           CurvedAnimation(parent: _slideController, curve: Curves.easeOutBack),
         );
@@ -85,27 +84,27 @@ class _LoginScreenState extends State<LoginScreen>
       switch (auth.currentUser?.role) {
         case 'admin':
         case 'director':
-          nextScreen = DirectorScreen();
+          nextScreen = const DirectorScreen();
           break;
         case 'head_of_department':
-          nextScreen = HeadScreen();
+          nextScreen = const HeadScreen();
           break;
         case 'bureau_chief':
-          nextScreen = BureauScreen();
+          nextScreen = const BureauScreen();
           break;
         default:
-          nextScreen = InspectorScreen();
+          nextScreen = const InspectorScreen();
       }
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          transitionDuration: Duration(milliseconds: 600),
+          transitionDuration: const Duration(milliseconds: 600),
           pageBuilder: (_, __, ___) => nextScreen,
           transitionsBuilder: (_, anim, __, child) {
             return FadeTransition(
               opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
               child: SlideTransition(
-                position: Tween<Offset>(begin: Offset(0.1, 0), end: Offset.zero)
+                position: Tween<Offset>(begin: const Offset(0.1, 0), end: Offset.zero)
                     .animate(
                       CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
                     ),
@@ -133,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
@@ -154,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Color(0xFFD4AF37).withValues(alpha: 0.08),
+                        const Color(0xFFD4AF37).withValues(alpha: 0.08),
                         Colors.transparent,
                       ],
                     ),
@@ -171,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Color(0xFF881337).withValues(alpha: 0.1),
+                        const Color(0xFF881337).withValues(alpha: 0.1),
                         Colors.transparent,
                       ],
                     ),
@@ -185,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen>
                 left: 16,
                 child: IconButton(
                   onPressed: () => langProvider.toggleLanguage(),
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.language,
                     color: Color(0xFFD4AF37),
                     size: 28,
@@ -198,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen>
                 child: SlideTransition(
                   position: _slideAnimation,
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -208,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen>
                           height: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
+                            gradient: const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
@@ -219,16 +218,16 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Color(0xFFD4AF37).withValues(alpha: 0.3),
+                                color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
                                 blurRadius: 30,
                                 spreadRadius: 5,
                               ),
                             ],
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(3),
+                            padding: const EdgeInsets.all(3),
                             child: Container(
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
                                   begin: Alignment.topRight,
@@ -239,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   ],
                                 ),
                               ),
-                              child: Center(
+                              child: const Center(
                                 child: Icon(
                                   Icons.shield_outlined,
                                   size: 48,
@@ -249,32 +248,32 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                         ),
-                        SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
                         // Title
                         Text(
                           loc.isArabic
                               ? 'نظام تتبع المفتشين'
                               : 'Suivi des Inspecteurs',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         Text(
                           loc.isArabic
                               ? 'مديرية التجارة — سطيف'
                               : 'Direction du Commerce — Sétif',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 13,
                             color: Color(0xFFD4AF37),
                           ),
                         ),
-                        SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
                         // Username field
                         AnimatedBuilder(
@@ -288,33 +287,33 @@ class _LoginScreenState extends State<LoginScreen>
                               child: TextField(
                                 controller: _usernameCtrl,
                                 textDirection: TextDirection.ltr,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontFamily: 'Tajawal',
                                   color: Colors.white,
                                 ),
                                 decoration: InputDecoration(
                                   labelText: loc.loginUsername,
-                                  prefixIcon: Icon(
+                                  prefixIcon: const Icon(
                                     Icons.person_outline,
                                     color: Color(0xFFD4AF37),
                                   ),
                                   filled: true,
-                                  fillColor: Color(0xFF3D1A45),
+                                  fillColor: const Color(0xFF3D1A45),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
+                                    borderSide: const BorderSide(
                                       color: Color(0xFF4A2050),
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
+                                    borderSide: const BorderSide(
                                       color: Color(0xFF4A2050),
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
+                                    borderSide: const BorderSide(
                                       color: Color(0xFFD4AF37),
                                       width: 2,
                                     ),
@@ -324,21 +323,21 @@ class _LoginScreenState extends State<LoginScreen>
                             );
                           },
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
                         // Password field
                         TextField(
                           controller: _passwordCtrl,
                           obscureText: _obscure,
                           textDirection: TextDirection.ltr,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             color: Colors.white,
                           ),
                           onSubmitted: (_) => _login(),
                           decoration: InputDecoration(
                             labelText: loc.loginPassword,
-                            prefixIcon: Icon(
+                            prefixIcon: const Icon(
                               Icons.lock_outline,
                               color: Color(0xFFD4AF37),
                             ),
@@ -347,46 +346,46 @@ class _LoginScreenState extends State<LoginScreen>
                                 _obscure
                                     ? Icons.visibility_off
                                     : Icons.visibility,
-                                color: Color(0xFFD4AF37).withValues(alpha: 0.6),
+                                color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
                               ),
                               onPressed: () =>
                                   setState(() => _obscure = !_obscure),
                             ),
                             filled: true,
-                            fillColor: Color(0xFF3D1A45),
+                            fillColor: const Color(0xFF3D1A45),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Color(0xFF4A2050)),
+                              borderSide: const BorderSide(color: Color(0xFF4A2050)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Color(0xFF4A2050)),
+                              borderSide: const BorderSide(color: Color(0xFF4A2050)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(
+                              borderSide: const BorderSide(
                                 color: Color(0xFFD4AF37),
                                 width: 2,
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
 
                         // Error
                         if (_error != null)
                           Padding(
-                            padding: EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               _error!,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 color: Color(0xFFEF4444),
                                 fontSize: 13,
                               ),
                             ),
                           ),
-                        SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
                         // Login button
                         SizedBox(
@@ -395,15 +394,15 @@ class _LoginScreenState extends State<LoginScreen>
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _login,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFD4AF37),
-                              foregroundColor: Color(0xFF1A0A1F),
+                              backgroundColor: const Color(0xFFD4AF37),
+                              foregroundColor: const Color(0xFF1A0A1F),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               elevation: 4,
                             ),
                             child: _isLoading
-                                ? SizedBox(
+                                ? const SizedBox(
                                     width: 22,
                                     height: 22,
                                     child: CircularProgressIndicator(
@@ -413,7 +412,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   )
                                 : Text(
                                     loc.loginButton,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontFamily: 'Tajawal',
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -421,16 +420,16 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                           ),
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
                         // Demo users
                         Container(
-                          padding: EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Color(0xFF2D1035).withValues(alpha: 0.6),
+                            color: const Color(0xFF2D1035).withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Color(0xFF4A2050).withValues(alpha: 0.5),
+                              color: const Color(0xFF4A2050).withValues(alpha: 0.5),
                             ),
                           ),
                           child: Column(
@@ -439,14 +438,14 @@ class _LoginScreenState extends State<LoginScreen>
                                 loc.isArabic
                                     ? 'حسابات تجريبية'
                                     : 'Comptes de test',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontSize: 12,
                                   color: Color(0xFFD4AF37),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               _demoUser(
                                 'directeur',
                                 'directeur123',
@@ -485,23 +484,23 @@ class _LoginScreenState extends State<LoginScreen>
       },
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         child: Row(
           children: [
-            Icon(Icons.chevron_left, size: 16, color: Colors.white38),
-            Spacer(),
+            const Icon(Icons.chevron_left, size: 16, color: Colors.white38),
+            const Spacer(),
             Text(
               '$username / $password',
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 11,
                 color: Colors.white54,
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               role,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 11,
                 color: Color(0xFFD4AF37),

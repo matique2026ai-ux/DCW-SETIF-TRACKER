@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
 
 class DirectorReportsTab extends StatefulWidget {
   const DirectorReportsTab({super.key});
@@ -27,12 +27,13 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       final api = context.read<AuthService>().api;
       final emp = await api.getEmployees();
       final att = await api.getAttendance();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _employees = emp;
           _attendance = att;
           _isLoading = false;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -41,10 +42,11 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    if (_isLoading)
-      return Center(
+    if (_isLoading) {
+      return const Center(
         child: CircularProgressIndicator(color: AppTheme.AccentColor),
       );
+    }
 
     final checkedInIds = _attendance.map((a) => a['EmployeeId']).toSet();
     final present = _employees
@@ -55,7 +57,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
         .toList();
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -67,14 +69,14 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                 AppTheme.AccentColor,
                 Icons.people,
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               _stat(
                 loc.presentToday,
                 present.length,
                 AppTheme.SuccessColor,
                 Icons.check_circle,
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               _stat(
                 loc.absentToday,
                 absent.length,
@@ -83,19 +85,19 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
               ),
             ],
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Text(
             loc.absentToday,
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: 'Tajawal',
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           absent.isEmpty
               ? Container(
-                  padding: EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
                     color: AppTheme.CardColor,
                     borderRadius: BorderRadius.circular(14),
@@ -106,15 +108,15 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.check_circle,
                           size: 48,
                           color: AppTheme.SuccessColor,
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         Text(
                           loc.noAbsence,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             color: AppTheme.SuccessColor,
                             fontSize: 14,
@@ -131,8 +133,8 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                         ? '${e['NomAr']} ${e['PrenomAr']}'
                         : '${e['Nom']} ${e['Prenom']}';
                     return Container(
-                      margin: EdgeInsets.only(bottom: 8),
-                      padding: EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppTheme.CardColor,
                         borderRadius: BorderRadius.circular(12),
@@ -151,29 +153,29 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               ),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.person_off,
                               color: AppTheme.DangerColor,
                               size: 20,
                             ),
                           ),
-                          SizedBox(width: 12),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   name,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
                                   '${e['Service'] ?? ''}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 11,
                                     color: AppTheme.TextSecondary,
@@ -182,7 +184,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               ],
                             ),
                           ),
-                          Icon(
+                          const Icon(
                             Icons.warning_amber,
                             color: AppTheme.WarningColor,
                             size: 20,
@@ -200,7 +202,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   Widget _stat(String label, int value, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        padding: EdgeInsets.all(14),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppTheme.CardColor,
           borderRadius: BorderRadius.circular(14),
@@ -209,7 +211,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
         child: Column(
           children: [
             Icon(icon, color: color, size: 22),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
               '$value',
               style: TextStyle(
@@ -219,10 +221,10 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                 color: color,
               ),
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 10,
                 color: AppTheme.TextSecondary,

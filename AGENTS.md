@@ -1,7 +1,8 @@
 # DCW-SETIF-TRACKER — AGENTS.md
 ## نظام تتبع مفتشي مديرية التجارة لولاية سطيف
 
-> **الريبو**: https://github.com/toufiknation/DCW-SETIF-TRACKER
+> **الريبو (Flutter)**: https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER
+> **الريبو (Backend)**: https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND
 > **تاريخ البدء:** سبتمبر 2026
 > **المشروع:** Frontend (Flutter) + Backend (Node.js) + SQL Server
 
@@ -131,35 +132,25 @@ GET    /api/health               → فحص الخادم
 
 ### ✅ مكتمل:
 - [x] هيكل المشروع + pubspec.yaml
-- [x] ثيم كامل مطابق لـ WPF
-- [x] خطوط Tajawal + Cairo
+- [x] ثيم كامل مطابق لـ WPF ووضع ليلي مريح
+- [x] خطوط Tajawal + Cairo ودعم ثنائي اللغة (عربي / فرنسي)
 - [x] Backend API كامل (Node.js + Express + ODBC)
 - [x] الاتصال بـ SQL Server الحقيقية
 - [x] 267 موظف من المصلحتين فقط
 - [x] 5 جداول جديدة للتتبع
 - [x] تسجيل الدخول عبر JWT + API
-- [x] Dashboard مع إحصائيات حقيقية (267)
-- [x] شاشة الحضور مع بيانات حقيقية (267 موظف)
-- [x] شاشة البرامج من API
-- [x] شاشة الملف الشخصي بالبيانات الحقيقية
-- [x] RTL كامل
+- [x] Dashboard مخصص لكل دور إداري (المدير، رئيس المصلحة، رئيس المكتب، المفتش)
+- [x] شاشة البداية الاحترافية (Splash Screen) والأنيميشن
+- [x] التحقق من الحضور الميداني بالـ GPS ومطابقة المسافة مع المقر
+- [x] دعم إثبات الحضور والمهمات بـ QR Code
+- [x] تنظيف شامل للمشروع من الأكواد والودجات والموديلات الميتة والتبعيات الزائدة
 - [x] صفر أخطاء compile
-- [x] Git repos + GitHub (Flutter + Backend)
+- [x] Git repos + GitHub (Flutter + Backend) متزامنان بالكامل
 
 ### 🔜 قادم:
-- [ ] شاشة التقارير (ربطها بالـ API)
-- [ ] GPS real check-in/check-out
-- [ ] تصدير Excel/PDF
-- [ ] نظام الإشعارات
-- [ ] BCrypt تشفير كلمات المرور
-
-### 🔜 قادم:
-- [ ] إصلاح type casting errors
-- [ ] ربط برامج التوزيع بالـ API
-- [ ] GPS real check-in/check-out
-- [ ] تصدير Excel/PDF
-- [ ] نظام الإشعارات
-- [ ] BCrypt تشفير كلمات المرور
+- [ ] تصدير التقارير إلى Excel/PDF
+- [ ] نظام الإشعارات الفورية
+- [ ] BCrypt تشفير كلمات المرور من جانب الواجهة
 
 ---
 

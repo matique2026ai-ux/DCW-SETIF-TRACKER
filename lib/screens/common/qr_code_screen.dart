@@ -20,21 +20,21 @@ class QRCodeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.BackgroundColor,
       appBar: AppBar(
-        backgroundColor: Color(0xFF2D1035),
+        backgroundColor: const Color(0xFF2D1035),
         title: Text(
           title,
-          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+          style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -53,10 +53,10 @@ class QRCodeScreen extends StatelessWidget {
                   backgroundColor: Colors.white,
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppTheme.CardColor,
                   borderRadius: BorderRadius.circular(14),
@@ -68,34 +68,34 @@ class QRCodeScreen extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     if (subtitle.isNotEmpty) ...[
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
                         subtitle,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontSize: 12,
                           color: AppTheme.TextSecondary,
                         ),
                       ),
                     ],
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      padding: EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: AppTheme.BackgroundColor,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         data,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'monospace',
                           fontSize: 9,
                           color: AppTheme.TextSecondary,
@@ -106,8 +106,8 @@ class QRCodeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(height: 20),
-              Text(
+              const SizedBox(height: 20),
+              const Text(
                 'امسح الرمز للتحقق',
                 style: TextStyle(
                   fontFamily: 'Tajawal',

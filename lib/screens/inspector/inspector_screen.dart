@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
-import '../../providers/language_provider.dart';
-import '../../utils/constants.dart';
-import '../auth/login_screen.dart';
-import '../common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/providers/language_provider.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
+import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
+import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 
 class InspectorScreen extends StatefulWidget {
   const InspectorScreen({super.key});
@@ -22,7 +22,6 @@ class InspectorScreen extends StatefulWidget {
 class _InspectorScreenState extends State<InspectorScreen> {
   bool _isCheckedIn = false;
   bool _isLoading = false;
-  Map<String, dynamic>? _currentAttendance;
   String? _checkInTime;
   List<Map<String, dynamic>> _todayVisits = [];
   int _visitCount = 0;
@@ -42,19 +41,20 @@ class _InspectorScreenState extends State<InspectorScreen> {
         setState(() {
           if (att != null && att['Id'] != null) {
             _isCheckedIn = true;
-            _currentAttendance = att;
             _checkInTime = att['CheckInTime'].toString().substring(11, 16);
           }
           _todayVisits = visits;
           _visitCount = visits.length;
         });
       }
-    } catch (e) {}
+    } catch (_) {
+      // Load error ignored on initial status check
+    }
   }
 
   Future<Position?> _getPosition() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) return null;
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -99,7 +99,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
           SnackBar(
             content: Text(
               loc.isArabic ? 'فعّل خدمة الموقع' : 'Activez la localisation',
-              style: TextStyle(fontFamily: 'Tajawal'),
+              style: const TextStyle(fontFamily: 'Tajawal'),
             ),
             backgroundColor: AppTheme.WarningColor,
           ),
@@ -116,7 +116,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
           SnackBar(
             content: Text(
               loc.isArabic ? 'التقط صورة أولاً' : 'Prenez une photo d\'abord',
-              style: TextStyle(fontFamily: 'Tajawal'),
+              style: const TextStyle(fontFamily: 'Tajawal'),
             ),
             backgroundColor: AppTheme.WarningColor,
           ),
@@ -162,11 +162,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message, style: TextStyle(fontFamily: 'Tajawal')),
+            content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
             backgroundColor: isAtHQ
                 ? AppTheme.SuccessColor
                 : AppTheme.WarningColor,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
         if (mounted) {
@@ -236,9 +236,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message, style: TextStyle(fontFamily: 'Tajawal')),
+            content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
             backgroundColor: AppTheme.SuccessColor,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -267,28 +267,28 @@ class _InspectorScreenState extends State<InspectorScreen> {
         title: Text(
           loc.recordVisit,
           textDirection: TextDirection.rtl,
-          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+          style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: EdgeInsets.all(10),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppTheme.SuccessColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.location_on,
                     color: AppTheme.SuccessColor,
                     size: 18,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 11,
                       color: AppTheme.SuccessColor,
@@ -297,7 +297,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: nameCtrl,
               textDirection: TextDirection.rtl,
@@ -308,7 +308,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             TextField(
               controller: notesCtrl,
               textDirection: TextDirection.rtl,
@@ -324,7 +324,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel, style: TextStyle(fontFamily: 'Tajawal')),
+            child: Text(loc.cancel, style: const TextStyle(fontFamily: 'Tajawal')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -341,7 +341,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 );
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text('✅'),
                     backgroundColor: AppTheme.SuccessColor,
                   ),
@@ -376,7 +376,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.SuccessColor,
             ),
-            child: Text(loc.save, style: TextStyle(fontFamily: 'Tajawal')),
+            child: Text(loc.save, style: const TextStyle(fontFamily: 'Tajawal')),
           ),
         ],
       ),
@@ -393,7 +393,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
-          backgroundColor: Color(0xFF2D1035),
+          backgroundColor: const Color(0xFF2D1035),
           automaticallyImplyLeading: false,
           title: Row(
             mainAxisSize: MainAxisSize.min,
@@ -401,20 +401,20 @@ class _InspectorScreenState extends State<InspectorScreen> {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [Color(0xFFD4AF37), Color(0xFF92400E)],
                   ),
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(Icons.explore, size: 18, color: Colors.white),
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Text(
                 loc.isArabic ? 'التفتيش الميداني' : 'Contrôle Terrain',
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -424,33 +424,33 @@ class _InspectorScreenState extends State<InspectorScreen> {
           ),
           actions: [
             IconButton(
-              icon: Icon(Icons.language, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.language, color: Color(0xFFD4AF37)),
               onPressed: () =>
                   context.read<LanguageProvider>().toggleLanguage(),
             ),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.white70),
+              icon: const Icon(Icons.logout, color: Colors.white70),
               onPressed: () {
                 context.read<AuthService>().logout();
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               },
             ),
           ],
         ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Profile Card
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(18),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [Color(0xFF881337), Color(0xFF4C0519)],
                   ),
                   borderRadius: BorderRadius.circular(18),
@@ -459,7 +459,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xFF881337).withValues(alpha: 0.3),
+                      color: const Color(0xFF881337).withValues(alpha: 0.3),
                       blurRadius: 16,
                     ),
                   ],
@@ -469,32 +469,32 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     Container(
                       width: 52,
                       height: 52,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [Color(0xFFD4AF37), Color(0xFF92400E)],
                         ),
                       ),
-                      child: Icon(Icons.person, color: Colors.white, size: 26),
+                      child: const Icon(Icons.person, color: Colors.white, size: 26),
                     ),
-                    SizedBox(width: 14),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${user?.fullName ?? ''}',
-                            style: TextStyle(
+                            user?.fullName ?? '',
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             loc.roleInspector,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 12,
                               color: Colors.white60,
@@ -504,7 +504,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 4,
                       ),
@@ -516,7 +516,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       ),
                       child: Text(
                         _isCheckedIn ? loc.checkedIn : loc.notCheckedIn,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontSize: 10,
                           color: Colors.white,
@@ -527,12 +527,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Attendance Card
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: AppTheme.CardColor,
                   borderRadius: BorderRadius.circular(18),
@@ -545,15 +545,15 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.access_time,
                           color: AppTheme.AccentColor,
                           size: 22,
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Text(
                           loc.attendance,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
@@ -561,11 +561,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 18),
+                    const SizedBox(height: 18),
                     if (_isCheckedIn) ...[
                       Container(
                         width: double.infinity,
-                        padding: EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: AppTheme.SuccessColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -575,24 +575,24 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.check_circle,
                               color: AppTheme.SuccessColor,
                               size: 22,
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Text(
                               loc.checkedIn,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.SuccessColor,
                               ),
                             ),
-                            Spacer(),
+                            const Spacer(),
                             Text(
                               '$_checkInTime',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.SuccessColor,
@@ -602,14 +602,14 @@ class _InspectorScreenState extends State<InspectorScreen> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 14),
+                      const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton.icon(
                           onPressed: _isLoading ? null : _checkOut,
                           icon: _isLoading
-                              ? SizedBox(
+                              ? const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
@@ -617,10 +617,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : Icon(Icons.exit_to_app),
+                              : const Icon(Icons.exit_to_app),
                           label: Text(
                             loc.checkOut,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -645,10 +645,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                 alpha: 0.5,
                               ),
                             ),
-                            SizedBox(height: 10),
+                            const SizedBox(height: 10),
                             Text(
                               loc.notCheckedIn,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 color: AppTheme.TextSecondary,
                               ),
@@ -656,14 +656,14 @@ class _InspectorScreenState extends State<InspectorScreen> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton.icon(
                           onPressed: _isLoading ? null : _checkIn,
                           icon: _isLoading
-                              ? SizedBox(
+                              ? const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
@@ -671,12 +671,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : Icon(Icons.fingerprint),
+                              : const Icon(Icons.fingerprint),
                           label: Text(
                             _isLoading
                                 ? loc.checkInProgress
                                 : loc.checkInWithCamera,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -695,7 +695,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // Visit Button
               if (_isCheckedIn) ...[
@@ -704,10 +704,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   height: 52,
                   child: ElevatedButton.icon(
                     onPressed: _recordVisit,
-                    icon: Icon(Icons.store),
+                    icon: const Icon(Icons.store),
                     label: Text(
                       loc.recordVisit,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontWeight: FontWeight.bold,
                       ),
@@ -720,16 +720,16 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
 
                 // Today's visits
                 Row(
                   children: [
-                    Icon(Icons.history, color: AppTheme.AccentColor, size: 20),
-                    SizedBox(width: 8),
+                    const Icon(Icons.history, color: AppTheme.AccentColor, size: 20),
+                    const SizedBox(width: 8),
                     Text(
                       '${loc.visitsToday} ($_visitCount)',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -737,11 +737,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 if (_todayVisits.isEmpty)
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(28),
+                    padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       color: AppTheme.CardColor,
                       borderRadius: BorderRadius.circular(14),
@@ -752,7 +752,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     child: Center(
                       child: Text(
                         loc.noVisits,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
                           color: AppTheme.TextSecondary,
                         ),
@@ -762,8 +762,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 else
                   ..._todayVisits.map(
                     (v) => Container(
-                      margin: EdgeInsets.only(bottom: 8),
-                      padding: EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppTheme.CardColor,
                         borderRadius: BorderRadius.circular(12),
@@ -782,29 +782,29 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               ),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.store,
                               color: AppTheme.SuccessColor,
                               size: 18,
                             ),
                           ),
-                          SizedBox(width: 12),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   '${v['ShopName'] ?? (loc.isArabic ? 'زيارة' : 'Visite')}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
                                   '${v['LocationName'] ?? ''} • ${v['CreatedAt'].toString().substring(11, 16)}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 11,
                                     color: AppTheme.TextSecondary,
@@ -813,7 +813,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               ],
                             ),
                           ),
-                          Icon(
+                          const Icon(
                             Icons.check_circle,
                             color: AppTheme.SuccessColor,
                             size: 18,

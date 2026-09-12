@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
-import 'auth/login_screen.dart';
+import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -35,27 +35,27 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1200),
     );
     _textController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 800),
     );
     _fadeController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 600),
     );
     _pulseController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
     _rotateController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 3000),
     )..repeat();
     _barController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2000),
     );
 
     _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -92,19 +92,19 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _startAnimation() async {
-    await Future.delayed(Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 300));
     _logoController.forward();
-    await Future.delayed(Duration(milliseconds: 600));
+    await Future.delayed(const Duration(milliseconds: 600));
     _textController.forward();
-    await Future.delayed(Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 400));
     _fadeController.forward();
     _barController.forward();
-    await Future.delayed(Duration(milliseconds: 2800));
+    await Future.delayed(const Duration(milliseconds: 2800));
     if (mounted) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          transitionDuration: Duration(milliseconds: 800),
-          pageBuilder: (_, __, ___) => LoginScreen(),
+          transitionDuration: const Duration(milliseconds: 800),
+          pageBuilder: (_, __, ___) => const LoginScreen(),
           transitionsBuilder: (_, anim, __, child) {
             return FadeTransition(
               opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
@@ -135,7 +135,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
@@ -155,7 +155,7 @@ class _SplashScreenState extends State<SplashScreen>
               animation: _rotateAngle,
               builder: (context, child) {
                 return CustomPaint(
-                  size: Size(double.infinity, double.infinity),
+                  size: const Size(double.infinity, double.infinity),
                   painter: _RotatingRingPainter(angle: _rotateAngle.value),
                 );
               },
@@ -166,7 +166,7 @@ class _SplashScreenState extends State<SplashScreen>
               animation: _pulseController,
               builder: (context, child) {
                 return CustomPaint(
-                  size: Size(double.infinity, double.infinity),
+                  size: const Size(double.infinity, double.infinity),
                   painter: _ParticlesPainter(pulse: _pulseScale.value),
                 );
               },
@@ -188,7 +188,7 @@ class _SplashScreenState extends State<SplashScreen>
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
+                            gradient: const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
@@ -200,16 +200,16 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Color(0xFFD4AF37).withValues(alpha: 0.4),
+                                color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
                                 blurRadius: 40,
                                 spreadRadius: 10,
                               ),
                             ],
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(4),
+                            padding: const EdgeInsets.all(4),
                             child: Container(
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
                                   begin: Alignment.topRight,
@@ -228,7 +228,7 @@ class _SplashScreenState extends State<SplashScreen>
                                       scale: _logoScale.value,
                                       child: Opacity(
                                         opacity: _logoOpacity.value,
-                                        child: Column(
+                                        child: const Column(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
@@ -262,7 +262,7 @@ class _SplashScreenState extends State<SplashScreen>
                     },
                   ),
 
-                  SizedBox(height: 36),
+                  const SizedBox(height: 36),
 
                   // Directorat name
                   AnimatedBuilder(
@@ -286,10 +286,10 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
                                 loc.isArabic ? 'ولاية سطيف' : 'Wilaya de Sétif',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontSize: 14,
                                   color: Color(0xFFD4AF37),
@@ -303,7 +303,7 @@ class _SplashScreenState extends State<SplashScreen>
                     },
                   ),
 
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
                   // App title
                   AnimatedBuilder(
@@ -317,7 +317,7 @@ class _SplashScreenState extends State<SplashScreen>
                             loc.isArabic
                                 ? 'نظام تتبع المفتشين'
                                 : 'Système de Suivi des Inspecteurs',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 26,
                               fontWeight: FontWeight.bold,
@@ -330,7 +330,7 @@ class _SplashScreenState extends State<SplashScreen>
                     },
                   ),
 
-                  SizedBox(height: 50),
+                  const SizedBox(height: 50),
 
                   // Loading bar
                   AnimatedBuilder(
@@ -355,7 +355,7 @@ class _SplashScreenState extends State<SplashScreen>
                                     widthFactor: _barProgress.value,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        gradient: LinearGradient(
+                                        gradient: const LinearGradient(
                                           colors: [
                                             Color(0xFFD4AF37),
                                             Color(0xFFFDE68A),
@@ -368,7 +368,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 );
                               },
                             ),
-                            SizedBox(height: 12),
+                            const SizedBox(height: 12),
                             Text(
                               loc.isArabic
                                   ? 'جاري التحميل...'
@@ -429,9 +429,9 @@ class _RotatingRingPainter extends CustomPainter {
         startAngle: angle,
         endAngle: angle + pi,
         colors: [
-          Color(0xFFD4AF37).withValues(alpha: 0.0),
-          Color(0xFFD4AF37).withValues(alpha: 0.3),
-          Color(0xFFD4AF37).withValues(alpha: 0.0),
+          const Color(0xFFD4AF37).withValues(alpha: 0.0),
+          const Color(0xFFD4AF37).withValues(alpha: 0.3),
+          const Color(0xFFD4AF37).withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
 
@@ -458,7 +458,7 @@ class _ParticlesPainter extends CustomPainter {
       final r = (random.nextDouble() * 2 + 0.5) * pulse;
       final opacity = (random.nextDouble() * 0.15 + 0.05) * pulse;
 
-      paint.color = Color(0xFFD4AF37).withValues(alpha: opacity);
+      paint.color = const Color(0xFFD4AF37).withValues(alpha: opacity);
       canvas.drawCircle(Offset(x, y), r, paint);
     }
   }

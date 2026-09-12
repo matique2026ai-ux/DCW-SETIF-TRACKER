@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
 
 class DirectorMapTab extends StatefulWidget {
   const DirectorMapTab({super.key});
@@ -30,11 +30,12 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     try {
       final api = context.read<AuthService>().api;
       final data = await api.getMapData();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _mapData = data;
           _isLoading = false;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -52,7 +53,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       children: [
         FlutterMap(
           mapController: _mapController,
-          options: MapOptions(initialCenter: _setifCenter, initialZoom: 12),
+          options: const MapOptions(initialCenter: _setifCenter, initialZoom: 12),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -92,7 +93,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                               ),
                             ],
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.person,
                             color: Colors.white,
                             size: 20,
@@ -112,17 +113,17 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           left: 12,
           right: 12,
           child: Container(
-            padding: EdgeInsets.all(14),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppTheme.CardColor.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: AppTheme.BorderColor.withValues(alpha: 0.3),
               ),
-              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12)],
+              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 12)],
             ),
             child: _isLoading
-                ? Center(
+                ? const Center(
                     child: CircularProgressIndicator(
                       color: AppTheme.AccentColor,
                     ),
@@ -134,20 +135,20 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                         present.length,
                         AppTheme.SuccessColor,
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       _legend(loc.absent, absent.length, AppTheme.DangerColor),
-                      Spacer(),
+                      const Spacer(),
                       _legend(loc.total, _mapData.length, AppTheme.AccentColor),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       GestureDetector(
                         onTap: _loadData,
                         child: Container(
-                          padding: EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: AppTheme.AccentColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.refresh,
                             size: 18,
                             color: AppTheme.AccentColor,
@@ -177,10 +178,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             ],
           ),
         ),
-        SizedBox(width: 5),
+        const SizedBox(width: 5),
         Text(
           '$label ',
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'Tajawal',
             fontSize: 11,
             color: AppTheme.TextSecondary,
@@ -205,11 +206,11 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppTheme.CardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +225,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Container(
@@ -239,25 +240,25 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     ),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.person, color: Colors.white, size: 24),
+                  child: const Icon(Icons.person, color: Colors.white, size: 24),
                 ),
-                SizedBox(width: 14),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '${emp['name']}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         '${emp['service'] ?? ''}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontSize: 12,
                           color: AppTheme.TextSecondary,
@@ -268,29 +269,29 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 ),
               ],
             ),
-            SizedBox(height: 16),
-            Divider(color: AppTheme.BorderColor),
-            SizedBox(height: 8),
+            const SizedBox(height: 16),
+            const Divider(color: AppTheme.BorderColor),
+            const SizedBox(height: 8),
             _infoRow(
               Icons.access_time,
               loc.checkIn,
               emp['checkInTime'].toString().substring(11, 16),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             _infoRow(
               Icons.location_on,
               loc.inField,
               emp['hasCheckedIn'] == true ? '✅' : '❌',
             ),
             if (emp['latitude'] != null) ...[
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               _infoRow(
                 Icons.map,
                 'GPS',
                 '${(emp['latitude'] as num).toStringAsFixed(4)}, ${(emp['longitude'] as num).toStringAsFixed(4)}',
               ),
             ],
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -301,10 +302,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     return Row(
       children: [
         Icon(icon, size: 16, color: AppTheme.AccentColor),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'Tajawal',
             fontSize: 12,
             color: AppTheme.TextSecondary,
@@ -312,7 +313,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         ),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'Tajawal',
             fontSize: 12,
             fontWeight: FontWeight.bold,

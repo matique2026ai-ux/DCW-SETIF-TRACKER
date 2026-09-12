@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
-import '../../providers/language_provider.dart';
-import '../auth/login_screen.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/providers/language_provider.dart';
+import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 
 class BureauScreen extends StatefulWidget {
   const BureauScreen({super.key});
@@ -27,11 +27,12 @@ class _BureauScreenState extends State<BureauScreen> {
     try {
       final api = context.read<AuthService>().api;
       final data = await api.getDeductions();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _deductions = data;
           _isLoading = false;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -47,7 +48,7 @@ class _BureauScreenState extends State<BureauScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
-          backgroundColor: Color(0xFF2D1035),
+          backgroundColor: const Color(0xFF2D1035),
           automaticallyImplyLeading: false,
           title: Row(
             mainAxisSize: MainAxisSize.min,
@@ -55,20 +56,20 @@ class _BureauScreenState extends State<BureauScreen> {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [Color(0xFFD4AF37), Color(0xFF92400E)],
                   ),
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(Icons.assignment, size: 18, color: Colors.white),
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Text(
                 loc.roleBureau,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -78,32 +79,32 @@ class _BureauScreenState extends State<BureauScreen> {
           ),
           actions: [
             IconButton(
-              icon: Icon(Icons.language, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.language, color: Color(0xFFD4AF37)),
               onPressed: () =>
                   context.read<LanguageProvider>().toggleLanguage(),
             ),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.white70),
+              icon: const Icon(Icons.logout, color: Colors.white70),
               onPressed: () {
                 context.read<AuthService>().logout();
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               },
             ),
           ],
         ),
         body: _isLoading
-            ? Center(
+            ? const Center(
                 child: CircularProgressIndicator(color: AppTheme.AccentColor),
               )
             : Column(
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(14),
-                    margin: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: pending.isEmpty
                           ? AppTheme.SuccessColor.withValues(alpha: 0.1)
@@ -128,10 +129,10 @@ class _BureauScreenState extends State<BureauScreen> {
                               : AppTheme.WarningColor,
                           size: 20,
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Text(
                           '${loc.pendingDeductions}: ${pending.length}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontWeight: FontWeight.bold,
                           ),
@@ -145,15 +146,15 @@ class _BureauScreenState extends State<BureauScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.check_circle_outline,
                               size: 64,
                               color: AppTheme.SuccessColor,
                             ),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             Text(
                               loc.noPendingDeductions,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontSize: 16,
                                 color: AppTheme.TextSecondary,
@@ -166,7 +167,7 @@ class _BureauScreenState extends State<BureauScreen> {
                   else
                     Expanded(
                       child: ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: pending.length,
                         itemBuilder: (ctx, i) {
                           final d = pending[i];
@@ -174,8 +175,8 @@ class _BureauScreenState extends State<BureauScreen> {
                               ? '${d['NomAr']} ${d['PrenomAr']}'
                               : '${d['Nom']} ${d['Prenom']}';
                           return Container(
-                            margin: EdgeInsets.only(bottom: 12),
-                            padding: EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: AppTheme.CardColor,
                               borderRadius: BorderRadius.circular(16),
@@ -199,13 +200,13 @@ class _BureauScreenState extends State<BureauScreen> {
                                         ),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.person,
                                         color: AppTheme.WarningColor,
                                         size: 22,
                                       ),
                                     ),
-                                    SizedBox(width: 12),
+                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -213,7 +214,7 @@ class _BureauScreenState extends State<BureauScreen> {
                                         children: [
                                           Text(
                                             name,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontFamily: 'Tajawal',
                                               fontWeight: FontWeight.bold,
                                               fontSize: 15,
@@ -221,7 +222,7 @@ class _BureauScreenState extends State<BureauScreen> {
                                           ),
                                           Text(
                                             '${d['Service'] ?? ''}',
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontFamily: 'Tajawal',
                                               fontSize: 11,
                                               color: AppTheme.TextSecondary,
@@ -232,7 +233,7 @@ class _BureauScreenState extends State<BureauScreen> {
                                     ),
                                     if (d['DaysCount'] != null)
                                       Container(
-                                        padding: EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                           horizontal: 10,
                                           vertical: 4,
                                         ),
@@ -247,7 +248,7 @@ class _BureauScreenState extends State<BureauScreen> {
                                         ),
                                         child: Text(
                                           '${d['DaysCount']} ${loc.days}',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontFamily: 'Tajawal',
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.DangerColor,
@@ -257,42 +258,42 @@ class _BureauScreenState extends State<BureauScreen> {
                                       ),
                                   ],
                                 ),
-                                SizedBox(height: 12),
+                                const SizedBox(height: 12),
                                 Container(
                                   width: double.infinity,
-                                  padding: EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: AppTheme.BackgroundColor,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     '${d['Reason']}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontFamily: 'Tajawal',
                                       fontSize: 12,
                                     ),
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   '${loc.from}: ${d['RequestedByName'] ?? '-'}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 11,
                                     color: AppTheme.TextSecondary,
                                   ),
                                 ),
-                                SizedBox(height: 14),
+                                const SizedBox(height: 14),
                                 Row(
                                   children: [
                                     Expanded(
                                       child: ElevatedButton.icon(
                                         onPressed: () =>
                                             _approve(d['Id'] as int),
-                                        icon: Icon(Icons.check, size: 18),
+                                        icon: const Icon(Icons.check, size: 18),
                                         label: Text(
                                           loc.approve,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontFamily: 'Tajawal',
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -300,7 +301,7 @@ class _BureauScreenState extends State<BureauScreen> {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
                                               AppTheme.SuccessColor,
-                                          padding: EdgeInsets.symmetric(
+                                          padding: const EdgeInsets.symmetric(
                                             vertical: 12,
                                           ),
                                           shape: RoundedRectangleBorder(
@@ -311,25 +312,25 @@ class _BureauScreenState extends State<BureauScreen> {
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: OutlinedButton.icon(
                                         onPressed: () =>
                                             _reject(d['Id'] as int),
-                                        icon: Icon(Icons.close, size: 18),
+                                        icon: const Icon(Icons.close, size: 18),
                                         label: Text(
                                           loc.reject,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontFamily: 'Tajawal',
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                         style: OutlinedButton.styleFrom(
-                                          side: BorderSide(
+                                          side: const BorderSide(
                                             color: AppTheme.DangerColor,
                                           ),
                                           foregroundColor: AppTheme.DangerColor,
-                                          padding: EdgeInsets.symmetric(
+                                          padding: const EdgeInsets.symmetric(
                                             vertical: 12,
                                           ),
                                           shape: RoundedRectangleBorder(
@@ -355,13 +356,12 @@ class _BureauScreenState extends State<BureauScreen> {
   }
 
   Future<void> _approve(int id) async {
-    final loc = AppLocalizations.of(context);
     try {
       final api = context.read<AuthService>().api;
       final user = context.read<AuthService>().currentUser;
       await api.approveDeduction(id: id, approvedBy: user!.id!);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('✅'), backgroundColor: AppTheme.SuccessColor),
+        const SnackBar(content: Text('✅'), backgroundColor: AppTheme.SuccessColor),
       );
       _load();
     } catch (e) {
@@ -377,7 +377,7 @@ class _BureauScreenState extends State<BureauScreen> {
       final user = context.read<AuthService>().currentUser;
       await api.rejectDeduction(id: id, approvedBy: user!.id!);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('تم الرفض'),
           backgroundColor: AppTheme.WarningColor,
         ),

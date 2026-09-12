@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../utils/theme.dart';
-import '../../utils/app_localizations.dart';
-import '../../providers/language_provider.dart';
-import '../auth/login_screen.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/providers/language_provider.dart';
+import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 
 class HeadScreen extends StatefulWidget {
   const HeadScreen({super.key});
@@ -25,7 +25,7 @@ class _HeadScreenState extends State<HeadScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
-          backgroundColor: Color(0xFF2D1035),
+          backgroundColor: const Color(0xFF2D1035),
           automaticallyImplyLeading: false,
           title: Row(
             mainAxisSize: MainAxisSize.min,
@@ -33,13 +33,13 @@ class _HeadScreenState extends State<HeadScreen> {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [Color(0xFFD4AF37), Color(0xFF92400E)],
                   ),
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(
                     Icons.work_outline,
                     size: 18,
@@ -47,10 +47,10 @@ class _HeadScreenState extends State<HeadScreen> {
                   ),
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Text(
                 loc.roleHead,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -60,17 +60,17 @@ class _HeadScreenState extends State<HeadScreen> {
           ),
           actions: [
             IconButton(
-              icon: Icon(Icons.language, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.language, color: Color(0xFFD4AF37)),
               onPressed: () =>
                   context.read<LanguageProvider>().toggleLanguage(),
             ),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.white70),
+              icon: const Icon(Icons.logout, color: Colors.white70),
               onPressed: () {
                 context.read<AuthService>().logout();
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               },
             ),
@@ -79,7 +79,7 @@ class _HeadScreenState extends State<HeadScreen> {
         body: _currentIndex == 0 ? _programTab(loc) : _employeesTab(loc),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            color: Color(0xFF2D1035),
+            color: const Color(0xFF2D1035),
             border: Border(
               top: BorderSide(
                 color: AppTheme.BorderColor.withValues(alpha: 0.3),
@@ -88,7 +88,7 @@ class _HeadScreenState extends State<HeadScreen> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -108,11 +108,11 @@ class _HeadScreenState extends State<HeadScreen> {
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? Color(0xFFD4AF37).withValues(alpha: 0.15)
+              ? const Color(0xFFD4AF37).withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
@@ -122,15 +122,15 @@ class _HeadScreenState extends State<HeadScreen> {
             Icon(
               icon,
               size: 22,
-              color: isSelected ? Color(0xFFD4AF37) : AppTheme.TextSecondary,
+              color: isSelected ? const Color(0xFFD4AF37) : AppTheme.TextSecondary,
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 10,
-                color: isSelected ? Color(0xFFD4AF37) : AppTheme.TextSecondary,
+                color: isSelected ? const Color(0xFFD4AF37) : AppTheme.TextSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -143,8 +143,8 @@ class _HeadScreenState extends State<HeadScreen> {
   Widget _programTab(AppLocalizations loc) {
     return Center(
       child: Container(
-        margin: EdgeInsets.all(24),
-        padding: EdgeInsets.all(32),
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: AppTheme.CardColor,
           borderRadius: BorderRadius.circular(20),
@@ -162,41 +162,41 @@ class _HeadScreenState extends State<HeadScreen> {
                 color: AppTheme.AccentColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.calendar_month,
                 size: 40,
                 color: AppTheme.AccentColor,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               loc.weeklyProgram,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               loc.distributeProgram,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Tajawal',
                 color: AppTheme.TextSecondary,
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {},
-              icon: Icon(Icons.add),
+              icon: const Icon(Icons.add),
               label: Text(
                 loc.addProgram,
-                style: TextStyle(fontFamily: 'Tajawal'),
+                style: const TextStyle(fontFamily: 'Tajawal'),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.AccentColor,
                 foregroundColor: Colors.black,
-                padding: EdgeInsets.all(14),
+                padding: const EdgeInsets.all(14),
               ),
             ),
           ],
@@ -208,8 +208,8 @@ class _HeadScreenState extends State<HeadScreen> {
   Widget _employeesTab(AppLocalizations loc) {
     return Center(
       child: Container(
-        margin: EdgeInsets.all(24),
-        padding: EdgeInsets.all(32),
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: AppTheme.CardColor,
           borderRadius: BorderRadius.circular(20),
@@ -227,21 +227,21 @@ class _HeadScreenState extends State<HeadScreen> {
                 color: AppTheme.PrimaryColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.people, size: 40, color: AppTheme.PrimaryColor),
+              child: const Icon(Icons.people, size: 40, color: AppTheme.PrimaryColor),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               loc.navEmployees,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               loc.distributeProgram,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Tajawal',
                 color: AppTheme.TextSecondary,
               ),

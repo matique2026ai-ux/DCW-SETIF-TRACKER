@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'screens/splash_screen.dart';
-import 'utils/theme.dart';
-import 'utils/app_localizations.dart';
-import 'services/auth_service.dart';
-import 'providers/language_provider.dart';
+import 'package:drh_setif_tracker/screens/splash_screen.dart';
+import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/providers/language_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,13 +29,13 @@ class DRHTrackerApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme,
             locale: langProvider.locale,
-            localizationsDelegates: [
+            localizationsDelegates: const [
               AppLocalizationsDelegate(),
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            supportedLocales: [Locale('ar', ''), Locale('fr', '')],
+            supportedLocales: const [Locale('ar', ''), Locale('fr', '')],
             home: const SplashScreen(),
           );
         },
