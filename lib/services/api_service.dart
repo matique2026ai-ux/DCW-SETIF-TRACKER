@@ -2,7 +2,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8080/api';
+  static String get baseUrl {
+    const prod = String.fromEnvironment('API_URL', defaultValue: '');
+    if (prod.isNotEmpty) return '$prod/api';
+    return 'https://drh-setif-api.onrender.com/api';
+  }
+
   String? _token;
 
   String? get token => _token;
