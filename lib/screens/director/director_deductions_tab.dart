@@ -122,7 +122,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   reason: reasonCtrl.text,
                   daysCount: int.tryParse(daysCtrl.text),
                 );
-                Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('✅'),
@@ -131,6 +132,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 );
                 _load();
               } catch (e) {
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('$e'),

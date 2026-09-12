@@ -1,11 +1,15 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
   static String get baseUrl {
-    const prod = String.fromEnvironment('API_URL', defaultValue: '');
-    if (prod.isNotEmpty) return '$prod/api';
-    return 'https://drh-setif-api.onrender.com/api';
+    const custom = String.fromEnvironment('API_URL', defaultValue: '');
+    if (custom.isNotEmpty) return '$custom/api';
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:8080/api';
+    }
+    return 'http://localhost:8080/api';
   }
 
   String? _token;

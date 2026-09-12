@@ -360,11 +360,13 @@ class _BureauScreenState extends State<BureauScreen> {
       final api = context.read<AuthService>().api;
       final user = context.read<AuthService>().currentUser;
       await api.approveDeduction(id: id, approvedBy: user!.id!);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅'), backgroundColor: AppTheme.SuccessColor),
       );
       _load();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$e'), backgroundColor: AppTheme.DangerColor),
       );
@@ -376,6 +378,7 @@ class _BureauScreenState extends State<BureauScreen> {
       final api = context.read<AuthService>().api;
       final user = context.read<AuthService>().currentUser;
       await api.rejectDeduction(id: id, approvedBy: user!.id!);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم الرفض'),
@@ -384,6 +387,7 @@ class _BureauScreenState extends State<BureauScreen> {
       );
       _load();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$e'), backgroundColor: AppTheme.DangerColor),
       );

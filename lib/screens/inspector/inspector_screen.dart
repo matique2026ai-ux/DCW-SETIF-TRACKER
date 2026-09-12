@@ -126,6 +126,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
       return;
     }
 
+    if (!mounted) return;
+
     try {
       final api = context.read<AuthService>().api;
       final user = context.read<AuthService>().currentUser;
@@ -204,6 +206,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
       setState(() => _isLoading = false);
       return;
     }
+
+    if (!mounted) return;
 
     try {
       final api = context.read<AuthService>().api;
@@ -339,7 +343,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   shopName: nameCtrl.text,
                   notes: notesCtrl.text,
                 );
-                Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('✅'),
@@ -347,24 +352,23 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ),
                 );
                 _loadStatus();
-                if (mounted) {
-                  QRCodeScreen.show(
-                    context,
-                    record: {
-                      'type': 'visit',
-                      'employeeName':
-                          context.read<AuthService>().currentUser?.fullName ??
-                          '',
-                      'date': DateTime.now().toString().split(' ')[0],
-                      'time': DateTime.now().toString().substring(11, 19),
-                      'latitude': pos.latitude,
-                      'longitude': pos.longitude,
-                      'id': DateTime.now().millisecondsSinceEpoch,
-                    },
-                    title: 'إثبات الزيارة',
-                  );
-                }
+                QRCodeScreen.show(
+                  context,
+                  record: {
+                    'type': 'visit',
+                    'employeeName':
+                        context.read<AuthService>().currentUser?.fullName ??
+                        '',
+                    'date': DateTime.now().toString().split(' ')[0],
+                    'time': DateTime.now().toString().substring(11, 19),
+                    'latitude': pos.latitude,
+                    'longitude': pos.longitude,
+                    'id': DateTime.now().millisecondsSinceEpoch,
+                  },
+                  title: 'إثبات الزيارة',
+                );
               } catch (e) {
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('$e'),
