@@ -28,7 +28,7 @@ class AuthService extends ChangeNotifier {
         username: (userData['username'] ?? '') as String,
         passwordHash: '',
         role: (userData['role'] ?? 'inspector') as String,
-        employeeId: null,
+        employeeId: userData['employeeId'] as int?,
         fullName:
             (userData['fullName'] ?? userData['full_name'] ?? '') as String?,
       );

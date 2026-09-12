@@ -9,6 +9,7 @@ import '../../utils/theme.dart';
 import '../../utils/app_localizations.dart';
 import '../../providers/language_provider.dart';
 import '../auth/login_screen.dart';
+import '../common/qr_code_screen.dart';
 
 class InspectorScreen extends StatefulWidget {
   const InspectorScreen({super.key});
@@ -142,6 +143,22 @@ class _InspectorScreenState extends State<InspectorScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('✅'), backgroundColor: AppTheme.SuccessColor),
         );
+        if (mounted) {
+          QRCodeScreen.show(
+            context,
+            record: {
+              'type': 'checkin',
+              'employeeName':
+                  context.read<AuthService>().currentUser?.fullName ?? '',
+              'date': DateTime.now().toString().split(' ')[0],
+              'time': DateTime.now().toString().substring(11, 19),
+              'latitude': pos.latitude,
+              'longitude': pos.longitude,
+              'id': DateTime.now().millisecondsSinceEpoch,
+            },
+            title: 'إثبات الحضور',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -284,6 +301,23 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ),
                 );
                 _loadStatus();
+                if (mounted) {
+                  QRCodeScreen.show(
+                    context,
+                    record: {
+                      'type': 'visit',
+                      'employeeName':
+                          context.read<AuthService>().currentUser?.fullName ??
+                          '',
+                      'date': DateTime.now().toString().split(' ')[0],
+                      'time': DateTime.now().toString().substring(11, 19),
+                      'latitude': pos.latitude,
+                      'longitude': pos.longitude,
+                      'id': DateTime.now().millisecondsSinceEpoch,
+                    },
+                    title: 'إثبات الزيارة',
+                  );
+                }
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
