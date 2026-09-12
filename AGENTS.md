@@ -1,23 +1,26 @@
 # DCW-SETIF-TRACKER — AGENTS.md
+
 ## نظام تتبع مفتشي مديرية التجارة لولاية سطيف
 
-> **الريبو (Flutter)**: https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER
-> **الريبو (Backend)**: https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND
-> **تاريخ البدء:** سبتمبر 2026
-> **المشروع:** Frontend (Flutter) + Backend (Node.js) + SQL Server
+> **الريبو (Flutter)**: [DCW-SETIF-TRACKER](https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER)  
+> **الريبو (Backend)**: [DCW-SETIF-BACKEND](https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND)  
+> **تاريخ البدء**: سبتمبر 2026  
+> **المشروع**: Frontend (Flutter) + Backend (Node.js) + SQL Server
 
 ---
 
-## ⚠️ تعليمات لأي وكيل/مطور جديد
+## ⚠️ تعليمات لأي وكيل أو مطور جديد
 
-### لا تلمس:
+### لا تلمس
+
 - المشروع القديم WPF في `DRH-Setif-1` — مستقل تماماً (للقراءة فقط)
 - قاعدة البيانات الأصلية `DRH_Setif_DB` — لا نغير فيها شيء
 
-### قواعد العمل:
+### قواعد العمل
+
 1. بعد كل تعديل: `flutter analyze` للتأكد من صفر أخطاء
 2. بعد كل تعديل: commit + push للريبو
-3. حديث AGENTS.md بأي تغيير كبير
+3. تحديث AGENTS.md بأي تغيير كبير
 4. Backend في مجلد منفصل `drh_setif_backend`
 
 ---
@@ -25,7 +28,7 @@
 ## 🔑 بيانات الدخول (SQL Server عبر Backend API)
 
 | الدور | اسم المستخدم | كلمة المرور | role |
-|-------|-------------|-------------|------|
+| :--- | :--- | :--- | :--- |
 | مدير النظام | `tracker_admin` | `admin123` | `admin` |
 | مدير | `directeur` | `directeur123` | `director` |
 | رئيس مصلحة | `chef_concurrence` | `chef123` | `head_of_department` |
@@ -33,24 +36,27 @@
 | رئيس مكتب | `chef_bureau` | `Bureau@2024` | `bureau` |
 | مفتش | `agent` | `Agent@2024` | `inspector` |
 
-**ملاحظة**: المستخدمون يأتون من قاعدة SQL Server الحقيقية عبر Backend API
+**ملاحظة**: المستخدمون يأتون من قاعدة SQL Server الحقيقية عبر Backend API.
 
 ---
 
 ## 👥 الهيكل التنظيمي (قانوني)
 
-### المرجع القانوني:
+### المرجع القانوني
+
 - المرسوم التنفيذي 03-409 (2003) — تنظيم المصالح الخارجية
 - المرسوم التنفيذي 11-09 (2011) — تنظيم خدمات وزارة التجارة
 - القرار الوزاري المشترك 16 أوت 2011 — تنظيم المديريات في مكاتب
 
-### المصلحتان المعنيتان فقط:
+### المصلحتان المعنيتان فقط
+
 1. **مصلحة مراقبة الممارسات التجارية والمضادة للمنافسة** — 145 عامل
-2. **صلة حماية المستهلك وقمع الغش** — 122 عامل
+2. **مصلحة حماية المستهلك وقمع الغش** — 122 عامل
 3. **المجموع**: 267 تكنيك فقط
 
-### الهيكل داخل كل مصلحة:
-```
+### الهيكل داخل كل مصلحة
+
+```text
 رئيس المصلحة
     ↓
 رئيس فرقة (chef de groupe)
@@ -62,7 +68,8 @@
 محقق (تيكنيك / تقني)
 ```
 
-### الفلتر المطبق:
+### الفلتر المطبق
+
 - **القسم**: مصلحتين فقط (منافسة + حماية المستهلك)
 - **الرتبة**: جميع الرتب (100-115)
 - **المنصب**: excludes (إعادة ادماج، ترسيم، موقفة تحفظيا)
@@ -71,29 +78,33 @@
 
 ## 📐 البنية التقنية
 
-### المشروعين:
-```
+### المشروعين
+
+```text
 C:\Users\PCIB\Desktop\
 ├── drh_setif_tracker\    ← تطبيق Flutter (موبايل)
 └── drh_setif_backend\    ← Backend API (Node.js + Express)
 ```
 
-### Frontend (Flutter):
+### Frontend (Flutter)
+
 - **Flutter SDK**: `C:\src\flutter` (v3.11.4+)
 - **المشروع**: `C:\Users\PCIB\Desktop\drh_setif_tracker\`
-- **الثيم**: Burgundy (#881337) + Gold (#D4AF37) — مطابق لتطبيق WPF
+- **الثيم**: Burgundy (`#881337`) + Gold (`#D4AF37`) — مطابق لتطبيق WPF
 - **الخط**: Tajawal + Cairo
 - **الاتجاه**: RTL عربي
 
-### Backend (Node.js):
+### Backend (Node.js)
+
 - **المشروع**: `C:\Users\PCIB\Desktop\drh_setif_backend\`
 - **التقنية**: Node.js + Express + ODBC
 - **قاعدة البيانات**: SQL Server LocalDB → DRH_Setif_DB
-- **المنفذ**: http://localhost:8080
+- **المنفذ**: [http://localhost:8080](http://localhost:8080)
 - **المصادقة**: JWT + BCrypt
 
-### API Endpoints:
-```
+### API Endpoints
+
+```text
 POST   /api/auth/login          → تسجيل الدخول
 GET    /api/auth/me              → بيانات المستخدم الحالي
 GET    /api/employees            → قائمة الموظفين
@@ -113,13 +124,15 @@ GET    /api/health               → فحص الخادم
 
 ## 🗃️ قاعدة البيانات (SQL Server)
 
-### الجداول الأصلية (WPF — لا نلمسها):
+### الجداول الأصلية (WPF — لا نلمسها)
+
 - `Employes` — 329 موظف (نأخذ 267 فقط)
 - `UtilisateursSysteme` — المستخدمون
 - `StructuresAdministratives` — الأقسام
-- + 20 جدول آخر مرتبط بالرواتب والوثائق
+- أكثر من 20 جدول آخر مرتبط بالرواتب والوثائق
 
-### الجداول الجديدة (Tracker):
+### الجداول الجديدة (Tracker)
+
 - `TrackerAttendance` — الحضور والانصراف
 - `TrackerPrograms` — البرامج الأسبوعية/الشهرية
 - `TrackerAssignments` — توزيع المهام
@@ -130,45 +143,52 @@ GET    /api/health               → فحص الخادم
 
 ## 📊 الحالة الحالية
 
-### ✅ مكتمل:
+### ✅ مكتمل
+
 - [x] هيكل المشروع + pubspec.yaml
 - [x] ثيم كامل مطابق لـ WPF ووضع ليلي مريح
 - [x] خطوط Tajawal + Cairo ودعم ثنائي اللغة (عربي / فرنسي)
-- [x] Backend API كامل (Node.js + Express + ODBC)
-- [x] الاتصال بـ SQL Server الحقيقية
-- [x] 267 موظف من المصلحتين فقط
-- [x] 5 جداول جديدة للتتبع
-- [x] تسجيل الدخول عبر JWT + API
-- [x] Dashboard مخصص لكل دور إداري (المدير، رئيس المصلحة، رئيس المكتب، المفتش)
-- [x] شاشة البداية الاحترافية (Splash Screen) والأنيميشن
-- [x] التحقق من الحضور الميداني بالـ GPS ومطابقة المسافة مع المقر
-- [x] دعم إثبات الحضور والمهمات بـ QR Code
-- [x] تنظيف شامل للمشروع من الأكواد والودجات والموديلات الميتة والتبعيات الزائدة
-- [x] صفر أخطاء compile
-- [x] Git repos + GitHub (Flutter + Backend) متزامنان بالكامل
+- [x] Backend API كامل (Node.js + Express + PostgreSQL + ODBC)
+- [x] النشر السحابي الحي (Live on Render) لكل من الويب والباك إند
+- [x] 267 موظف من المصلحتين مسجلين في النظام
+- [x] خرائط متعددة فائقة الدقة: أقمار صناعية (Esri Satellite) + عصرية (Voyager) + تكتيكية ليلية (Dark)
+- [x] تحديد مقر المديرية مع نطاق الحضور الجغرافي (دائرة 500 متر)
+- [x] بناء حزمة الأندرويد النهائية APK بصلاحيات الإنترنت والكاميرا والـ GPS
+- [x] معالجة مرنة لتسجيل الدخول بدون حساسية للمسافات الزائدة أو حالة الأحرف
+- [x] Git repos متزامنة بالكامل ومحدثة
 
-### 🔜 قادم:
-- [ ] تصدير التقارير إلى Excel/PDF
-- [ ] نظام الإشعارات الفورية
-- [ ] BCrypt تشفير كلمات المرور من جانب الواجهة
+---
+
+## 🌐 الروابط الحية والإنتاج (Live Production)
+
+- **رابط نسخة الويب (Web App)**: [dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)
+- **رابط خادم البيانات (Backend API)**: [drh-setif-api.onrender.com/api](https://drh-setif-api.onrender.com/api)
+- **ملف تثبيت الأندرويد**: `DCW_SETIF_TRACKER.apk` في المجلد الرئيسي
 
 ---
 
 ## 📌 ملاحظات تقنية
 
-### الاتصال بالـ Backend:
+### الاتصال بالـ Backend
+
 ```dart
 // في api_service.dart
-static const String baseUrl = 'http://localhost:8080/api';
+static String get baseUrl {
+  const custom = String.fromEnvironment('API_URL', defaultValue: '');
+  if (custom.isNotEmpty) return '$custom/api';
+  return 'https://drh-setif-api.onrender.com/api';
+}
 ```
 
-### الألوان:
+### الألوان
+
 | الاسم | الكود |
-|-------|-------|
+| :--- | :--- |
 | PrimaryColor | `#881337` |
 | AccentColor | `#D4AF37` |
 | SidebarColor | `#4C0519` |
-| BackgroundColor | `#FAF5F5` |
+| BackgroundColor | `#1A0A1F` |
+| CardColor | `#2D1035` |
 | SuccessColor | `#10B981` |
 | WarningColor | `#F59E0B` |
 | DangerColor | `#EF4444` |

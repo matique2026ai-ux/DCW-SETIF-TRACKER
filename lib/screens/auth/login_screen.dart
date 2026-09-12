@@ -63,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _login() async {
-    if (_usernameCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) {
+    final username = _usernameCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+    if (username.isEmpty || password.isEmpty) {
       setState(() => _error = 'أدخل اسم المستخدم وكلمة المرور');
       _shakeController.forward(from: 0);
       return;
@@ -76,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       final auth = context.read<AuthService>();
-      await auth.login(_usernameCtrl.text, _passwordCtrl.text);
+      await auth.login(username, password);
 
       if (!mounted) return;
 
