@@ -17,6 +17,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   List<Map<String, dynamic>> _mapData = [];
   bool _isLoading = true;
   final MapController _mapController = MapController();
+  String _selectedMapStyle = 'satellite'; // 'satellite', 'voyager', 'dark'
 
   static const LatLng _setifCenter = LatLng(36.1898, 5.4108);
 
@@ -53,61 +54,144 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       children: [
         FlutterMap(
           mapController: _mapController,
-          options: const MapOptions(initialCenter: _setifCenter, initialZoom: 12),
+          options: const MapOptions(initialCenter: _setifCenter, initialZoom: 13),
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'DCW-SETIF-TRACKER',
+            // Dynamic TileLayer based on selected style
+            if (_selectedMapStyle == 'satellite') ...[
+              TileLayer(
+                urlTemplate:
+                    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                userAgentPackageName: 'DCW-SETIF-TRACKER',
+                maxZoom: 19,
+              ),
+              TileLayer(
+                urlTemplate:
+                    'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+                userAgentPackageName: 'DCW-SETIF-TRACKER',
+                maxZoom: 19,
+              ),
+            ] else if (_selectedMapStyle == 'dark') ...[
+              TileLayer(
+                urlTemplate:
+                    'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                userAgentPackageName: 'DCW-SETIF-TRACKER',
+                maxZoom: 19,
+              ),
+            ] else ...[
+              TileLayer(
+                urlTemplate:
+                    'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                userAgentPackageName: 'DCW-SETIF-TRACKER',
+                maxZoom: 19,
+              ),
+            ],
+
+            // 500m Directorate HQ Geofence Circle
+            CircleLayer(
+              circles: [
+                CircleMarker(
+                  point: _setifCenter,
+                  radius: 500,
+                  useRadiusInMeter: true,
+                  color: AppTheme.AccentColor.withValues(alpha: 0.18),
+                  borderColor: AppTheme.AccentColor,
+                  borderStrokeWidth: 2,
+                ),
+              ],
             ),
+
             MarkerLayer(
-              markers: _mapData
-                  .where(
-                    (e) => e['latitude'] != null && e['hasCheckedIn'] == true,
-                  )
-                  .map((emp) {
-                    final lat = (emp['latitude'] as num).toDouble();
-                    final lng = (emp['longitude'] as num).toDouble();
-                    final isOut = emp['isCheckedOut'] == true;
-                    return Marker(
-                      point: LatLng(lat, lng),
-                      width: 40,
-                      height: 40,
-                      child: GestureDetector(
-                        onTap: () => _showInfo(emp),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isOut
-                                ? AppTheme.WarningColor
-                                : AppTheme.SuccessColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    (isOut
-                                            ? AppTheme.WarningColor
-                                            : AppTheme.SuccessColor)
-                                        .withValues(alpha: 0.5),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ],
+              markers: [
+                // HQ Badge Marker
+                Marker(
+                  point: _setifCenter,
+                  width: 44,
+                  height: 44,
+                  child: Tooltip(
+                    message: 'مقر مديرية التجارة لولاية سطيف',
+                    child: GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              '🏢 مقر مديرية التجارة وترقية الصادرات — سطيف (نطاق الحضور: 500 متر)',
+                              style: TextStyle(fontFamily: 'Tajawal'),
+                            ),
+                            backgroundColor: AppTheme.CardColor,
                           ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.AccentColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2.5),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black54,
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.account_balance,
+                          color: Colors.white,
+                          size: 22,
                         ),
                       ),
-                    );
-                  })
-                  .toList(),
+                    ),
+                  ),
+                ),
+
+                // Active Inspectors Markers
+                ..._mapData
+                    .where(
+                      (e) => e['latitude'] != null && e['hasCheckedIn'] == true,
+                    )
+                    .map((emp) {
+                      final lat = (emp['latitude'] as num).toDouble();
+                      final lng = (emp['longitude'] as num).toDouble();
+                      final isOut = emp['isCheckedOut'] == true;
+                      return Marker(
+                        point: LatLng(lat, lng),
+                        width: 42,
+                        height: 42,
+                        child: GestureDetector(
+                          onTap: () => _showInfo(emp),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isOut
+                                  ? AppTheme.WarningColor
+                                  : AppTheme.SuccessColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (isOut
+                                          ? AppTheme.WarningColor
+                                          : AppTheme.SuccessColor)
+                                      .withValues(alpha: 0.6),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+              ],
             ),
           ],
         ),
 
-        // Stats card
+        // Stats card on top
         Positioned(
           top: 12,
           left: 12,
@@ -120,7 +204,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
               border: Border.all(
                 color: AppTheme.BorderColor.withValues(alpha: 0.3),
               ),
-              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 12)],
+              boxShadow: const [
+                BoxShadow(color: Colors.black38, blurRadius: 12),
+              ],
             ),
             child: _isLoading
                 ? const Center(
@@ -159,7 +245,110 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                   ),
           ),
         ),
+
+        // Map Style Switcher (Floating below Stats Card)
+        Positioned(
+          top: 74,
+          right: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppTheme.CardColor.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.BorderColor.withValues(alpha: 0.4),
+              ),
+              boxShadow: const [
+                BoxShadow(color: Colors.black38, blurRadius: 8),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _styleChip('satellite', '🛰️ أقمار صناعية'),
+                const SizedBox(width: 2),
+                _styleChip('voyager', '🗺️ عصرية'),
+                const SizedBox(width: 2),
+                _styleChip('dark', '🌙 تكتيكية'),
+              ],
+            ),
+          ),
+        ),
+
+        // Zoom & Recenter Controls
+        Positioned(
+          bottom: 24,
+          right: 12,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _actionButton(Icons.add, () {
+                final currentZoom = _mapController.camera.zoom;
+                _mapController.move(
+                  _mapController.camera.center,
+                  currentZoom + 1,
+                );
+              }),
+              const SizedBox(height: 8),
+              _actionButton(Icons.remove, () {
+                final currentZoom = _mapController.camera.zoom;
+                _mapController.move(
+                  _mapController.camera.center,
+                  currentZoom - 1,
+                );
+              }),
+              const SizedBox(height: 8),
+              _actionButton(Icons.my_location, () {
+                _mapController.move(_setifCenter, 13);
+              }),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _styleChip(String styleKey, String label) {
+    final isSelected = _selectedMapStyle == styleKey;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedMapStyle = styleKey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.AccentColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : AppTheme.TextSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionButton(IconData icon, VoidCallback onPressed) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: AppTheme.CardColor.withValues(alpha: 0.95),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppTheme.BorderColor.withValues(alpha: 0.4),
+          ),
+          boxShadow: const [
+            BoxShadow(color: Colors.black26, blurRadius: 6),
+          ],
+        ),
+        child: Icon(icon, color: AppTheme.TextPrimary, size: 20),
+      ),
     );
   }
 
@@ -202,6 +391,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
 
   void _showInfo(Map<String, dynamic> emp) {
     final loc = AppLocalizations.of(context);
+    final checkInStr = emp['checkInTime'] != null
+        ? emp['checkInTime'].toString().replaceAll('T', ' ').substring(0, 16)
+        : '---';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -272,11 +465,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             const SizedBox(height: 16),
             const Divider(color: AppTheme.BorderColor),
             const SizedBox(height: 8),
-            _infoRow(
-              Icons.access_time,
-              loc.checkIn,
-              emp['checkInTime'].toString().substring(11, 16),
-            ),
+            _infoRow(Icons.access_time, loc.checkIn, checkInStr),
             const SizedBox(height: 8),
             _infoRow(
               Icons.location_on,
