@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../utils/theme.dart';
 import '../../utils/app_localizations.dart';
 import '../../providers/language_provider.dart';
+import '../../utils/constants.dart';
 import '../auth/login_screen.dart';
 import '../common/qr_code_screen.dart';
 
@@ -128,11 +129,21 @@ class _InspectorScreenState extends State<InspectorScreen> {
     try {
       final api = context.read<AuthService>().api;
       final user = context.read<AuthService>().currentUser;
+
+      final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
+      final distance = AppConstants.distanceBetween(
+        pos.latitude,
+        pos.longitude,
+        AppConstants.hqLatitude,
+        AppConstants.hqLongitude,
+      );
+
       await api.checkIn(
         user!.employeeId!,
         latitude: pos.latitude,
         longitude: pos.longitude,
         photo: photo,
+        location: isAtHQ ? 'HQ' : 'Field',
       );
       if (mounted) {
         setState(() {
@@ -140,8 +151,23 @@ class _InspectorScreenState extends State<InspectorScreen> {
           _checkInTime = DateTime.now().toString().substring(11, 16);
           _isLoading = false;
         });
+
+        final message = isAtHQ
+            ? (loc.isArabic
+                  ? '✅ تم تسجيل الحضور من مقر المديرية'
+                  : '✅ Présence enregistrée au siège')
+            : (loc.isArabic
+                  ? '⚠️ تم التسجيل خارج المقر (${distance.round()}م)'
+                  : '⚠️ Enregistré hors siège (${distance.round()}m)');
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✅'), backgroundColor: AppTheme.SuccessColor),
+          SnackBar(
+            content: Text(message, style: TextStyle(fontFamily: 'Tajawal')),
+            backgroundColor: isAtHQ
+                ? AppTheme.SuccessColor
+                : AppTheme.WarningColor,
+            duration: Duration(seconds: 3),
+          ),
         );
         if (mounted) {
           QRCodeScreen.show(
@@ -171,6 +197,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
   }
 
   Future<void> _checkOut() async {
+    final loc = AppLocalizations.of(context);
     setState(() => _isLoading = true);
     final pos = await _getPosition();
     if (pos == null) {
@@ -181,6 +208,14 @@ class _InspectorScreenState extends State<InspectorScreen> {
     try {
       final api = context.read<AuthService>().api;
       final user = context.read<AuthService>().currentUser;
+      final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
+      final distance = AppConstants.distanceBetween(
+        pos.latitude,
+        pos.longitude,
+        AppConstants.hqLatitude,
+        AppConstants.hqLongitude,
+      );
+
       await api.checkOut(
         user!.employeeId!,
         latitude: pos.latitude,
@@ -192,8 +227,19 @@ class _InspectorScreenState extends State<InspectorScreen> {
           _checkInTime = null;
           _isLoading = false;
         });
+
+        final message = isAtHQ
+            ? (loc.isArabic ? '✅ تم الانصراف من المقر' : '✅ Départ du siège')
+            : (loc.isArabic
+                  ? '✅ تم الانصراف من مكان العمل (${distance.round()}م عن المقر)'
+                  : '✅ Départ du lieu de travail (${distance.round()}m du siège)');
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✅'), backgroundColor: AppTheme.SuccessColor),
+          SnackBar(
+            content: Text(message, style: TextStyle(fontFamily: 'Tajawal')),
+            backgroundColor: AppTheme.SuccessColor,
+            duration: Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {
