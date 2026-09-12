@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import '../../services/database_service.dart';
 import '../../utils/theme.dart';
 import '../screens/auth/login_screen.dart';
 
@@ -23,7 +22,7 @@ class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppTheme.PrimaryColor,
       foregroundColor: Colors.white,
       elevation: 0,
-      centerTitle: false,
+      centerTitle: true,
       title: Text(
         title,
         style: TextStyle(
@@ -43,12 +42,53 @@ class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: Icon(Icons.logout, color: Colors.white),
+          tooltip: 'تسجيل الخروج',
           onPressed: () {
-            context.read<AuthService>().logout();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => LoginScreen()),
-              (route) => false,
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(
+                  'تسجيل الخروج',
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                content: Text(
+                  'هل تريد تسجيل الخروج؟',
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(fontFamily: 'Tajawal'),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      'إلغاء',
+                      style: TextStyle(fontFamily: 'Tajawal'),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.read<AuthService>().logout();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => LoginScreen()),
+                        (route) => false,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.DangerColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      'خروج',
+                      style: TextStyle(fontFamily: 'Tajawal'),
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),

@@ -42,102 +42,215 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppTheme.AccentColor,
-                  child: Icon(Icons.person, color: AppTheme.SidebarColor),
-                ),
-                SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Text(
-                      _getGreeting(),
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 14,
-                        color: AppTheme.TextSecondary,
-                      ),
-                      textDirection: TextDirection.rtl,
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppTheme.PrimaryColor,
+                      child: Icon(Icons.person, color: Colors.white, size: 28),
                     ),
-                    Text(
-                      _getRoleName(user?.role ?? ''),
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.TextPrimary,
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getGreeting(),
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 13,
+                              color: AppTheme.TextSecondary,
+                            ),
+                            textDirection: TextDirection.rtl,
+                          ),
+                          Text(
+                            'مديرية التجارة — ولاية سطيف',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.TextPrimary,
+                            ),
+                            textDirection: TextDirection.rtl,
+                          ),
+                        ],
                       ),
-                      textDirection: TextDirection.rtl,
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.AccentColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getRoleName(user?.role ?? ''),
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.AccentColor,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-            SizedBox(height: 24),
+            SizedBox(height: 20),
             Text(
               'الإحصائيات',
               style: TextStyle(
                 fontFamily: 'Tajawal',
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.TextPrimary,
               ),
               textDirection: TextDirection.rtl,
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 12),
             FutureBuilder<Map<String, dynamic>>(
               future: api.getDashboardStats(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
                 }
                 final stats = snapshot.data ?? {};
-                return GridView.count(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.2,
+                final total = (stats['totalInspectors'] ?? 0) as int;
+                final present = (stats['presentToday'] ?? 0) as int;
+                final absent = (stats['absentToday'] ?? 0) as int;
+                final programs = (stats['activePrograms'] ?? 0) as int;
+                return Column(
                   children: [
-                    StatCard(
-                      title: 'إجمالي المفتشين',
-                      value: (stats['totalInspectors'] ?? 0) as int,
-                      icon: Icons.people,
-                      iconColor: AppTheme.PrimaryColor,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            title: 'المفتشين',
+                            value: total,
+                            icon: Icons.groups,
+                            iconColor: AppTheme.PrimaryColor,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            title: 'حاضرون اليوم',
+                            value: present,
+                            icon: Icons.check_circle,
+                            iconColor: AppTheme.SuccessColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    StatCard(
-                      title: 'حاضرون اليوم',
-                      value: (stats['presentToday'] ?? 0) as int,
-                      icon: Icons.check_circle,
-                      iconColor: AppTheme.SuccessColor,
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            title: 'غائبين',
+                            value: absent,
+                            icon: Icons.cancel,
+                            iconColor: AppTheme.DangerColor,
+                            backgroundColor: AppTheme.BackgroundColor,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: StatCard(
+                            title: 'برامج نشطة',
+                            value: programs,
+                            icon: Icons.calendar_month,
+                            iconColor: AppTheme.AccentColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    StatCard(
-                      title: 'غائبين اليوم',
-                      value: (stats['absentToday'] ?? 0) as int,
-                      icon: Icons.cancel,
-                      iconColor: AppTheme.DangerColor,
-                      backgroundColor: AppTheme.BackgroundColor,
-                    ),
-                    StatCard(
-                      title: 'برامج نشطة',
-                      value: (stats['activePrograms'] ?? 0) as int,
-                      icon: Icons.list_alt,
-                      iconColor: AppTheme.AccentColor,
-                    ),
+                    if (total > 0) ...[
+                      SizedBox(height: 12),
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'نسبة الحضور اليوم',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 13,
+                                  color: AppTheme.TextSecondary,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: LinearProgressIndicator(
+                                        value: present / total,
+                                        minHeight: 12,
+                                        backgroundColor:
+                                            AppTheme.DangerColor.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              present / total > 0.7
+                                                  ? AppTheme.SuccessColor
+                                                  : present / total > 0.4
+                                                  ? AppTheme.WarningColor
+                                                  : AppTheme.DangerColor,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    '${(present / total * 100).toStringAsFixed(0)}%',
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.TextPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 );
               },
             ),
-            SizedBox(height: 24),
+            SizedBox(height: 20),
             Text(
               'آخر النشاطات',
               style: TextStyle(
                 fontFamily: 'Tajawal',
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.TextPrimary,
               ),
@@ -147,6 +260,9 @@ class DashboardScreen extends StatelessWidget {
             FutureBuilder<List<Map<String, dynamic>>>(
               future: api.getRecentActivity(),
               builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
                 final activities = snapshot.data ?? [];
                 if (activities.isEmpty) {
                   return Card(
@@ -155,14 +271,25 @@ class DashboardScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: EdgeInsets.all(32),
                       child: Center(
-                        child: Text(
-                          'لا توجد نشاطات بعد',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            color: AppTheme.TextSecondary,
-                          ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.event_busy,
+                              size: 48,
+                              color: AppTheme.BorderColor,
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'لا توجد نشاطات اليوم',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 14,
+                                color: AppTheme.TextSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -174,49 +301,57 @@ class DashboardScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(12),
                     child: Column(
                       children: activities.take(5).map((a) {
-                        return Column(
-                          children: [
-                            ListTile(
-                              leading: Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.SuccessColor.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.login,
-                                  color: AppTheme.SuccessColor,
-                                  size: 20,
-                                ),
+                        return ListTile(
+                          dense: true,
+                          leading: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.SuccessColor.withValues(
+                                alpha: 0.1,
                               ),
-                              title: Text(
-                                (a['employeeName'] ?? '') as String,
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 14,
-                                  color: AppTheme.TextPrimary,
-                                ),
-                                textDirection: TextDirection.rtl,
-                              ),
-                              trailing: Text(
-                                a['checkIn'] != null ? 'حاضر' : 'غائب',
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 12,
-                                  color: a['checkIn'] != null
-                                      ? AppTheme.SuccessColor
-                                      : AppTheme.DangerColor,
-                                ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.login,
+                              color: AppTheme.SuccessColor,
+                              size: 18,
+                            ),
+                          ),
+                          title: Text(
+                            (a['employeeName'] ?? '') as String,
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.TextPrimary,
+                            ),
+                          ),
+                          trailing: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: a['checkIn'] != null
+                                  ? AppTheme.SuccessColor.withValues(alpha: 0.1)
+                                  : AppTheme.DangerColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              a['checkIn'] != null ? 'حاضر' : 'غائب',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: a['checkIn'] != null
+                                    ? AppTheme.SuccessColor
+                                    : AppTheme.DangerColor,
                               ),
                             ),
-                            if (activities.indexOf(a) < activities.length - 1)
-                              Divider(height: 1),
-                          ],
+                          ),
                         );
                       }).toList(),
                     ),
