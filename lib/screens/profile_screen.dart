@@ -23,19 +23,6 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
-  String _getDepartmentName(String role) {
-    switch (role) {
-      case 'director':
-        return 'مديرية التجارة';
-      case 'head_of_department':
-      case 'bureau':
-      case 'inspector':
-        return 'حماية المستهلك وقمع الغش';
-      default:
-        return 'مديرية التجارة لولاية سطيف';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthService>().currentUser;
@@ -89,10 +76,7 @@ class ProfileScreen extends StatelessWidget {
                         height: 32,
                         color: AppTheme.BorderColor,
                       ),
-                      _profileInfo(
-                        'القسم',
-                        _getDepartmentName(user?.role ?? ''),
-                      ),
+                      _profileInfo('القسم', 'مديرية التجارة لولاية سطيف'),
                     ],
                   ),
                 ],
@@ -166,7 +150,6 @@ class ProfileScreen extends StatelessWidget {
               fontSize: 11,
               color: AppTheme.TextSecondary,
             ),
-            textDirection: TextDirection.rtl,
           ),
           SizedBox(height: 4),
           Text(
@@ -177,7 +160,6 @@ class ProfileScreen extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: AppTheme.TextPrimary,
             ),
-            textDirection: TextDirection.rtl,
           ),
         ],
       ),
@@ -203,7 +185,6 @@ class ProfileScreen extends StatelessWidget {
             fontWeight: FontWeight.w500,
             color: AppTheme.TextPrimary,
           ),
-          textDirection: TextDirection.rtl,
         ),
         subtitle: subtitle != null
             ? Text(
@@ -213,7 +194,6 @@ class ProfileScreen extends StatelessWidget {
                   fontSize: 12,
                   color: AppTheme.TextSecondary,
                 ),
-                textDirection: TextDirection.rtl,
               )
             : null,
         trailing: Icon(

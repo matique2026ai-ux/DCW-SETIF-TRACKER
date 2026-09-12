@@ -3,86 +3,126 @@
 
 > **الريبو**: https://github.com/toufiknation/DCW-SETIF-TRACKER
 > **تاريخ البدء:** سبتمبر 2026
-> **المشروع:** Frontend فقط (Flutter) — لا يوجد باك اند ولا قاعدة معطيات حقيقية
+> **المشروع:** Frontend (Flutter) + Backend (Node.js) + SQL Server
 
 ---
 
 ## ⚠️ تعليمات لأي وكيل/مطور جديد
 
 ### لا تلمس:
-- المشروع القديم WPF في `DRH-Setif-1` — مستقل تماماً
+- المشروع القديم WPF في `DRH-Setif-1` — مستقل تماماً (للقراءة فقط)
+- قاعدة البيانات الأصلية `DRH_Setif_DB` — لا نغير فيها شيء
 
 ### قواعد العمل:
 1. بعد كل تعديل: `flutter analyze` للتأكد من صفر أخطاء
 2. بعد كل تعديل: commit + push للريبو
 3. حديث AGENTS.md بأي تغيير كبير
+4. Backend في مجلد منفصل `drh_setif_backend`
 
 ---
 
-## 🔑 بيانات الدخول (للتجربة — hardcoded في auth_service.dart)
+## 🔑 بيانات الدخول (SQL Server عبر Backend API)
 
 | الدور | اسم المستخدم | كلمة المرور | role |
 |-------|-------------|-------------|------|
-| مدير | `admin` | `admin123` | `director` |
-| رئيس مصلحة | `chef` | `chef123` | `head_of_department` |
-| مفتش | `agent` | `agent123` | `inspector` |
+| مدير النظام | `tracker_admin` | `admin123` | `director` |
+| مدير | `directeur` | `Dir@2024` | `director` |
+| رئيس مصلحة | `chef_service` | `Service@2024` | `head_of_department` |
+| رئيس مكتب | `chef_bureau` | `Bureau@2024` | `bureau` |
+| مفتش | `agent` | `Agent@2024` | `inspector` |
 
-**ملاحظة**: لا يوجد حفظ في قاعدة بيانات — البيانات في الذاكرة فقط (Frontend فقط)
+**ملاحظة**: المستخدمون يأتون من قاعدة SQL Server الحقيقية عبر Backend API
 
 ---
 
-## 👥 الأدوار والصلاحيات
+## 👥 الهيكل التنظيمي (قانوني)
 
-| الدور | الصلاحيات |
-|-------|-----------|
-| **مدير** | لوحة القيادة — يشوف كل المفتشين — يصادق الخصم |
-| **رئيس المصلحة** | يكتب/يوزّع البرنامج الأسبوعي والشهري — يراقب مفتشيه |
-| **مكتب المستخدمين** | يسجل الغيابات — يطبّق قرارات الخصم |
-| **مفتش** | يسجل حضوره — يتبع البرنامج |
+### المرجع القانوني:
+- المرسوم التنفيذي 03-409 (2003) — تنظيم المصالح الخارجية
+- المرسوم التنفيذي 11-09 (2011) — تنظيم خدمات وزارة التجارة
+- القرار الوزاري المشترك 16 أوت 2011 — تنظيم المديريات في مكاتب
+
+### المصلحتان المعنيتان فقط:
+1. **مصلحة مراقبة الممارسات التجارية والمضادة للمنافسة** — 145 عامل
+2. **صلة حماية المستهلك وقمع الغش** — 122 عامل
+3. **المجموع**: 267 تكنيك فقط
+
+### الهيكل داخل كل مصلحة:
+```
+رئيس المصلحة
+    ↓
+رئيس فرقة (chef de groupe)
+    ↓
+رئيس مهمة (chef de mission)
+    ↓
+مفتش رئيسي / محقق رئيسي
+    ↓
+محقق (تيكنيك / تقني)
+```
+
+### الفلتر المطبق:
+- **القسم**: مصلحتين فقط (منافسة + حماية المستهلك)
+- **الرتبة**: جميع الرتب (100-115)
+- **المنصب**: excludes (إعادة ادماج، ترسيم، موقفة تحفظيا)
 
 ---
 
 ## 📐 البنية التقنية
 
+### المشروعين:
+```
+C:\Users\PCIB\Desktop\
+├── drh_setif_tracker\    ← تطبيق Flutter (موبايل)
+└── drh_setif_backend\    ← Backend API (Node.js + Express)
+```
+
+### Frontend (Flutter):
 - **Flutter SDK**: `C:\src\flutter` (v3.11.4+)
 - **المشروع**: `C:\Users\PCIB\Desktop\drh_setif_tracker\`
 - **الثيم**: Burgundy (#881337) + Gold (#D4AF37) — مطابق لتطبيق WPF
 - **الخط**: Tajawal + Cairo
 - **الاتجاه**: RTL عربي
-- **ijk.Database**: SQLite (sqflite) — لكن لا يعمل بشكل موثوق على Flutter Web
 
-### الهيكل:
+### Backend (Node.js):
+- **المشروع**: `C:\Users\PCIB\Desktop\drh_setif_backend\`
+- **التقنية**: Node.js + Express + ODBC
+- **قاعدة البيانات**: SQL Server LocalDB → DRH_Setif_DB
+- **المنفذ**: http://localhost:8080
+- **المصادقة**: JWT + BCrypt
+
+### API Endpoints:
 ```
-lib/
-├── main.dart                    # نقطة البداية — MaterialApp + Provider
-├── models/
-│   ├── employee.dart            # نموذج الموظف
-│   ├── program.dart             # نموذج البرنامج
-│   ├── attendance.dart          # نموذج الحضور
-│   ├── absence.dart             # نموذج الغياب
-│   ├── deduction.dart           # نموذج الخصم
-│   └── user.dart                # نموذج المستخدم
-├── screens/
-│   ├── auth/login_screen.dart   # شاشة تسجيل الدخول
-│   ├── main_navigation_screen.dart  # التنقل الرئيسي (Scaffold + AppBar + BottomNav)
-│   ├── dashboard_screen.dart    # لوحة القيادة
-│   ├── attendance_screen.dart   # الحضور والانصراف
-│   ├── program_screen.dart      # البرامج
-│   ├── reports_screen.dart      # التقارير
-│   └── profile_screen.dart      # الملف الشخصي
-├── services/
-│   ├── auth_service.dart        # المصادقة (hardcoded — لا قاعدة بيانات)
-│   ├── database_service.dart    # SQLite (غير مستخدم حالياً على Web)
-│   ├── gps_service.dart         # خدمة الموقع GPS
-│   └── sync_service.dart        # خدمة التزامن (stub)
-├── utils/
-│   ├── theme.dart               # الثيم الكامل (ألوان + أنماط)
-│   └── constants.dart           # الثوابت والأسماء
-└── widgets/
-    ├── app_bar.dart             # الشريط العلوي
-    ├── bottom_nav.dart          # الشريط السفلي
-    └── stat_card.dart           # بطاقة الإحصائيات
+POST   /api/auth/login          → تسجيل الدخول
+GET    /api/auth/me              → بيانات المستخدم الحالي
+GET    /api/employees            → قائمة الموظفين
+GET    /api/employees/departments → قائمة الأقسام
+GET    /api/employees/:id        → بيانات موظف
+GET    /api/dashboard/stats      → إحصائيات Dashboard
+GET    /api/dashboard/recent-activity → آخر النشاطات
+GET    /api/attendance           → بيانات الحضور
+POST   /api/attendance/checkin   → تسجيل حضور
+POST   /api/attendance/checkout  → تسجيل انصراف
+GET    /api/programs             → البرامج
+POST   /api/programs             → إنشاء برنامج
+GET    /api/health               → فحص الخادم
 ```
+
+---
+
+## 🗃️ قاعدة البيانات (SQL Server)
+
+### الجداول الأصلية (WPF — لا نلمسها):
+- `Employes` — 329 موظف (نأخذ 267 فقط)
+- `UtilisateursSysteme` — المستخدمون
+- `StructuresAdministratives` — الأقسام
+- + 20 جدول آخر مرتبط بالرواتب والوثائق
+
+### الجداول الجديدة (Tracker):
+- `TrackerAttendance` — الحضور والانصراف
+- `TrackerPrograms` — البرامج الأسبوعية/الشهرية
+- `TrackerAssignments` — توزيع المهام
+- `TrackerAbsences` — الغيابات
+- `TrackerDeductions` — قرارات الخصم
 
 ---
 
@@ -90,55 +130,48 @@ lib/
 
 ### ✅ مكتمل:
 - [x] هيكل المشروع + pubspec.yaml
-- [x] ثيم كامل مطابق لـ WPF (Burgury + Gold + RTL)
+- [x] ثيم كامل مطابق لـ WPF
 - [x] خطوط Tajawal + Cairo
 - [x] 6 نماذج بيانات (models)
-- [x] 4 خدمات (services)
-- [x] شاشة تسجيل الدخول (login_screen)
-- [x] شاشة لوحة القيادة (dashboard) — إحصائيات + نشاطات
-- [x] شاشة الحضور (attendance) — قائمة مفتشين + أزرار حضور/انصراف
-- [x] شاشة البرامج (program) — فلتر أسبوعي/شهري + شريط تقدم
-- [x] شاشة التقارير (reports) — 4 أنواع تقارير + تصدير
-- [x] شاشة الملف الشخصي (profile) — معلومات + إعدادات + تسجيل خروج
-- [x] شريط سفلي (BottomNav) — 5 تبويبات
-- [x] AppBar موحد — لا يوجد تكرار
+- [x] Backend API كامل (Node.js + Express + ODBC)
+- [x] الاتصال بـ SQL Server الحقيقية
+- [x] 267 موظف من المصلحتين
+- [x] 5 جداول جديدة للتتبع
+- [x] تسجيل الدخول عبر API
+- [x] Dashboard مع إحصائيات حقيقية
+- [x] شاشة الحضور مع بيانات حقيقية
+- [x] شاشة البرامج
+- [x] شاشة التقارير
+- [x] شاشة الملف الشخصي
 - [x] RTL كامل
-- [x] تسجيل دخول يعمل (hardcoded)
-- [x] Git repo + GitHub
 - [x] صفر أخطاء compile
+- [x] Git repo + GitHub
 
 ### 🔜 قادم:
-- [ ] بيانات حقيقية (nstqdam هرم المفتشين)
-- [ ] SQLite يعمل على Web (أو تخطيه بالكامل)
+- [ ] إصلاح type casting errors
+- [ ] ربط برامج التوزيع بالـ API
 - [ ] GPS real check-in/check-out
-- [ ] برامج توزيع حقيقية
 - [ ] تصدير Excel/PDF
-- [ ] تزامن مع SQL Server (backend)
+- [ ] نظام الإشعارات
 - [ ] BCrypt تشفير كلمات المرور
-
----
-
-## 🔑 كلمات المرور
-
-- `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` — **تم حذفه من Git config** — يجب حذفه من GitHub أيضاً
 
 ---
 
 ## 📌 ملاحظات تقنية
 
-### مشكلة sqflite على Web:
-- `sqflite` لا يعمل بشكل موثوق على Flutter Web (Chrome)
-- الحل الحالي: تسجيل دخول hardcoded بدون قاعدة بيانات
-- مستقبلاً: نستخدم SharedPreferences أو Hive بدلاً من sqflite على Web
+### الاتصال بالـ Backend:
+```dart
+// في api_service.dart
+static const String baseUrl = 'http://localhost:8080/api';
+```
 
-### الألوان المستخدمة:
-| الاسم | الكود | الاستخدام |
-|-------|-------|-----------|
-| PrimaryColor | `#881337` | العنابي الرئيسي |
-| AccentColor | `#D4AF37` | الذهبي |
-| SidebarColor | `#4C0519` | الشريط الجانبي |
-| BackgroundColor | `#FAF5F5` | الخلفية |
-| CardColor | `#FFFFFF` | البطاقات |
-| SuccessColor | `#10B981` | النجاح (أخضر) |
-| WarningColor | `#F59E0B` | تحذير (أصفر) |
-| DangerColor | `#EF4444` | خطأ/حذف (أحمر) |
+### الألوان:
+| الاسم | الكود |
+|-------|-------|
+| PrimaryColor | `#881337` |
+| AccentColor | `#D4AF37` |
+| SidebarColor | `#4C0519` |
+| BackgroundColor | `#FAF5F5` |
+| SuccessColor | `#10B981` |
+| WarningColor | `#F59E0B` |
+| DangerColor | `#EF4444` |

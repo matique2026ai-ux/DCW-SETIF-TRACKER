@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../models/employee.dart';
-import '../../utils/constants.dart';
+import 'api_service.dart';
 
 class AuthService extends ChangeNotifier {
+  final ApiService _api = ApiService();
   User? _currentUser;
   Employee? _currentEmployee;
   bool _isLoading = false;
@@ -12,38 +13,26 @@ class AuthService extends ChangeNotifier {
   Employee? get currentEmployee => _currentEmployee;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;
-
-  static final Map<String, Map<String, String>> _users = {
-    'admin': {'username': 'admin', 'password': 'admin123', 'role': 'director'},
-    'chef': {
-      'username': 'chef',
-      'password': 'chef123',
-      'role': 'head_of_department',
-    },
-    'agent': {'username': 'agent', 'password': 'agent123', 'role': 'inspector'},
-  };
+  ApiService get api => _api;
 
   Future<void> login(String username, String password) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final userData = _users[username];
-      if (userData != null && userData['password'] == password) {
-        _currentUser = User(
-          id: 1,
-          username: userData['username']!,
-          passwordHash: userData['password']!,
-          role: userData['role']!,
-          employeeId: 1,
-        );
-        _isLoading = false;
-        notifyListeners();
-      } else {
-        _isLoading = false;
-        notifyListeners();
-        throw Exception('خطأ في اسم المستخدم أو كلمة المرور');
-      }
+      final result = await _api.login(username, password);
+      final userData = result['user'];
+
+      _currentUser = User(
+        id: userData['id'],
+        username: userData['username'],
+        passwordHash: '',
+        role: userData['role'],
+        employeeId: null,
+      );
+
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
       _isLoading = false;
       notifyListeners();
@@ -52,6 +41,7 @@ class AuthService extends ChangeNotifier {
   }
 
   void logout() {
+    _api.logout();
     _currentUser = null;
     _currentEmployee = null;
     notifyListeners();
