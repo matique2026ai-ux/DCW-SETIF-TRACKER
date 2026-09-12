@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../models/user.dart';
-import '../../models/employee.dart';
-import 'api_service.dart';
+import 'package:drh_setif_tracker/models/user.dart';
+import 'package:drh_setif_tracker/models/employee.dart';
+import 'package:drh_setif_tracker/services/api_service.dart';
 
 class AuthService extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -29,6 +29,8 @@ class AuthService extends ChangeNotifier {
         passwordHash: '',
         role: (userData['role'] ?? 'inspector') as String,
         employeeId: null,
+        fullName:
+            (userData['fullName'] ?? userData['full_name'] ?? '') as String?,
       );
 
       _isLoading = false;

@@ -1,213 +1,110 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color PrimaryColor = Color(0xFF881337);
-  static const Color PrimaryLightColor = Color(0xFF9F1239);
-  static const Color AccentColor = Color(0xFFD4AF37);
-  static const Color AccentLightColor = Color(0xFFFDE68A);
-  static const Color SidebarColor = Color(0xFF4C0519);
-  static const Color BackgroundColor = Color(0xFFFAF5F5);
-  static const Color CardColor = Color(0xFFFFFFFF);
-  static const Color TextPrimary = Color(0xFF1F2937);
-  static const Color TextSecondary = Color(0xFF6B7280);
-  static const Color BorderColor = Color(0xFFE5E7EB);
-  static const Color BorderFocusColor = Color(0xFF9F1239);
-  static const Color SuccessColor = Color(0xFF10B981);
-  static const Color WarningColor = Color(0xFFF59E0B);
-  static const Color DangerColor = Color(0xFFEF4444);
+  static const PrimaryColor = Color(0xFF881337);
+  static const PrimaryLightColor = Color(0xFF9F1239);
+  static const AccentColor = Color(0xFFD4AF37);
+  static const AccentLightColor = Color(0xFFFDE68A);
+  static const SidebarColor = Color(0xFF4C0519);
+  static const BackgroundColor = Color(0xFF1A0A1F);
+  static const CardColor = Color(0xFF2D1035);
+  static const SurfaceColor = Color(0xFF3D1A45);
+  static const TextPrimary = Color(0xFFFFFFFF);
+  static const TextSecondary = Color(0xFFB0B0B0);
+  static const BorderColor = Color(0xFF4A2050);
+  static const SuccessColor = Color(0xFF10B981);
+  static const WarningColor = Color(0xFFF59E0B);
+  static const DangerColor = Color(0xFFEF4444);
 
-  static ThemeData get lightTheme {
+  static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'Tajawal',
-      scaffoldBackgroundColor: BackgroundColor,
+      brightness: Brightness.dark,
       primaryColor: PrimaryColor,
-      colorScheme: ColorScheme.light(
+      scaffoldBackgroundColor: BackgroundColor,
+      fontFamily: 'Tajawal',
+      colorScheme: ColorScheme.dark(
         primary: PrimaryColor,
         secondary: AccentColor,
         surface: CardColor,
-        background: BackgroundColor,
         error: DangerColor,
         onPrimary: Colors.white,
-        onSurface: TextPrimary,
-        onBackground: TextPrimary,
+        onSecondary: Colors.black,
+        onSurface: Colors.white,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: PrimaryColor,
+        backgroundColor: Color(0xFF2D1035),
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         titleTextStyle: TextStyle(
-          color: Colors.white,
+          fontFamily: 'Tajawal',
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          fontFamily: 'Tajawal',
+          color: Colors.white,
         ),
-        iconTheme: IconThemeData(color: Colors.white),
       ),
       cardTheme: CardThemeData(
         color: CardColor,
-        elevation: 0,
+        elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: BorderColor, width: 1),
+          side: BorderSide(color: BorderColor.withValues(alpha: 0.3), width: 1),
         ),
-        shadowColor: Colors.black.withOpacity(0.06),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: PrimaryColor,
           foregroundColor: Colors.white,
-          elevation: 0,
-          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: TextStyle(
             fontFamily: 'Tajawal',
             fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: PrimaryColor,
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: TextStyle(
-            fontFamily: 'Tajawal',
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: PrimaryColor,
-          side: BorderSide(color: PrimaryColor, width: 1.5),
-          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: TextStyle(
-            fontFamily: 'Tajawal',
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
           ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: CardColor,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: SurfaceColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: BorderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: BorderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: PrimaryColor, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AccentColor, width: 2),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: DangerColor),
-        ),
+        labelStyle: TextStyle(fontFamily: 'Tajawal', color: TextSecondary),
         hintStyle: TextStyle(
           fontFamily: 'Tajawal',
-          color: TextSecondary,
-          fontSize: 14,
-        ),
-        labelStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          color: TextPrimary,
-          fontSize: 14,
+          color: TextSecondary.withValues(alpha: 0.6),
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: CardColor,
-        selectedItemColor: PrimaryColor,
+        backgroundColor: Color(0xFF2D1035),
+        selectedItemColor: AccentColor,
         unselectedItemColor: TextSecondary,
-        selectedLabelStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: TextStyle(fontFamily: 'Tajawal', fontSize: 12),
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
-      dataTableTheme: DataTableThemeData(
-        decoration: BoxDecoration(
-          color: CardColor,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        headingRowColor: WidgetStatePropertyAll(PrimaryColor),
-        headingTextStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          fontSize: 13,
-        ),
-        dataTextStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          color: TextPrimary,
-          fontSize: 13,
-        ),
-        columnSpacing: 16,
-        horizontalMargin: 16,
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      dividerTheme: DividerThemeData(color: BorderColor, thickness: 1),
+      dividerTheme: DividerThemeData(color: BorderColor.withValues(alpha: 0.3)),
       dialogTheme: DialogThemeData(
         backgroundColor: CardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        titleTextStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
-          color: TextPrimary,
-        ),
-        contentTextStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          fontSize: 14,
-          color: TextPrimary,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
 
-  static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      fontFamily: 'Tajawal',
-      scaffoldBackgroundColor: Color(0xFF1F2937),
-      primaryColor: AccentColor,
-      colorScheme: ColorScheme.dark(
-        primary: AccentColor,
-        secondary: PrimaryColor,
-        surface: Color(0xFF374151),
-        background: Color(0xFF111827),
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: SidebarColor,
-        foregroundColor: AccentColor,
-        elevation: 0,
-      ),
-      cardTheme: CardThemeData(
-        color: Color(0xFF374151),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Color(0xFF374151),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
-  }
+  static ThemeData get lightTheme => darkTheme;
 }

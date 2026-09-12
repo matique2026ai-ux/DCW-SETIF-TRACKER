@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/user.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:8080/api';
@@ -60,7 +59,6 @@ class ApiService {
       Uri.parse('$baseUrl/employees/departments'),
       headers: _headers,
     );
-
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
       return data.cast<String>();
@@ -73,7 +71,6 @@ class ApiService {
       Uri.parse('$baseUrl/dashboard/stats'),
       headers: _headers,
     );
-
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return Map<String, dynamic>.from(data as Map);
@@ -86,7 +83,6 @@ class ApiService {
       Uri.parse('$baseUrl/dashboard/recent-activity'),
       headers: _headers,
     );
-
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
@@ -94,26 +90,46 @@ class ApiService {
     throw Exception('خطأ في جلب النشاطات');
   }
 
-  Future<void> checkIn(int employeeId, {String? location}) async {
+  Future<void> checkIn(
+    int employeeId, {
+    double? latitude,
+    double? longitude,
+    String? photo,
+    String? location,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/attendance/checkin'),
       headers: _headers,
-      body: jsonEncode({'employeeId': employeeId, 'location': location}),
+      body: jsonEncode({
+        'employeeId': employeeId,
+        'latitude': latitude,
+        'longitude': longitude,
+        'photo': photo,
+        'location': location,
+      }),
     );
-
     if (response.statusCode != 201) {
       final error = jsonDecode(response.body);
       throw Exception(error['error'] ?? 'خطأ في تسجيل الحضور');
     }
   }
 
-  Future<void> checkOut(int employeeId, {String? location}) async {
+  Future<void> checkOut(
+    int employeeId, {
+    double? latitude,
+    double? longitude,
+    String? location,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/attendance/checkout'),
       headers: _headers,
-      body: jsonEncode({'employeeId': employeeId, 'location': location}),
+      body: jsonEncode({
+        'employeeId': employeeId,
+        'latitude': latitude,
+        'longitude': longitude,
+        'location': location,
+      }),
     );
-
     if (response.statusCode != 200) {
       final error = jsonDecode(response.body);
       throw Exception(error['error'] ?? 'خطأ في تسجيل الانصراف');
@@ -140,16 +156,156 @@ class ApiService {
     throw Exception('خطأ في جلب بيانات الحضور');
   }
 
+  Future<Map<String, dynamic>?> getTodayAttendance() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/attendance/today-self'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data == null) return null;
+      return Map<String, dynamic>.from(data as Map);
+    }
+    return null;
+  }
+
   Future<List<Map<String, dynamic>>> getPrograms() async {
     final response = await http.get(
       Uri.parse('$baseUrl/programs'),
       headers: _headers,
     );
-
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('خطأ في جلب البرامج');
+  }
+
+  Future<List<Map<String, dynamic>>> getMapData() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/attendance/map-data'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception('خطأ في جلب بيانات الخريطة');
+  }
+
+  Future<List<Map<String, dynamic>>> getTodayVisits() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/visits/today'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  Future<void> recordVisit({
+    required int employeeId,
+    required double latitude,
+    required double longitude,
+    String? photo,
+    String? shopName,
+    String? shopType,
+    String? notes,
+    double? accuracy,
+    String? locationName,
+    int? assignmentId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/visits'),
+      headers: _headers,
+      body: jsonEncode({
+        'employeeId': employeeId,
+        'latitude': latitude,
+        'longitude': longitude,
+        'accuracy': accuracy,
+        'locationName': locationName,
+        'shopName': shopName,
+        'shopType': shopType,
+        'photo': photo,
+        'assignmentId': assignmentId,
+        'notes': notes,
+      }),
+    );
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'خطأ في تسجيل الزيارة');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getDeductions({String? status}) async {
+    final params = <String, String>{};
+    if (status != null) params['status'] = status;
+
+    final uri = Uri.parse(
+      '$baseUrl/deductions',
+    ).replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception('خطأ في جلب طلبات الخصم');
+  }
+
+  Future<void> requestDeduction({
+    required int employeeId,
+    required int requestedBy,
+    required String reason,
+    int? daysCount,
+    double? amount,
+    String? evidence,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/deductions'),
+      headers: _headers,
+      body: jsonEncode({
+        'employeeId': employeeId,
+        'requestedBy': requestedBy,
+        'reason': reason,
+        'daysCount': daysCount,
+        'amount': amount,
+        'evidence': evidence,
+      }),
+    );
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'خطأ في إنشاء طلب الخصم');
+    }
+  }
+
+  Future<void> approveDeduction({
+    required int id,
+    required int approvedBy,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/deductions/$id/approve'),
+      headers: _headers,
+      body: jsonEncode({'approvedBy': approvedBy}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('خطأ في الموافقة على الخصم');
+    }
+  }
+
+  Future<void> rejectDeduction({
+    required int id,
+    required int approvedBy,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/deductions/$id/reject'),
+      headers: _headers,
+      body: jsonEncode({'approvedBy': approvedBy}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('خطأ في رفض طلب الخصم');
+    }
   }
 }

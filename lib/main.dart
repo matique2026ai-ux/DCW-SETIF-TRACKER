@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/main_navigation_screen.dart';
+import 'screens/splash_screen.dart';
 import 'utils/theme.dart';
+import 'utils/app_localizations.dart';
 import 'services/auth_service.dart';
+import 'providers/language_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,21 +18,27 @@ class DRHTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthService())],
-      child: MaterialApp(
-        title: 'DCW-SETIF-TRACKER',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light,
-        home: const LoginScreen(),
-        routes: {'/main': (context) => const MainNavigationScreen()},
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('ar', '')],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+      ],
+      child: Consumer<LanguageProvider>(
+        builder: (context, langProvider, _) {
+          return MaterialApp(
+            title: 'DCW-SETIF-TRACKER',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.darkTheme,
+            locale: langProvider.locale,
+            localizationsDelegates: [
+              AppLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: [Locale('ar', ''), Locale('fr', '')],
+            home: const SplashScreen(),
+          );
+        },
       ),
     );
   }
