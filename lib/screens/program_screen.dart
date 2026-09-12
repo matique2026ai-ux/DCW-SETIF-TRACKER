@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../services/auth_service.dart';
 import '../../utils/theme.dart';
 
 class ProgramScreen extends StatefulWidget {
@@ -10,39 +12,39 @@ class ProgramScreen extends StatefulWidget {
 
 class _ProgramScreenState extends State<ProgramScreen> {
   String _selectedFilter = 'all';
+  List<Map<String, dynamic>> _programs = [];
+  bool _isLoading = true;
 
-  final List<Map<String, dynamic>> _programs = [
-    {
-      'id': 1,
-      'title': 'مراقبة الأسواق - منطقة وسط سطيف',
-      'type': 'weekly',
-      'week_date': '08 - 12 سبتمبر 2025',
-      'total': 5,
-      'done': 3,
-    },
-    {
-      'id': 2,
-      'title': 'حملة مكافحة الغش التجاري',
-      'type': 'monthly',
-      'week_date': 'سبتمبر 2025',
-      'total': 8,
-      'done': 2,
-    },
-    {
-      'id': 3,
-      'title': 'تفتيش المحلات التجارية - القاطب',
-      'type': 'weekly',
-      'week_date': '15 - 19 سبتمبر 2025',
-      'total': 6,
-      'done': 0,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadPrograms();
+  }
+
+  Future<void> _loadPrograms() async {
+    try {
+      final api = context.read<AuthService>().api;
+      final programs = await api.getPrograms();
+      if (mounted) {
+        setState(() {
+          _programs = programs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filteredPrograms = _selectedFilter == 'all'
         ? _programs
-        : _programs.where((p) => p['type'] == _selectedFilter).toList();
+        : _programs.where((p) => p['Type'] == _selectedFilter).toList();
 
     return Column(
       children: [
@@ -59,7 +61,9 @@ class _ProgramScreenState extends State<ProgramScreen> {
           ),
         ),
         Expanded(
-          child: filteredPrograms.isEmpty
+          child: _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : filteredPrograms.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -81,107 +85,111 @@ class _ProgramScreenState extends State<ProgramScreen> {
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: filteredPrograms.length,
-                  itemBuilder: (context, index) {
-                    final program = filteredPrograms[index];
-                    final doneCount = program['done'] as int;
-                    final totalCount = program['total'] as int;
-                    final isWeekly = program['type'] == 'weekly';
-                    return Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      margin: EdgeInsets.only(bottom: 12),
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    program['title'] as String,
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: AppTheme.TextPrimary,
-                                    ),
-                                    textDirection: TextDirection.rtl,
-                                  ),
-                                ),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isWeekly
-                                        ? AppTheme.AccentColor.withValues(
-                                            alpha: 0.1,
-                                          )
-                                        : AppTheme.PrimaryColor.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    isWeekly ? 'أسبوعي' : 'شهري',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 11,
-                                      color: isWeekly
-                                          ? AppTheme.AccentColor
-                                          : AppTheme.PrimaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textDirection: TextDirection.rtl,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              program['week_date'] as String,
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 12,
-                                color: AppTheme.TextSecondary,
-                              ),
-                              textDirection: TextDirection.rtl,
-                            ),
-                            SizedBox(height: 12),
-                            LinearProgressIndicator(
-                              value: totalCount > 0
-                                  ? doneCount / totalCount
-                                  : 0,
-                              backgroundColor: AppTheme.BorderColor,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                doneCount / totalCount > 0.7
-                                    ? AppTheme.SuccessColor
-                                    : AppTheme.AccentColor,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              '$doneCount / $totalCount منجز',
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 11,
-                                color: AppTheme.TextSecondary,
-                              ),
-                              textDirection: TextDirection.rtl,
-                            ),
-                          ],
+              : RefreshIndicator(
+                  onRefresh: _loadPrograms,
+                  child: ListView.builder(
+                    padding: EdgeInsets.all(16),
+                    itemCount: filteredPrograms.length,
+                    itemBuilder: (context, index) {
+                      final program = filteredPrograms[index];
+                      final doneCount = (program['DoneCount'] ?? 0) as int;
+                      final totalCount = (program['TotalCount'] ?? 0) as int;
+                      final isWeekly = program['Type'] == 'weekly';
+                      return Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      ),
-                    );
-                  },
+                        margin: EdgeInsets.only(bottom: 12),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      (program['Title'] ?? '') as String,
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: AppTheme.TextPrimary,
+                                      ),
+                                      textDirection: TextDirection.rtl,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isWeekly
+                                          ? AppTheme.AccentColor.withValues(
+                                              alpha: 0.1,
+                                            )
+                                          : AppTheme.PrimaryColor.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      isWeekly ? 'أسبوعي' : 'شهري',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 11,
+                                        color: isWeekly
+                                            ? AppTheme.AccentColor
+                                            : AppTheme.PrimaryColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textDirection: TextDirection.rtl,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                (program['WeekDate'] ?? '') as String,
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 12,
+                                  color: AppTheme.TextSecondary,
+                                ),
+                                textDirection: TextDirection.rtl,
+                              ),
+                              SizedBox(height: 12),
+                              LinearProgressIndicator(
+                                value: totalCount > 0
+                                    ? doneCount / totalCount
+                                    : 0,
+                                backgroundColor: AppTheme.BorderColor,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  doneCount / totalCount > 0.7
+                                      ? AppTheme.SuccessColor
+                                      : AppTheme.AccentColor,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '$doneCount / $totalCount منجز',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 11,
+                                  color: AppTheme.TextSecondary,
+                                ),
+                                textDirection: TextDirection.rtl,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
         ),
       ],

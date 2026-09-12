@@ -139,4 +139,17 @@ class ApiService {
     }
     throw Exception('خطأ في جلب بيانات الحضور');
   }
+
+  Future<List<Map<String, dynamic>>> getPrograms() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/programs'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception('خطأ في جلب البرامج');
+  }
 }
