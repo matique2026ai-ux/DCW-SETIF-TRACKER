@@ -24,12 +24,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _loadEmployees() async {
     try {
       final api = context.read<AuthService>().api;
-      final employees = await api.getEmployees(department: 'حماية المستهلك');
-      final employees2 = await api.getEmployees(department: 'المنافسة');
-      final all = [...employees, ...employees2];
+      final employees = await api.getEmployees();
       if (mounted) {
         setState(() {
-          _employees = all;
+          _employees = employees;
           _isLoading = false;
         });
       }
