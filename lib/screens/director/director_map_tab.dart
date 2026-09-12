@@ -55,9 +55,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           options: MapOptions(initialCenter: _setifCenter, initialZoom: 12),
           children: [
             TileLayer(
-              urlTemplate:
-                  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-              subdomains: ['a', 'b', 'c'],
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'DCW-SETIF-TRACKER',
             ),
             MarkerLayer(

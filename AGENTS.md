@@ -25,9 +25,10 @@
 
 | الدور | اسم المستخدم | كلمة المرور | role |
 |-------|-------------|-------------|------|
-| مدير النظام | `tracker_admin` | `admin123` | `director` |
-| مدير | `directeur` | `Dir@2024` | `director` |
-| رئيس مصلحة | `chef_service` | `Service@2024` | `head_of_department` |
+| مدير النظام | `tracker_admin` | `admin123` | `admin` |
+| مدير | `directeur` | `directeur123` | `director` |
+| رئيس مصلحة | `chef_concurrence` | `chef123` | `head_of_department` |
+| رئيس مكتب | `bureau_user` | `bureau123` | `bureau_chief` |
 | رئيس مكتب | `chef_bureau` | `Bureau@2024` | `bureau` |
 | مفتش | `agent` | `Agent@2024` | `inspector` |
 
