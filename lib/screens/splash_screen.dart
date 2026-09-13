@@ -307,12 +307,10 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Column(
                             children: [
                               Text(
-                                loc.isArabic
-                                    ? 'مديرية التجارة وترقية الصادرات'
-                                    : 'Direction du Commerce et de la Promotion des Exportations',
+                                loc.splashDirectorate,
                                 style: TextStyle(
                                   fontFamily: 'Tajawal',
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   color: Colors.white.withValues(alpha: 0.9),
                                   fontWeight: FontWeight.w500,
                                 ),

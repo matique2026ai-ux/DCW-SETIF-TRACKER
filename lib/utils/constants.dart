@@ -4,7 +4,7 @@ class AppConstants {
   static const String appName = 'DCW-SETIF-TRACKER';
   static const String appNameAr = 'منصة الرقابة والتفتيش الميداني';
 
-  // Directorate HQ (مقر مديرية التجارة لولاية سطيف — حي المعبودة، شارع جودي حمو)
+  // Directorate HQ (مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف — حي المعبودة، شارع جودي حمو)
   static const double hqLatitude = 36.1930704;
   static const double hqLongitude = 5.3959613;
   static const double hqRadiusMeters = 500.0;

@@ -14,8 +14,8 @@ class AppLocalizations {
   String get splashTitle =>
       isArabic ? 'منصة الرقابة والتفتيش الميداني' : 'Plateforme d\'Inspection et de Contrôle';
   String get splashDirectorate => isArabic
-      ? 'مديرية التجارة وترقية الصادرات'
-      : 'Direction du Commerce et de la Promotion des Exportations';
+      ? 'مديرية التجارة الداخلية وضبط السوق الوطنية'
+      : 'Direction du Commerce Intérieur et de la Régulation du Marché National';
   String get splashWilaya => isArabic ? 'ولاية سطيف' : 'Wilaya de Sétif';
   String get splashLoading => isArabic ? 'جاري التحميل...' : 'Chargement...';
 

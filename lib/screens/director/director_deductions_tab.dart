@@ -903,7 +903,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               children: [
                 const Center(
                   child: Text(
-                    'الجمهورية الجزائرية الديمقراطية الشعبية\nوزارة التجارة وترقية الصادرات\nمديرية التجارة لولاية سطيف',
+                    'الجمهورية الجزائرية الديمقراطية الشعبية\nوزارة التجارة الداخلية وضبط السوق الوطنية\nمديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Tajawal',

@@ -267,8 +267,8 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(height: 6),
                         Text(
                           loc.isArabic
-                              ? 'مديرية التجارة — سطيف'
-                              : 'Direction du Commerce — Sétif',
+                              ? 'مديرية التجارة الداخلية وضبط السوق — سطيف'
+                              : 'Direction du Commerce Intérieur — Sétif',
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 13,

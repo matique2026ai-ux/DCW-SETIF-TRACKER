@@ -145,13 +145,13 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                   width: 44,
                   height: 44,
                   child: Tooltip(
-                    message: 'مقر مديرية التجارة لولاية سطيف',
+                    message: 'مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف',
                     child: GestureDetector(
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                              '🏢 مقر مديرية التجارة وترقية الصادرات — سطيف (نطاق الحضور: 500 متر)',
+                              '🏢 مقر مديرية التجارة الداخلية وضبط السوق الوطنية — سطيف (نطاق الحضور: 500 متر)',
                               style: TextStyle(fontFamily: 'Tajawal'),
                             ),
                             backgroundColor: AppTheme.CardColor,
