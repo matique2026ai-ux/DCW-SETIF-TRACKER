@@ -28,6 +28,10 @@ linter:
 analyzer:
   errors:
     constant_identifier_names: ignore
+  exclude:
+    - build/**
+    - android/**
+    - web/**
   language:
     strict-casts: true
     strict-raw-types: true
