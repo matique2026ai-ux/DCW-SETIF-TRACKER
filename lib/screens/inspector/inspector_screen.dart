@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/services/offline_sync_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
@@ -21,6 +22,8 @@ class InspectorScreen extends StatefulWidget {
 class _InspectorScreenState extends State<InspectorScreen> {
   bool _isCheckedIn = false;
   bool _isLoading = false;
+  bool _isSyncing = false;
+  int _pendingSyncCount = 0;
   String? _checkInTime;
   List<Map<String, dynamic>> _todayVisits = [];
   int _visitCount = 0;
@@ -52,23 +55,93 @@ class _InspectorScreenState extends State<InspectorScreen> {
   }
 
   Future<void> _loadStatus() async {
+    final pending = await OfflineSyncService.getPendingCount();
+    if (mounted) {
+      setState(() => _pendingSyncCount = pending);
+    }
+
     try {
       final auth = context.read<AuthService>();
       final api = auth.api;
       final att = await api.getTodayAttendance();
       final visits = await api.getTodayVisits(auth.currentUser?.employeeId);
+      final offlineVisits = await OfflineSyncService.getCachedVisits();
+
       if (mounted) {
         setState(() {
           if (att != null && att['Id'] != null) {
             _isCheckedIn = true;
             _checkInTime = _formatTime(att['CheckInTime']);
           }
-          _todayVisits = visits;
-          _visitCount = visits.length;
+          // Combine server visits with offline pending visits
+          _todayVisits = [...offlineVisits, ...visits];
+          _visitCount = _todayVisits.length;
         });
       }
+
+      // If online and there are pending items, attempt auto-sync
+      if (pending > 0) {
+        _syncPendingItems(silent: true);
+      }
     } catch (_) {
-      // Load error ignored on initial status check
+      // Offline fallback: load from local cache
+      final cachedAtt = await OfflineSyncService.getCachedAttendance();
+      final cachedVisits = await OfflineSyncService.getCachedVisits();
+      if (mounted) {
+        setState(() {
+          if (cachedAtt != null) {
+            _isCheckedIn = cachedAtt['isCheckedIn'] == true;
+            _checkInTime = cachedAtt['checkInTime'];
+          }
+          _todayVisits = cachedVisits;
+          _visitCount = cachedVisits.length;
+        });
+      }
+    }
+  }
+
+  Future<void> _syncPendingItems({bool silent = false}) async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+
+    try {
+      final api = context.read<AuthService>().api;
+      final result = await OfflineSyncService.syncAll(api);
+      final int synced = result['syncedCount'] ?? 0;
+      final int remaining = await OfflineSyncService.getPendingCount();
+
+      if (mounted) {
+        setState(() {
+          _pendingSyncCount = remaining;
+          _isSyncing = false;
+        });
+
+        if (!silent && mounted) {
+          if (synced > 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '✅ تمت مزامنة $synced عمليات بنجاح مع السيرفر',
+                  style: const TextStyle(fontFamily: 'Tajawal'),
+                ),
+                backgroundColor: AppTheme.SuccessColor,
+              ),
+            );
+          } else if (remaining > 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '⚠️ تعذر المزامنة: يرجى التحقق من اتصال الإنترنت',
+                  style: const TextStyle(fontFamily: 'Tajawal'),
+                ),
+                backgroundColor: AppTheme.WarningColor,
+              ),
+            );
+          }
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isSyncing = false);
     }
   }
 
@@ -141,18 +214,27 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
     if (!mounted) return;
 
+    final user = context.read<AuthService>().currentUser;
+    final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
+    final distance = AppConstants.distanceBetween(
+      pos.latitude,
+      pos.longitude,
+      AppConstants.hqLatitude,
+      AppConstants.hqLongitude,
+    );
+
+    final payload = {
+      'employeeId': user?.employeeId ?? 1,
+      'latitude': pos.latitude,
+      'longitude': pos.longitude,
+      'photo': photo,
+      'location': isAtHQ ? 'HQ' : 'Field',
+    };
+
+    bool isOfflineMode = false;
+
     try {
       final api = context.read<AuthService>().api;
-      final user = context.read<AuthService>().currentUser;
-
-      final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
-      final distance = AppConstants.distanceBetween(
-        pos.latitude,
-        pos.longitude,
-        AppConstants.hqLatitude,
-        AppConstants.hqLongitude,
-      );
-
       await api.checkIn(
         user!.employeeId!,
         latitude: pos.latitude,
@@ -160,54 +242,57 @@ class _InspectorScreenState extends State<InspectorScreen> {
         photo: photo,
         location: isAtHQ ? 'HQ' : 'Field',
       );
-      if (mounted) {
-        setState(() {
-          _isCheckedIn = true;
-          _checkInTime = DateTime.now().toString().substring(11, 16);
-          _isLoading = false;
-        });
+    } catch (e) {
+      // Offline fallback: save to offline queue
+      isOfflineMode = true;
+      await OfflineSyncService.queueCheckIn(payload);
+    }
 
-        final message = isAtHQ
-            ? (loc.isArabic
+    if (mounted) {
+      final pending = await OfflineSyncService.getPendingCount();
+      setState(() {
+        _isCheckedIn = true;
+        _checkInTime = DateTime.now().toString().substring(11, 16);
+        _isLoading = false;
+        _pendingSyncCount = pending;
+      });
+
+      final message = isOfflineMode
+          ? (loc.isArabic
+              ? '📡 تم حفظ الحضور محلياً (بدون نت) — ستتم المزامنة تلقائياً'
+              : '📡 Présence enregistrée hors ligne — synchro auto')
+          : (isAtHQ
+              ? (loc.isArabic
                   ? '✅ تم تسجيل الحضور من مقر المديرية'
                   : '✅ Présence enregistrée au siège')
-            : (loc.isArabic
+              : (loc.isArabic
                   ? '⚠️ تم التسجيل خارج المقر (${distance.round()}م)'
-                  : '⚠️ Enregistré hors siège (${distance.round()}m)');
+                  : '⚠️ Enregistré hors siège (${distance.round()}m)'));
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
-            backgroundColor: isAtHQ
-                ? AppTheme.SuccessColor
-                : AppTheme.WarningColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        if (mounted) {
-          QRCodeScreen.show(
-            context,
-            record: {
-              'type': 'checkin',
-              'employeeName':
-                  context.read<AuthService>().currentUser?.fullName ?? '',
-              'date': DateTime.now().toString().split(' ')[0],
-              'time': DateTime.now().toString().substring(11, 19),
-              'latitude': pos.latitude,
-              'longitude': pos.longitude,
-              'id': DateTime.now().millisecondsSinceEpoch,
-            },
-            title: 'إثبات الحضور',
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppTheme.DangerColor),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
+          backgroundColor: isOfflineMode
+              ? const Color(0xFFD97706)
+              : (isAtHQ ? AppTheme.SuccessColor : AppTheme.WarningColor),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+
+      QRCodeScreen.show(
+        context,
+        record: {
+          'type': 'checkin',
+          'employeeName': user?.fullName ?? '',
+          'date': DateTime.now().toString().split(' ')[0],
+          'time': DateTime.now().toString().substring(11, 19),
+          'latitude': pos.latitude,
+          'longitude': pos.longitude,
+          'id': DateTime.now().millisecondsSinceEpoch,
+          'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
+        },
+        title: isOfflineMode ? 'إثبات الحضور (وضع عدم الاتصال)' : 'إثبات الحضور',
+      );
     }
   }
 
@@ -230,65 +315,79 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
     if (!mounted) return;
 
+    final user = context.read<AuthService>().currentUser;
+    final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
+    final distance = AppConstants.distanceBetween(
+      pos.latitude,
+      pos.longitude,
+      AppConstants.hqLatitude,
+      AppConstants.hqLongitude,
+    );
+
+    final payload = {
+      'employeeId': user?.employeeId ?? 1,
+      'latitude': pos.latitude,
+      'longitude': pos.longitude,
+      'location': isAtHQ ? 'HQ' : 'Field',
+    };
+
+    bool isOfflineMode = false;
+
     try {
       final api = context.read<AuthService>().api;
-      final user = context.read<AuthService>().currentUser;
-      final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
-      final distance = AppConstants.distanceBetween(
-        pos.latitude,
-        pos.longitude,
-        AppConstants.hqLatitude,
-        AppConstants.hqLongitude,
-      );
-
       await api.checkOut(
         user!.employeeId!,
         latitude: pos.latitude,
         longitude: pos.longitude,
       );
-      if (mounted) {
-        setState(() {
-          _isCheckedIn = false;
-          _checkInTime = null;
-          _isLoading = false;
-        });
-
-        final message = isAtHQ
-            ? (loc.isArabic ? '✅ تم الانصراف من المقر' : '✅ Départ du siège')
-            : (loc.isArabic
-                  ? '✅ تم الانصراف من مكان العمل (${distance.round()}م عن المقر)'
-                  : '✅ Départ du lieu de travail (${distance.round()}m du siège)');
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
-            backgroundColor: AppTheme.SuccessColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        QRCodeScreen.show(
-          context,
-          record: {
-            'type': 'checkout',
-            'employeeName':
-                context.read<AuthService>().currentUser?.fullName ?? '',
-            'date': DateTime.now().toString().split(' ')[0],
-            'time': DateTime.now().toString().substring(11, 19),
-            'latitude': pos.latitude,
-            'longitude': pos.longitude,
-            'id': DateTime.now().millisecondsSinceEpoch,
-          },
-          title: 'إثبات الانصراف',
-        );
-      }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppTheme.DangerColor),
-        );
-      }
+      isOfflineMode = true;
+      await OfflineSyncService.queueCheckOut(payload);
+    }
+
+    if (mounted) {
+      final pending = await OfflineSyncService.getPendingCount();
+      setState(() {
+        _isCheckedIn = false;
+        _checkInTime = null;
+        _isLoading = false;
+        _pendingSyncCount = pending;
+      });
+
+      final message = isOfflineMode
+          ? (loc.isArabic
+              ? '📡 تم حفظ الانصراف محلياً (بدون نت) — ستتم المزامنة تلقائياً'
+              : '📡 Départ enregistré hors ligne — synchro auto')
+          : (isAtHQ
+              ? (loc.isArabic ? '✅ تم الانصراف من المقر' : '✅ Départ du siège')
+              : (loc.isArabic
+                  ? '✅ تم الانصراف من مكان العمل (${distance.round()}م عن المقر)'
+                  : '✅ Départ du lieu de travail (${distance.round()}m du siège)'));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
+          backgroundColor: isOfflineMode
+              ? const Color(0xFFD97706)
+              : AppTheme.SuccessColor,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+
+      QRCodeScreen.show(
+        context,
+        record: {
+          'type': 'checkout',
+          'employeeName': user?.fullName ?? '',
+          'date': DateTime.now().toString().split(' ')[0],
+          'time': DateTime.now().toString().substring(11, 19),
+          'latitude': pos.latitude,
+          'longitude': pos.longitude,
+          'id': DateTime.now().millisecondsSinceEpoch,
+          'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
+        },
+        title: isOfflineMode ? 'إثبات الانصراف (وضع عدم الاتصال)' : 'إثبات الانصراف',
+      );
     }
   }
 
@@ -386,50 +485,67 @@ class _InspectorScreenState extends State<InspectorScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final user = context.read<AuthService>().currentUser;
+              final payload = {
+                'employeeId': user?.employeeId ?? 1,
+                'latitude': finalPos.latitude,
+                'longitude': finalPos.longitude,
+                'photo': photo,
+                'shopName': nameCtrl.text.trim().isEmpty ? 'محل تجاري' : nameCtrl.text.trim(),
+                'shopType': 'معاينة ميدانية',
+                'notes': notesCtrl.text.trim(),
+              };
+
+              bool isOfflineMode = false;
               try {
                 final api = context.read<AuthService>().api;
-                final user = context.read<AuthService>().currentUser;
                 await api.recordVisit(
                   employeeId: user!.employeeId!,
                   latitude: finalPos.latitude,
                   longitude: finalPos.longitude,
                   photo: photo,
-                  shopName: nameCtrl.text,
-                  notes: notesCtrl.text,
-                );
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅'),
-                    backgroundColor: AppTheme.SuccessColor,
-                  ),
-                );
-                _loadStatus();
-                QRCodeScreen.show(
-                  context,
-                  record: {
-                    'type': 'visit',
-                    'employeeName':
-                        context.read<AuthService>().currentUser?.fullName ??
-                        '',
-                    'date': DateTime.now().toString().split(' ')[0],
-                    'time': DateTime.now().toString().substring(11, 19),
-                    'latitude': finalPos.latitude,
-                    'longitude': finalPos.longitude,
-                    'id': DateTime.now().millisecondsSinceEpoch,
-                  },
-                  title: 'إثبات الزيارة',
+                  shopName: payload['shopName'] as String,
+                  notes: payload['notes'] as String,
                 );
               } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$e'),
-                    backgroundColor: AppTheme.DangerColor,
-                  ),
-                );
+                isOfflineMode = true;
+                await OfflineSyncService.queueVisit(payload);
               }
+
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (!mounted) return;
+
+              _loadStatus();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isOfflineMode
+                        ? '📡 تم حفظ الزيارة محلياً في انتظار المزامنة'
+                        : '✅ تم توثيق الزيارة بنجاح',
+                    style: const TextStyle(fontFamily: 'Tajawal'),
+                  ),
+                  backgroundColor: isOfflineMode
+                      ? const Color(0xFFD97706)
+                      : AppTheme.SuccessColor,
+                ),
+              );
+
+              QRCodeScreen.show(
+                context,
+                record: {
+                  'type': 'visit',
+                  'employeeName': user?.fullName ?? '',
+                  'shopName': payload['shopName'],
+                  'date': DateTime.now().toString().split(' ')[0],
+                  'time': DateTime.now().toString().substring(11, 19),
+                  'latitude': finalPos.latitude,
+                  'longitude': finalPos.longitude,
+                  'id': DateTime.now().millisecondsSinceEpoch,
+                  'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
+                },
+                title: isOfflineMode ? 'إثبات الزيارة (وضع عدم الاتصال)' : 'إثبات الزيارة',
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.SuccessColor,
@@ -481,6 +597,51 @@ class _InspectorScreenState extends State<InspectorScreen> {
             ],
           ),
           actions: [
+            // Sync status badge and button
+            if (_pendingSyncCount > 0)
+              InkWell(
+                onTap: _isSyncing ? null : () => _syncPendingItems(silent: false),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD97706),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _isSyncing
+                          ? const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.sync, color: Colors.white, size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$_pendingSyncCount معلق',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.cloud_done, color: Color(0xFF10B981), size: 20),
+                tooltip: 'جميع البيانات متزامنة',
+                onPressed: () => _syncPendingItems(silent: false),
+              ),
             IconButton(
               icon: const Icon(Icons.language, color: Color(0xFFD4AF37)),
               onPressed: () =>
@@ -503,6 +664,46 @@ class _InspectorScreenState extends State<InspectorScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Offline banner if pending items exist
+              if (_pendingSyncCount > 0)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD97706).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFD97706).withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.wifi_off, color: Color(0xFFD97706), size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'يوجد $_pendingSyncCount عمليات مسجلة محلياً في انتظار المزامنة مع السيرفر.',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 12,
+                            color: Color(0xFFFCD34D),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _isSyncing ? null : () => _syncPendingItems(silent: false),
+                        child: Text(
+                          _isSyncing ? 'جاري...' : 'مزامنة الآن',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Profile Card
               Container(
                 width: double.infinity,
@@ -819,66 +1020,102 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   )
                 else
                   ..._todayVisits.map(
-                    (v) => Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppTheme.CardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.BorderColor.withValues(alpha: 0.3),
+                    (v) {
+                      final bool isItemOffline = v['IsOffline'] == true;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.CardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isItemOffline
+                                ? const Color(0xFFD97706).withValues(alpha: 0.5)
+                                : AppTheme.BorderColor.withValues(alpha: 0.3),
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: AppTheme.SuccessColor.withValues(
-                                alpha: 0.15,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: (isItemOffline
+                                        ? const Color(0xFFD97706)
+                                        : AppTheme.SuccessColor)
+                                    .withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
                               ),
-                              shape: BoxShape.circle,
+                              child: Icon(
+                                Icons.store,
+                                color: isItemOffline
+                                    ? const Color(0xFFD97706)
+                                    : AppTheme.SuccessColor,
+                                size: 18,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.store,
-                              color: AppTheme.SuccessColor,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '${v['TraderName'] ?? v['ShopName'] ?? (loc.isArabic ? 'زيارة' : 'Visite')}',
+                                        style: const TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      if (isItemOffline) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFD97706)
+                                                .withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'معلق للمزامنة',
+                                            style: TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 9,
+                                              color: Color(0xFFFCD34D),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${v['LocationName'] ?? (v['ShopName'] ?? '')} • ${_formatTime(v['CreatedAt'] ?? v['VisitTime'] ?? v['CheckInTime'])}',
+                                    style: const TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 11,
+                                      color: AppTheme.TextSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              isItemOffline
+                                  ? Icons.sync_problem
+                                  : Icons.check_circle,
+                              color: isItemOffline
+                                  ? const Color(0xFFD97706)
+                                  : AppTheme.SuccessColor,
                               size: 18,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${v['ShopName'] ?? (loc.isArabic ? 'زيارة' : 'Visite')}',
-                                  style: const TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${v['LocationName'] ?? (v['ShopName'] ?? '')} • ${_formatTime(v['CreatedAt'] ?? v['CheckInTime'])}',
-                                  style: const TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 11,
-                                    color: AppTheme.TextSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.check_circle,
-                            color: AppTheme.SuccessColor,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                    ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
               ],
             ],

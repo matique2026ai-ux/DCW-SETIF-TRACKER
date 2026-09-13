@@ -39,6 +39,10 @@ class ApiService {
     _token = null;
   }
 
+  void setToken(String? token) {
+    _token = token;
+  }
+
   Future<List<Map<String, dynamic>>> getEmployees({
     String? department,
     bool activeOnly = true,
