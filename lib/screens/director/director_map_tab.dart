@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -19,8 +20,9 @@ class DirectorMapTab extends StatefulWidget {
 class _DirectorMapTabState extends State<DirectorMapTab> {
   List<Map<String, dynamic>> _mapData = [];
   bool _isLoading = true;
+  Timer? _liveRefreshTimer;
   final MapController _mapController = MapController();
-  String _selectedMapStyle = 'satellite'; // 'satellite', 'voyager', 'dark'
+  String _selectedMapStyle = 'satellite'; // 'satellite', 'osm'
 
   static const LatLng _setifCenter = LatLng(AppConstants.hqLatitude, AppConstants.hqLongitude);
 
@@ -28,9 +30,19 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   void initState() {
     super.initState();
     _loadData();
+    // Live Auto-Refresh every 12 seconds
+    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (mounted) _loadData(silent: true);
+    });
   }
 
-  Future<void> _loadData() async {
+  @override
+  void dispose() {
+    _liveRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadData({bool silent = false}) async {
     try {
       final api = context.read<AuthService>().api;
       final data = await api.getMapData();
@@ -41,7 +53,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && !silent) setState(() => _isLoading = false);
     }
   }
 

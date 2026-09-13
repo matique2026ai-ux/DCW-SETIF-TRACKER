@@ -44,12 +44,18 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getEmployees({
+    bool activeOnly = false,
+    bool all = false,
     String? department,
-    bool activeOnly = true,
+    String? status,
+    bool? brigadeOnly,
   }) async {
     final params = <String, String>{};
     if (activeOnly) params['active'] = '1';
+    if (all) params['all'] = 'true';
     if (department != null) params['department'] = department;
+    if (status != null) params['status'] = status;
+    if (brigadeOnly == true) params['brigade'] = 'true';
 
     final uri = Uri.parse(
       '$baseUrl/employees',
@@ -73,6 +79,33 @@ class ApiService {
       return data.cast<String>();
     }
     throw Exception('خطأ في جلب الأقسام');
+  }
+
+  Future<List<String>> getAllDepartments() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/employees/all-departments'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<String>();
+    }
+    throw Exception('خطأ في جلب المصالح');
+  }
+
+  Future<void> updateEmployeeAdminStatus(
+    int employeeId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/employees/$employeeId/admin-status'),
+      headers: _headers,
+      body: jsonEncode(data),
+    );
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['error'] ?? 'خطأ في تحديث البيانات الإدارية');
+    }
   }
 
   Future<Map<String, dynamic>> getDashboardStats() async {
