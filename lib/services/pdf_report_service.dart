@@ -186,21 +186,21 @@ class PdfReportService {
                 : pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                     columnWidths: const {
-                      0: pw.FixedColumnWidth(28),
-                      1: pw.FlexColumnWidth(3.0),
-                      2: pw.FlexColumnWidth(3.5),
-                      3: pw.FlexColumnWidth(2.0),
-                      4: pw.FlexColumnWidth(1.8),
+                      0: pw.FlexColumnWidth(1.8), // Leftmost: المعاينات
+                      1: pw.FlexColumnWidth(2.0), // وقت الحضور
+                      2: pw.FlexColumnWidth(3.5), // المصلحة / الرتبة
+                      3: pw.FlexColumnWidth(3.0), // الاسم واللقب
+                      4: pw.FixedColumnWidth(28), // Rightmost: الرقم
                     },
                     children: [
                       pw.TableRow(
                         decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                         children: [
-                          _tableHeader('الرقم'),
-                          _tableHeader('الاسم واللقب'),
-                          _tableHeader('المصلحة / الرتبة'),
-                          _tableHeader('وقت الحضور'),
                           _tableHeader('المعاينات'),
+                          _tableHeader('وقت الحضور'),
+                          _tableHeader('المصلحة / الرتبة'),
+                          _tableHeader('الاسم واللقب'),
+                          _tableHeader('الرقم'),
                         ],
                       ),
                       ...presentEmployees.asMap().entries.map((entry) {
@@ -218,11 +218,11 @@ class PdfReportService {
 
                         return pw.TableRow(
                           children: [
-                            _tableCell('$i', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
-                            _tableCell(name, bold: true),
-                            _tableCell(service),
-                            _tableCell(checkInTime, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center, color: PdfColors.green900),
                             _tableCell('$empVisits زيارات', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
+                            _tableCell(checkInTime, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center, color: PdfColors.green900),
+                            _tableCell(service),
+                            _tableCell(name, bold: true),
+                            _tableCell('$i', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
                           ],
                         );
                       }),
@@ -230,7 +230,7 @@ class PdfReportService {
                   ),
             pw.SizedBox(height: 14),
 
-            // Section 2: ALL Absent Employees (Full List across pages)
+            // Section 2: ALL Absent Employees (Full List across pages, ordered from Right to Left)
             pw.Container(
               padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               decoration: const pw.BoxDecoration(
@@ -253,19 +253,19 @@ class PdfReportService {
                 : pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                     columnWidths: const {
-                      0: pw.FixedColumnWidth(28),
-                      1: pw.FlexColumnWidth(3.0),
-                      2: pw.FlexColumnWidth(4.0),
-                      3: pw.FlexColumnWidth(2.8),
+                      0: pw.FlexColumnWidth(2.8), // Leftmost: الوضعية القانونية
+                      1: pw.FlexColumnWidth(4.0), // المصلحة الإدارية / الرتبة
+                      2: pw.FlexColumnWidth(3.0), // الاسم واللقب
+                      3: pw.FixedColumnWidth(28), // Rightmost: الرقم
                     },
                     children: [
                       pw.TableRow(
                         decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                         children: [
-                          _tableHeader('الرقم'),
-                          _tableHeader('الاسم واللقب'),
-                          _tableHeader('المصلحة الإدارية / الرتبة'),
                           _tableHeader('الوضعية القانونية'),
+                          _tableHeader('المصلحة الإدارية / الرتبة'),
+                          _tableHeader('الاسم واللقب'),
+                          _tableHeader('الرقم'),
                         ],
                       ),
                       ...absentEmployees.asMap().entries.map((entry) {
@@ -278,10 +278,10 @@ class PdfReportService {
 
                         return pw.TableRow(
                           children: [
-                            _tableCell('$i', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
-                            _tableCell(name, bold: true),
-                            _tableCell(service),
                             _tableCell('غياب غير مسجل (محل استفسار)', color: PdfColors.red700, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
+                            _tableCell(service),
+                            _tableCell(name, bold: true),
+                            _tableCell('$i', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
                           ],
                         );
                       }),

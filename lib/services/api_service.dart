@@ -18,6 +18,23 @@ class ApiService {
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
+  String _parseError(http.Response response, String defaultMessage) {
+    try {
+      final body = response.body.trim();
+      if (body.startsWith('<')) {
+        return '$defaultMessage (كود الخطأ: ${response.statusCode})';
+      }
+      final error = jsonDecode(body);
+      if (error is Map && error['error'] != null) {
+        return error['error'].toString();
+      }
+      if (error is Map && error['message'] != null) {
+        return error['message'].toString();
+      }
+    } catch (_) {}
+    return '$defaultMessage (كود: ${response.statusCode})';
+  }
+
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
@@ -30,8 +47,7 @@ class ApiService {
       _token = data['token'] as String;
       return data;
     } else {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في تسجيل الدخول');
+      throw Exception(_parseError(response, 'خطأ في تسجيل الدخول'));
     }
   }
 
@@ -66,7 +82,7 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('خطأ في جلب الموظفين');
+    throw Exception(_parseError(response, 'خطأ في جلب الموظفين'));
   }
 
   Future<List<String>> getDepartments() async {
@@ -78,7 +94,7 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<String>();
     }
-    throw Exception('خطأ في جلب الأقسام');
+    throw Exception(_parseError(response, 'خطأ في جلب الأقسام'));
   }
 
   Future<List<String>> getAllDepartments() async {
@@ -90,7 +106,7 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<String>();
     }
-    throw Exception('خطأ في جلب المصالح');
+    throw Exception(_parseError(response, 'خطأ في جلب المصالح'));
   }
 
   Future<void> updateEmployeeAdminStatus(
@@ -103,8 +119,7 @@ class ApiService {
       body: jsonEncode(data),
     );
     if (response.statusCode != 200) {
-      final body = jsonDecode(response.body);
-      throw Exception(body['error'] ?? 'خطأ في تحديث البيانات الإدارية');
+      throw Exception(_parseError(response, 'خطأ في تحديث البيانات الإدارية'));
     }
   }
 
@@ -117,7 +132,7 @@ class ApiService {
       final data = jsonDecode(response.body);
       return Map<String, dynamic>.from(data as Map);
     }
-    throw Exception('خطأ في جلب الإحصائيات');
+    throw Exception(_parseError(response, 'خطأ في جلب الإحصائيات'));
   }
 
   Future<List<Map<String, dynamic>>> getRecentActivity() async {
@@ -129,7 +144,7 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('خطأ في جلب النشاطات');
+    throw Exception(_parseError(response, 'خطأ في جلب النشاطات'));
   }
 
   Future<void> checkIn(
@@ -153,8 +168,7 @@ class ApiService {
       }),
     );
     if (response.statusCode != 201) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في تسجيل الحضور');
+      throw Exception(_parseError(response, 'خطأ في تسجيل الحضور'));
     }
   }
 
@@ -177,8 +191,7 @@ class ApiService {
       }),
     );
     if (response.statusCode != 200) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في تسجيل الانصراف');
+      throw Exception(_parseError(response, 'خطأ في تسجيل الانصراف'));
     }
   }
 
@@ -189,8 +202,7 @@ class ApiService {
       body: jsonEncode({'employeeId': employeeId}),
     );
     if (response.statusCode != 200) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في استئناف الدوام');
+      throw Exception(_parseError(response, 'خطأ في استئناف الدوام'));
     }
   }
 
@@ -211,19 +223,23 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('خطأ في جلب بيانات الحضور');
+    throw Exception(_parseError(response, 'خطأ في جلب بيانات الحضور'));
   }
 
   Future<Map<String, dynamic>?> getTodayAttendance() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/attendance/today-self'),
-      headers: _headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data == null) return null;
-      return Map<String, dynamic>.from(data as Map);
-    }
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/attendance/today-self'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final body = response.body.trim();
+        if (body.startsWith('<') || body.isEmpty || body == 'null') return null;
+        final data = jsonDecode(body);
+        if (data == null) return null;
+        return Map<String, dynamic>.from(data as Map);
+      }
+    } catch (_) {}
     return null;
   }
 
@@ -238,7 +254,7 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('خطأ في جلب البرامج');
+    throw Exception(_parseError(response, 'خطأ في جلب البرامج'));
   }
 
   Future<void> createProgram({
@@ -268,8 +284,7 @@ class ApiService {
       }),
     );
     if (response.statusCode != 201) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في إنشاء أمر المهمة');
+      throw Exception(_parseError(response, 'خطأ في إنشاء أمر المهمة'));
     }
   }
 
@@ -282,21 +297,25 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('خطأ في جلب بيانات الخريطة');
+    throw Exception(_parseError(response, 'خطأ في جلب بيانات الخريطة'));
   }
 
   Future<List<Map<String, dynamic>>> getTodayVisits([int? employeeId]) async {
-    final url = employeeId != null
-        ? '$baseUrl/visits/today?employeeId=$employeeId'
-        : '$baseUrl/visits/today';
-    final response = await http.get(
-      Uri.parse(url),
-      headers: _headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
-    }
+    try {
+      final url = employeeId != null
+          ? '$baseUrl/visits/today?employeeId=$employeeId'
+          : '$baseUrl/visits/today';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final body = response.body.trim();
+        if (body.startsWith('<') || body.isEmpty) return [];
+        final data = jsonDecode(body) as List;
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (_) {}
     return [];
   }
 
@@ -329,8 +348,7 @@ class ApiService {
       }),
     );
     if (response.statusCode != 201) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في تسجيل الزيارة');
+      throw Exception(_parseError(response, 'خطأ في تسجيل الزيارة'));
     }
   }
 
@@ -347,7 +365,7 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('خطأ في جلب طلبات الخصم');
+    throw Exception(_parseError(response, 'خطأ في جلب طلبات الخصم'));
   }
 
   Future<void> requestDeduction({
@@ -371,8 +389,7 @@ class ApiService {
       }),
     );
     if (response.statusCode != 201) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في إنشاء طلب الخصم');
+      throw Exception(_parseError(response, 'خطأ في إنشاء طلب الخصم'));
     }
   }
 
@@ -386,7 +403,7 @@ class ApiService {
       body: jsonEncode({'approvedBy': approvedBy}),
     );
     if (response.statusCode != 200) {
-      throw Exception('خطأ في الموافقة على الخصم');
+      throw Exception(_parseError(response, 'خطأ في الموافقة على الخصم'));
     }
   }
 
@@ -400,7 +417,7 @@ class ApiService {
       body: jsonEncode({'approvedBy': approvedBy}),
     );
     if (response.statusCode != 200) {
-      throw Exception('خطأ في رفض طلب الخصم');
+      throw Exception(_parseError(response, 'خطأ في رفض طلب الخصم'));
     }
   }
 
@@ -417,7 +434,7 @@ class ApiService {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
-    throw Exception('خطأ في جلب مبررات الغياب');
+    throw Exception(_parseError(response, 'خطأ في جلب مبررات الغياب'));
   }
 
   Future<void> submitJustification(Map<String, dynamic> data) async {
@@ -427,8 +444,7 @@ class ApiService {
       body: jsonEncode(data),
     );
     if (response.statusCode != 201) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'خطأ في إرسال التبرير');
+      throw Exception(_parseError(response, 'خطأ في إرسال التبرير'));
     }
   }
 
@@ -439,7 +455,7 @@ class ApiService {
       body: jsonEncode({'status': status, 'reviewNotes': reviewNotes}),
     );
     if (response.statusCode != 200) {
-      throw Exception('خطأ في تحديث حالة التبرير');
+      throw Exception(_parseError(response, 'خطأ في تحديث حالة التبرير'));
     }
   }
 }
