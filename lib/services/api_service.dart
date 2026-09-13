@@ -198,9 +198,12 @@ class ApiService {
     throw Exception('خطأ في جلب بيانات الخريطة');
   }
 
-  Future<List<Map<String, dynamic>>> getTodayVisits() async {
+  Future<List<Map<String, dynamic>>> getTodayVisits([int? employeeId]) async {
+    final url = employeeId != null
+        ? '$baseUrl/visits/today?employeeId=$employeeId'
+        : '$baseUrl/visits/today';
     final response = await http.get(
-      Uri.parse('$baseUrl/visits/today'),
+      Uri.parse(url),
       headers: _headers,
     );
     if (response.statusCode == 200) {

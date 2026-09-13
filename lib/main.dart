@@ -9,6 +9,35 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: const Color(0xFF1A0A1F),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Color(0xFFD4AF37), size: 44),
+              const SizedBox(height: 12),
+              const Text(
+                'تنبيه في عرض البيانات',
+                style: TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                details.exceptionAsString(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
   runApp(const DRHTrackerApp());
 }
 

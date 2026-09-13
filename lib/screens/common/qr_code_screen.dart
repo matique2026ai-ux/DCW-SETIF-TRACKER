@@ -51,6 +51,21 @@ class QRCodeScreen extends StatelessWidget {
                   version: QrVersions.auto,
                   size: 280,
                   backgroundColor: Colors.white,
+                  errorCorrectionLevel: QrErrorCorrectLevel.M,
+                  errorStateBuilder: (cxt, err) => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(
+                        'تعذر عرض رمز الاستجابة السريعة',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          color: AppTheme.DangerColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

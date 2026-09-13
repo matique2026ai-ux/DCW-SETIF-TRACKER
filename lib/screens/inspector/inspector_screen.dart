@@ -31,16 +31,37 @@ class _InspectorScreenState extends State<InspectorScreen> {
     _loadStatus();
   }
 
+  String _formatTime(dynamic val) {
+    if (val == null) return '';
+    final str = val.toString().trim();
+    if (str.isEmpty || str == 'null') return '';
+    try {
+      if (str.contains('T')) {
+        final timePart = str.split('T')[1];
+        if (timePart.length >= 5) return timePart.substring(0, 5);
+      }
+      if (str.contains(' ')) {
+        final parts = str.split(' ');
+        if (parts.length > 1 && parts[1].length >= 5) {
+          return parts[1].substring(0, 5);
+        }
+      }
+      if (str.length >= 5) return str.substring(0, 5);
+    } catch (_) {}
+    return str;
+  }
+
   Future<void> _loadStatus() async {
     try {
-      final api = context.read<AuthService>().api;
+      final auth = context.read<AuthService>();
+      final api = auth.api;
       final att = await api.getTodayAttendance();
-      final visits = await api.getTodayVisits();
+      final visits = await api.getTodayVisits(auth.currentUser?.employeeId);
       if (mounted) {
         setState(() {
           if (att != null && att['Id'] != null) {
             _isCheckedIn = true;
-            _checkInTime = att['CheckInTime'].toString().substring(11, 16);
+            _checkInTime = _formatTime(att['CheckInTime']);
           }
           _todayVisits = visits;
           _visitCount = visits.length;
@@ -840,7 +861,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${v['LocationName'] ?? ''} • ${v['CreatedAt'].toString().substring(11, 16)}',
+                                  '${v['LocationName'] ?? (v['ShopName'] ?? '')} • ${_formatTime(v['CreatedAt'] ?? v['CheckInTime'])}',
                                   style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 11,
