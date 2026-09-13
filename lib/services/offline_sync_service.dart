@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drh_setif_tracker/services/api_service.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
 
 class OfflineSyncService {
   static const String _pendingQueueKey = 'offline_pending_queue';
@@ -158,8 +159,8 @@ class OfflineSyncService {
           );
           syncedCount++;
         } else if (type == 'visit') {
-          final double lat = (payload['latitude'] as num?)?.toDouble() ?? 36.1898;
-          final double lng = (payload['longitude'] as num?)?.toDouble() ?? 5.4108;
+          final double lat = (payload['latitude'] as num?)?.toDouble() ?? AppConstants.hqLatitude;
+          final double lng = (payload['longitude'] as num?)?.toDouble() ?? AppConstants.hqLongitude;
           final int empId = (payload['employeeId'] as num?)?.toInt() ?? 1;
           await api.recordVisit(
             employeeId: empId,

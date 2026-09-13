@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 
 class DirectorMapTab extends StatefulWidget {
@@ -21,7 +22,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   final MapController _mapController = MapController();
   String _selectedMapStyle = 'satellite'; // 'satellite', 'voyager', 'dark'
 
-  static const LatLng _setifCenter = LatLng(36.1898, 5.4108);
+  static const LatLng _setifCenter = LatLng(AppConstants.hqLatitude, AppConstants.hqLongitude);
 
   @override
   void initState() {
