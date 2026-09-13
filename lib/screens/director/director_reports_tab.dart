@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/services/pdf_report_service.dart';
+import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 
 class DirectorReportsTab extends StatefulWidget {
   const DirectorReportsTab({super.key});
@@ -98,7 +100,62 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+
+          // Action Buttons: PDF Export & Review Justifications
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    PdfReportService.generateAndPrintDailyReport(
+                      employees: _employees,
+                      attendance: _attendance,
+                      visits: [],
+                      directorName: 'السيد المدير الولائي',
+                    );
+                  },
+                  icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 18),
+                  label: const Text(
+                    'تصدير محضر PDF',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => JustificationsReviewScreen.show(context),
+                  icon: const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFF38BDF8), size: 18),
+                  label: const Text(
+                    'مبررات الغياب',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF38BDF8),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF38BDF8), width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

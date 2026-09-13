@@ -358,4 +358,43 @@ class ApiService {
       throw Exception('خطأ في رفض طلب الخصم');
     }
   }
+
+  // Justifications API
+  Future<List<Map<String, dynamic>>> getJustifications({String? status, int? employeeId}) async {
+    final params = <String, String>{};
+    if (status != null) params['status'] = status;
+    if (employeeId != null) params['employeeId'] = employeeId.toString();
+
+    final uri = Uri.parse('$baseUrl/justifications').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception('خطأ في جلب مبررات الغياب');
+  }
+
+  Future<void> submitJustification(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/justifications'),
+      headers: _headers,
+      body: jsonEncode(data),
+    );
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'خطأ في إرسال التبرير');
+    }
+  }
+
+  Future<void> updateJustificationStatus(int id, String status, {String? reviewNotes}) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/justifications/$id/status'),
+      headers: _headers,
+      body: jsonEncode({'status': status, 'reviewNotes': reviewNotes}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('خطأ في تحديث حالة التبرير');
+    }
+  }
 }

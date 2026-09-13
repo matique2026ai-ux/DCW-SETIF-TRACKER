@@ -11,6 +11,7 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/screens/common/justification_submission_modal.dart';
 
 class InspectorScreen extends StatefulWidget {
   const InspectorScreen({super.key});
@@ -1480,6 +1481,28 @@ class _InspectorScreenState extends State<InspectorScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => JustificationSubmissionModal.show(context),
+                          icon: const Icon(Icons.file_present_outlined, color: Color(0xFFD4AF37), size: 18),
+                          label: const Text(
+                            'تقديم مبرر غياب / عطلة قانونية (شهادة طبية، وفاة، زواج...)',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                              color: Color(0xFFD4AF37),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ),

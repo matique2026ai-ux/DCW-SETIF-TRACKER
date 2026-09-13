@@ -22,6 +22,8 @@ dependencies:
   qr_flutter: ^4.1.0
   flutter_localizations:
     sdk: flutter
+  pdf: ^3.13.0
+  printing: ^5.15.0
 
 dev_dependencies:
   flutter_test:
