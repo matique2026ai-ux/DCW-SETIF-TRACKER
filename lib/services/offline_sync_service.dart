@@ -156,10 +156,13 @@ class OfflineSyncService {
           );
           syncedCount++;
         } else if (type == 'visit') {
+          final double lat = (payload['latitude'] as num?)?.toDouble() ?? 36.1898;
+          final double lng = (payload['longitude'] as num?)?.toDouble() ?? 5.4108;
+          final int empId = (payload['employeeId'] as num?)?.toInt() ?? 1;
           await api.recordVisit(
-            employeeId: payload['employeeId'] as int,
-            latitude: (payload['latitude'] as num).toDouble(),
-            longitude: (payload['longitude'] as num).toDouble(),
+            employeeId: empId,
+            latitude: lat,
+            longitude: lng,
             shopName: payload['shopName'] as String?,
             shopType: payload['shopType'] as String?,
             notes: payload['notes'] as String?,

@@ -104,7 +104,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: targetType,
+                  initialValue: targetType,
                   dropdownColor: AppTheme.CardColor,
                   decoration: InputDecoration(
                     labelText: 'الأنشطة المستهدفة',
@@ -166,9 +166,11 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
             ElevatedButton.icon(
               onPressed: () async {
                 if (titleCtrl.text.trim().isEmpty) return;
-                final user = context.read<AuthService>().currentUser;
+                final auth = context.read<AuthService>();
+                final user = auth.currentUser;
+                final messenger = ScaffoldMessenger.of(context);
                 try {
-                  final api = context.read<AuthService>().api;
+                  final api = auth.api;
                   await api.createProgram(
                     title: titleCtrl.text.trim(),
                     targetArea: areaCtrl.text.trim(),
@@ -182,26 +184,22 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   if (ctx.mounted) Navigator.pop(ctx);
                   _loadAllData();
 
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          '✅ تم إصدار أمر المهمة وتعميمه على فرق المفتشين بنجاح',
-                          style: TextStyle(fontFamily: 'Tajawal'),
-                        ),
-                        backgroundColor: AppTheme.SuccessColor,
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        '✅ تم إصدار أمر المهمة وتعميمه على فرق المفتشين بنجاح',
+                        style: TextStyle(fontFamily: 'Tajawal'),
                       ),
-                    );
-                  }
+                      backgroundColor: AppTheme.SuccessColor,
+                    ),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('⚠️ خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
-                        backgroundColor: AppTheme.WarningColor,
-                      ),
-                    );
-                  }
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('⚠️ خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
+                      backgroundColor: AppTheme.WarningColor,
+                    ),
+                  );
                 }
               },
               icon: const Icon(Icons.send, size: 16),

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
+import 'package:drh_setif_tracker/screens/director/director_screen.dart';
+import 'package:drh_setif_tracker/screens/head/head_screen.dart';
+import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
+import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -92,6 +98,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _startAnimation() async {
+    final auth = context.read<AuthService>();
     await Future.delayed(const Duration(milliseconds: 300));
     _logoController.forward();
     await Future.delayed(const Duration(milliseconds: 600));
@@ -99,12 +106,37 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 400));
     _fadeController.forward();
     _barController.forward();
-    await Future.delayed(const Duration(milliseconds: 2800));
+
+    // Check auto-login session in parallel
+    bool autoLoggedIn = false;
+    try {
+      autoLoggedIn = await auth.tryAutoLogin();
+    } catch (_) {}
+
+    await Future.delayed(const Duration(milliseconds: 1800));
     if (mounted) {
+      Widget targetScreen = const LoginScreen();
+      if (autoLoggedIn) {
+        switch (auth.currentUser?.role) {
+          case 'admin':
+          case 'director':
+            targetScreen = const DirectorScreen();
+            break;
+          case 'head_of_department':
+            targetScreen = const HeadScreen();
+            break;
+          case 'bureau_chief':
+            targetScreen = const BureauScreen();
+            break;
+          default:
+            targetScreen = const InspectorScreen();
+        }
+      }
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 800),
-          pageBuilder: (_, __, ___) => const LoginScreen(),
+          pageBuilder: (_, __, ___) => targetScreen,
           transitionsBuilder: (_, anim, __, child) {
             return FadeTransition(
               opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),

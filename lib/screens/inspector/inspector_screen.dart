@@ -78,10 +78,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
     }
 
     try {
+      if (!mounted) return;
       final auth = context.read<AuthService>();
       final api = auth.api;
+      final empId = auth.currentUser?.employeeId ?? auth.currentUser?.id ?? 1;
       final att = await api.getTodayAttendance();
-      final visits = await api.getTodayVisits(auth.currentUser?.employeeId);
+      final visits = await api.getTodayVisits(empId);
       final offlineVisits = await OfflineSyncService.getCachedVisits();
 
       if (mounted) {
@@ -90,8 +92,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
             _isCheckedIn = true;
             _checkInTime = _formatTime(att['CheckInTime']);
             _checkInPhoto = att['CheckInPhoto']?.toString();
-            _checkInLat = att['CheckInLatitude'] != null ? (att['CheckInLatitude'] as num).toDouble() : null;
-            _checkInLng = att['CheckInLongitude'] != null ? (att['CheckInLongitude'] as num).toDouble() : null;
+            _checkInLat = att['CheckInLatitude'] != null
+                ? double.tryParse(att['CheckInLatitude'].toString())
+                : null;
+            _checkInLng = att['CheckInLongitude'] != null
+                ? double.tryParse(att['CheckInLongitude'].toString())
+                : null;
           }
           _todayVisits = [...offlineVisits, ...visits];
           _visitCount = _todayVisits.length;
@@ -110,8 +116,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
             _isCheckedIn = cachedAtt['isCheckedIn'] == true;
             _checkInTime = cachedAtt['checkInTime']?.toString();
             _checkInPhoto = cachedAtt['photo']?.toString();
-            _checkInLat = (cachedAtt['latitude'] as num?)?.toDouble();
-            _checkInLng = (cachedAtt['longitude'] as num?)?.toDouble();
+            _checkInLat = double.tryParse(cachedAtt['latitude']?.toString() ?? '');
+            _checkInLng = double.tryParse(cachedAtt['longitude']?.toString() ?? '');
           }
           _todayVisits = cachedVisits;
           _visitCount = cachedVisits.length;
@@ -167,40 +173,33 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
   Future<Position?> _getPosition() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        await Geolocator.openLocationSettings();
-        serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) return null;
-      }
-
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return null;
+        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+          return null;
+        }
       }
       if (permission == LocationPermission.deniedForever) return null;
 
-      Position? pos;
       try {
-        pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 8),
+        return await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 3),
         );
       } catch (_) {
-        pos = await Geolocator.getLastKnownPosition();
+        return await Geolocator.getLastKnownPosition();
       }
-      return pos;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
-  Future<String?> _takePhoto() async {
+  Future<String?> _pickPhoto({bool fromGallery = false}) async {
     try {
       final picker = ImagePicker();
       final photo = await picker.pickImage(
-        source: ImageSource.camera,
+        source: fromGallery ? ImageSource.gallery : ImageSource.camera,
         imageQuality: 50,
         maxWidth: 600,
       );
@@ -230,11 +229,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
       speedAccuracy: 0.0,
     );
 
-    final photo = await _takePhoto();
+    final photo = await _pickPhoto();
 
     if (!mounted) return;
 
     final user = context.read<AuthService>().currentUser;
+    final int empId = user?.employeeId ?? user?.id ?? 1;
     final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
     final distance = AppConstants.distanceBetween(
       pos.latitude,
@@ -245,7 +245,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
     final nowStr = DateTime.now().toString().substring(11, 16);
     final payload = {
-      'employeeId': user?.employeeId ?? 1,
+      'employeeId': empId,
       'latitude': pos.latitude,
       'longitude': pos.longitude,
       'photo': photo,
@@ -257,7 +257,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
     try {
       final api = context.read<AuthService>().api;
       await api.checkIn(
-        user!.employeeId!,
+        empId,
         latitude: pos.latitude,
         longitude: pos.longitude,
         photo: photo,
@@ -268,8 +268,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
       await OfflineSyncService.queueCheckIn(payload);
     }
 
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final pending = await OfflineSyncService.getPendingCount();
+
     if (mounted) {
-      final pending = await OfflineSyncService.getPendingCount();
       setState(() {
         _isCheckedIn = true;
         _checkInTime = nowStr;
@@ -292,7 +295,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ? '⚠️ تم التسجيل خارج المقر (${distance.round()}م)'
                   : '⚠️ Enregistré hors siège (${distance.round()}m)'));
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
           backgroundColor: isOfflineMode
@@ -360,7 +363,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: selectedReason,
+                initialValue: selectedReason,
                 dropdownColor: AppTheme.CardColor,
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -427,10 +430,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
     if (!mounted) return;
 
     final user = context.read<AuthService>().currentUser;
+    final int empId = user?.employeeId ?? user?.id ?? 1;
     final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
 
     final payload = {
-      'employeeId': user?.employeeId ?? 1,
+      'employeeId': empId,
       'latitude': pos.latitude,
       'longitude': pos.longitude,
       'location': isAtHQ ? 'HQ' : 'Field',
@@ -442,7 +446,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
     try {
       final api = context.read<AuthService>().api;
       await api.checkOut(
-        user!.employeeId!,
+        empId,
         latitude: pos.latitude,
         longitude: pos.longitude,
         notes: notes,
@@ -452,8 +456,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
       await OfflineSyncService.queueCheckOut(payload);
     }
 
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final pending = await OfflineSyncService.getPendingCount();
+
     if (mounted) {
-      final pending = await OfflineSyncService.getPendingCount();
       setState(() {
         _isCheckedIn = false;
         _checkInTime = null;
@@ -462,7 +469,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
         _pendingSyncCount = pending;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             isOfflineMode
@@ -475,20 +482,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
         ),
       );
 
-      QRCodeScreen.show(
-        context,
-        record: {
-          'type': 'checkout',
-          'employeeName': user?.fullName ?? '',
-          'date': DateTime.now().toString().split(' ')[0],
-          'time': DateTime.now().toString().substring(11, 19),
-          'latitude': pos.latitude,
-          'longitude': pos.longitude,
-          'notes': notes ?? 'انصراف نظامي',
-          'id': DateTime.now().millisecondsSinceEpoch,
-          'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
-        },
-        title: isOfflineMode ? 'إثبات الانصراف (وضع عدم الاتصال)' : 'إثبات الانصراف الرسمي',
+      _showCheckOutProof(
+        employeeName: user?.fullName ?? '',
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        notes: notes,
+        isOffline: isOfflineMode,
       );
     }
   }
@@ -509,6 +508,30 @@ class _InspectorScreenState extends State<InspectorScreen> {
         'status': isOffline ? 'OFFLINE_PENDING_SYNC' : 'VERIFIED_ACTIVE',
       },
       title: isOffline ? 'إثبات الحضور (محلي)' : 'بطاقة الإثبات الرقمي (حضور معتمد)',
+    );
+  }
+
+  void _showCheckOutProof({
+    required String employeeName,
+    required double latitude,
+    required double longitude,
+    String? notes,
+    bool isOffline = false,
+  }) {
+    QRCodeScreen.show(
+      context,
+      record: {
+        'type': 'checkout',
+        'employeeName': employeeName,
+        'date': DateTime.now().toString().split(' ')[0],
+        'time': DateTime.now().toString().substring(11, 19),
+        'latitude': latitude,
+        'longitude': longitude,
+        'notes': notes ?? 'انصراف نظامي',
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'status': isOffline ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
+      },
+      title: isOffline ? 'إثبات الانصراف (وضع عدم الاتصال)' : 'إثبات الانصراف الرسمي',
     );
   }
 
@@ -664,176 +687,261 @@ class _InspectorScreenState extends State<InspectorScreen> {
     );
   }
 
-  Future<void> _recordVisit() async {
+  void _recordVisit() {
     final loc = AppLocalizations.of(context);
-    setState(() => _isLoading = true);
-    final Position finalPos = (await _getPosition()) ??
-        Position(
-          latitude: AppConstants.hqLatitude,
-          longitude: AppConstants.hqLongitude,
-          timestamp: DateTime.now(),
-          accuracy: 5.0,
-          altitude: 0.0,
-          altitudeAccuracy: 0.0,
-          heading: 0.0,
-          headingAccuracy: 0.0,
-          speed: 0.0,
-          speedAccuracy: 0.0,
-        );
-
-    final photo = await _takePhoto();
-    setState(() => _isLoading = false);
-    if (photo == null) return;
-
     final nameCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     String shopType = 'محل تجزئة / سوبرماركت';
+    String? capturedPhoto;
+    Position? currentPos;
+    bool isLocating = true;
+    bool isSaving = false;
 
-    if (!mounted) return;
     showDialog(
       context: context,
+      barrierDismissible: !isSaving,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.CardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            loc.recordVisit,
-            textDirection: TextDirection.rtl,
-            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.SuccessColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+        builder: (context, setDialogState) {
+          // Fetch GPS in the background once when dialog opens
+          if (isLocating && currentPos == null) {
+            _getPosition().then((pos) {
+              if (ctx.mounted) {
+                setDialogState(() {
+                  currentPos = pos ?? Position(
+                    latitude: AppConstants.hqLatitude,
+                    longitude: AppConstants.hqLongitude,
+                    timestamp: DateTime.now(),
+                    accuracy: 5.0,
+                    altitude: 0.0,
+                    altitudeAccuracy: 0.0,
+                    heading: 0.0,
+                    headingAccuracy: 0.0,
+                    speed: 0.0,
+                    speedAccuracy: 0.0,
+                  );
+                  isLocating = false;
+                });
+              }
+            });
+          }
+
+          final double displayLat = currentPos?.latitude ?? AppConstants.hqLatitude;
+          final double displayLng = currentPos?.longitude ?? AppConstants.hqLongitude;
+
+          return AlertDialog(
+            backgroundColor: AppTheme.CardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              loc.recordVisit,
+              textDirection: TextDirection.rtl,
+              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.SuccessColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on, color: AppTheme.SuccessColor, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            isLocating
+                                ? 'جاري تحديد إحداثيات الموقع (GPS)...'
+                                : '${displayLat.toStringAsFixed(4)}, ${displayLng.toStringAsFixed(4)} (دقيق)',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.SuccessColor),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: nameCtrl,
+                    textDirection: TextDirection.rtl,
+                    decoration: InputDecoration(
+                      labelText: 'اسم المحل / التاجر المعاين *',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: shopType,
+                    dropdownColor: AppTheme.CardColor,
+                    decoration: InputDecoration(
+                      labelText: 'طبيعة النشاط التجاري',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'محل تجزئة / سوبرماركت', child: Text('محل تجزئة / مواد غذائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'مخبزة / صناعة حلويات', child: Text('مخبزة / صناعة حلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'قصابة / لحوم ودواجن', child: Text('قصابة / لحوم ودواجن', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'سوق الجملة للخضر والفواكه', child: Text('سوق الجملة للخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'وحدة إنتاج / مصنع', child: Text('وحدة إنتاج / تحويل صناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'أخرى', child: Text('أخرى', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => shopType = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesCtrl,
+                    textDirection: TextDirection.rtl,
+                    decoration: InputDecoration(
+                      labelText: 'ملاحظات المعاينة (الأسعار، النظافة، الفوترة...)',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Photo capture row
+                  if (capturedPhoto != null && capturedPhoto!.isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.memory(
+                        base64Decode(capturedPhoto!),
+                        height: 120,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  Row(
                     children: [
-                      const Icon(Icons.location_on, color: AppTheme.SuccessColor, size: 18),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final photo = await _pickPhoto(fromGallery: false);
+                            if (photo != null && ctx.mounted) {
+                              setDialogState(() => capturedPhoto = photo);
+                            }
+                          },
+                          icon: const Icon(Icons.camera_alt, size: 16),
+                          label: Text(
+                            capturedPhoto != null ? 'تغيير الصورة' : 'التقاط بالكاميرا',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11),
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Text(
-                        '${finalPos.latitude.toStringAsFixed(4)}, ${finalPos.longitude.toStringAsFixed(4)}',
-                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.SuccessColor),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final photo = await _pickPhoto(fromGallery: true);
+                            if (photo != null && ctx.mounted) {
+                              setDialogState(() => capturedPhoto = photo);
+                            }
+                          },
+                          icon: const Icon(Icons.photo_library, size: 16),
+                          label: const Text(
+                            'من المعرض',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: nameCtrl,
-                  textDirection: TextDirection.rtl,
-                  decoration: InputDecoration(
-                    labelText: 'اسم المحل / التاجر المعاين',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: shopType,
-                  dropdownColor: AppTheme.CardColor,
-                  decoration: InputDecoration(
-                    labelText: 'طبيعة النشاط التجاري',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'محل تجزئة / سوبرماركت', child: Text('محل تجزئة / مواد غذائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'مخبزة / صناعة حلويات', child: Text('مخبزة / صناعة حلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'قصابة / لحوم ودواجن', child: Text('قصابة / لحوم ودواجن', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'سوق الجملة للخضر والفواكه', child: Text('سوق الجملة للخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'وحدة إنتاج / مصنع', child: Text('وحدة إنتاج / تحويل صناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'أخرى', child: Text('أخرى', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) setDialogState(() => shopType = val);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: notesCtrl,
-                  textDirection: TextDirection.rtl,
-                  decoration: InputDecoration(
-                    labelText: 'ملاحظات المعاينة (الأسعار، النظافة، الفوترة...)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.cancel, style: const TextStyle(fontFamily: 'Tajawal')),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final user = context.read<AuthService>().currentUser;
-                final payload = {
-                  'employeeId': user?.employeeId ?? 1,
-                  'latitude': finalPos.latitude,
-                  'longitude': finalPos.longitude,
-                  'photo': photo,
-                  'shopName': nameCtrl.text.trim().isEmpty ? 'محل تجاري' : nameCtrl.text.trim(),
-                  'shopType': shopType,
-                  'notes': notesCtrl.text.trim(),
-                };
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                child: Text(loc.cancel, style: const TextStyle(fontFamily: 'Tajawal')),
+              ),
+              ElevatedButton(
+                onPressed: isSaving ? null : () async {
+                  setDialogState(() => isSaving = true);
+                  final auth = context.read<AuthService>();
+                  final user = auth.currentUser;
+                  final messenger = ScaffoldMessenger.of(context);
+                  final int empId = user?.employeeId ?? user?.id ?? 1;
+                  final shopNameVal = nameCtrl.text.trim().isEmpty ? 'محل تجاري - معاينة ميدانية' : nameCtrl.text.trim();
 
-                bool isOfflineMode = false;
-                try {
-                  final api = context.read<AuthService>().api;
-                  await api.recordVisit(
-                    employeeId: user!.employeeId!,
-                    latitude: finalPos.latitude,
-                    longitude: finalPos.longitude,
-                    photo: photo,
-                    shopName: payload['shopName'] as String,
-                    shopType: shopType,
-                    notes: payload['notes'] as String,
-                  );
-                } catch (e) {
-                  isOfflineMode = true;
-                  await OfflineSyncService.queueVisit(payload);
-                }
+                  final double posLat = currentPos?.latitude ?? AppConstants.hqLatitude;
+                  final double posLng = currentPos?.longitude ?? AppConstants.hqLongitude;
 
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (!mounted) return;
+                  final payload = {
+                    'employeeId': empId,
+                    'latitude': posLat,
+                    'longitude': posLng,
+                    'photo': capturedPhoto,
+                    'shopName': shopNameVal,
+                    'shopType': shopType,
+                    'notes': notesCtrl.text.trim(),
+                  };
 
-                _loadStatus();
+                  bool isOfflineMode = false;
+                  try {
+                    final api = auth.api;
+                    await api.recordVisit(
+                      employeeId: empId,
+                      latitude: posLat,
+                      longitude: posLng,
+                      photo: capturedPhoto,
+                      shopName: shopNameVal,
+                      shopType: shopType,
+                      notes: payload['notes'] as String,
+                    );
+                  } catch (e) {
+                    isOfflineMode = true;
+                    await OfflineSyncService.queueVisit(payload);
+                  }
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isOfflineMode ? '📡 تم حفظ الزيارة محلياً في انتظار المزامنة' : '✅ تم توثيق الزيارة بنجاح',
-                      style: const TextStyle(fontFamily: 'Tajawal'),
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (!mounted) return;
+
+                  _loadStatus();
+
+                  final Map<String, dynamic> visitRecord = {
+                    'TraderName': shopNameVal,
+                    'ShopName': shopNameVal,
+                    'ActivityType': shopType,
+                    'CreatedAt': DateTime.now().toIso8601String(),
+                    'Latitude': posLat,
+                    'Longitude': posLng,
+                    'Photo': capturedPhoto,
+                    'Notes': payload['notes'],
+                    'IsOffline': isOfflineMode,
+                  };
+
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isOfflineMode ? '📡 تم حفظ المعاينة محلياً بنجاح' : '✅ تم توثيق المعاينة الميدانية بنجاح',
+                        style: const TextStyle(fontFamily: 'Tajawal'),
+                      ),
+                      backgroundColor: isOfflineMode ? const Color(0xFFD97706) : AppTheme.SuccessColor,
+                      action: SnackBarAction(
+                        label: 'عرض الـ QR',
+                        textColor: Colors.white,
+                        onPressed: () => _showVisitProofModal(visitRecord),
+                      ),
+                      duration: const Duration(seconds: 4),
                     ),
-                    backgroundColor: isOfflineMode ? const Color(0xFFD97706) : AppTheme.SuccessColor,
-                  ),
-                );
-
-                QRCodeScreen.show(
-                  context,
-                  record: {
-                    'type': 'visit',
-                    'employeeName': user?.fullName ?? '',
-                    'shopName': payload['shopName'],
-                    'date': DateTime.now().toString().split(' ')[0],
-                    'time': DateTime.now().toString().substring(11, 19),
-                    'latitude': finalPos.latitude,
-                    'longitude': finalPos.longitude,
-                    'id': DateTime.now().millisecondsSinceEpoch,
-                    'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
-                  },
-                  title: isOfflineMode ? 'إثبات الزيارة (وضع عدم الاتصال)' : 'إثبات الزيارة الميدانية',
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.SuccessColor),
-              child: Text(loc.save, style: const TextStyle(fontFamily: 'Tajawal')),
-            ),
-          ],
-        ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.SuccessColor),
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : Text(loc.save, style: const TextStyle(fontFamily: 'Tajawal')),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
