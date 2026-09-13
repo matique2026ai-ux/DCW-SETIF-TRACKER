@@ -105,6 +105,7 @@ class ApiService {
     double? longitude,
     String? photo,
     String? location,
+    String? notes,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/attendance/checkin'),
@@ -115,6 +116,7 @@ class ApiService {
         'longitude': longitude,
         'photo': photo,
         'location': location,
+        'notes': notes,
       }),
     );
     if (response.statusCode != 201) {
@@ -128,6 +130,7 @@ class ApiService {
     double? latitude,
     double? longitude,
     String? location,
+    String? notes,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/attendance/checkout'),
@@ -137,6 +140,7 @@ class ApiService {
         'latitude': latitude,
         'longitude': longitude,
         'location': location,
+        'notes': notes,
       }),
     );
     if (response.statusCode != 200) {
@@ -178,16 +182,50 @@ class ApiService {
     return null;
   }
 
-  Future<List<Map<String, dynamic>>> getPrograms() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/programs'),
-      headers: _headers,
-    );
+  Future<List<Map<String, dynamic>>> getPrograms({String? service, String? type}) async {
+    final params = <String, String>{};
+    if (service != null) params['service'] = service;
+    if (type != null) params['type'] = type;
+
+    final uri = Uri.parse('$baseUrl/programs').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('خطأ في جلب البرامج');
+  }
+
+  Future<void> createProgram({
+    required String title,
+    String? description,
+    String? type,
+    String? weekDate,
+    String? targetArea,
+    String? targetType,
+    String? focusPoints,
+    String? serviceName,
+    int? createdBy,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/programs'),
+      headers: _headers,
+      body: jsonEncode({
+        'title': title,
+        'description': description,
+        'type': type ?? 'daily',
+        'weekDate': weekDate,
+        'targetArea': targetArea,
+        'targetType': targetType,
+        'focusPoints': focusPoints,
+        'serviceName': serviceName,
+        'createdBy': createdBy,
+      }),
+    );
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'خطأ في إنشاء أمر المهمة');
+    }
   }
 
   Future<List<Map<String, dynamic>>> getMapData() async {

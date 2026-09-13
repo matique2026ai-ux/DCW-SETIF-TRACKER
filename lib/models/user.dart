@@ -5,6 +5,7 @@ class User {
   final String role;
   final int? employeeId;
   final String? fullName;
+  final String? serviceName;
 
   User({
     this.id,
@@ -13,6 +14,7 @@ class User {
     required this.role,
     this.employeeId,
     this.fullName,
+    this.serviceName,
   });
 
   Map<String, dynamic> toMap() {
@@ -22,6 +24,7 @@ class User {
       'role': role,
       'employee_id': employeeId,
       'full_name': fullName,
+      'service_name': serviceName,
     };
   }
 
@@ -29,10 +32,11 @@ class User {
     return User(
       id: map['id'] as int?,
       username: map['username'] as String,
-      passwordHash: map['password_hash'] as String,
+      passwordHash: map['password_hash'] as String? ?? '',
       role: map['role'] as String,
       employeeId: map['employee_id'] as int?,
       fullName: map['full_name'] as String?,
+      serviceName: map['service_name'] as String? ?? map['service'] as String?,
     );
   }
 }

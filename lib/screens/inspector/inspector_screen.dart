@@ -25,13 +25,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
   bool _isSyncing = false;
   int _pendingSyncCount = 0;
   String? _checkInTime;
+  String? _checkInPhoto;
+  double? _checkInLat;
+  double? _checkInLng;
   List<Map<String, dynamic>> _todayVisits = [];
   int _visitCount = 0;
+  Map<String, dynamic>? _activeProgram;
 
   @override
   void initState() {
     super.initState();
     _loadStatus();
+    _loadActiveProgram();
   }
 
   String _formatTime(dynamic val) {
@@ -54,6 +59,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
     return str;
   }
 
+  Future<void> _loadActiveProgram() async {
+    try {
+      final api = context.read<AuthService>().api;
+      final progs = await api.getPrograms();
+      if (progs.isNotEmpty && mounted) {
+        setState(() {
+          _activeProgram = progs.first;
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _loadStatus() async {
     final pending = await OfflineSyncService.getPendingCount();
     if (mounted) {
@@ -72,26 +89,29 @@ class _InspectorScreenState extends State<InspectorScreen> {
           if (att != null && att['Id'] != null) {
             _isCheckedIn = true;
             _checkInTime = _formatTime(att['CheckInTime']);
+            _checkInPhoto = att['CheckInPhoto']?.toString();
+            _checkInLat = att['CheckInLatitude'] != null ? (att['CheckInLatitude'] as num).toDouble() : null;
+            _checkInLng = att['CheckInLongitude'] != null ? (att['CheckInLongitude'] as num).toDouble() : null;
           }
-          // Combine server visits with offline pending visits
           _todayVisits = [...offlineVisits, ...visits];
           _visitCount = _todayVisits.length;
         });
       }
 
-      // If online and there are pending items, attempt auto-sync
       if (pending > 0) {
         _syncPendingItems(silent: true);
       }
     } catch (_) {
-      // Offline fallback: load from local cache
       final cachedAtt = await OfflineSyncService.getCachedAttendance();
       final cachedVisits = await OfflineSyncService.getCachedVisits();
       if (mounted) {
         setState(() {
           if (cachedAtt != null) {
             _isCheckedIn = cachedAtt['isCheckedIn'] == true;
-            _checkInTime = cachedAtt['checkInTime'];
+            _checkInTime = cachedAtt['checkInTime']?.toString();
+            _checkInPhoto = cachedAtt['photo']?.toString();
+            _checkInLat = (cachedAtt['latitude'] as num?)?.toDouble();
+            _checkInLng = (cachedAtt['longitude'] as num?)?.toDouble();
           }
           _todayVisits = cachedVisits;
           _visitCount = cachedVisits.length;
@@ -107,7 +127,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
     try {
       final api = context.read<AuthService>().api;
       final result = await OfflineSyncService.syncAll(api);
-      final int synced = result['syncedCount'] ?? 0;
+      final int synced = (result['syncedCount'] as num?)?.toInt() ?? 0;
       final int remaining = await OfflineSyncService.getPendingCount();
 
       if (mounted) {
@@ -129,10 +149,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
             );
           } else if (remaining > 0) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text(
                   '⚠️ تعذر المزامنة: يرجى التحقق من اتصال الإنترنت',
-                  style: const TextStyle(fontFamily: 'Tajawal'),
+                  style: TextStyle(fontFamily: 'Tajawal'),
                 ),
                 backgroundColor: AppTheme.WarningColor,
               ),
@@ -223,6 +243,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
       AppConstants.hqLongitude,
     );
 
+    final nowStr = DateTime.now().toString().substring(11, 16);
     final payload = {
       'employeeId': user?.employeeId ?? 1,
       'latitude': pos.latitude,
@@ -243,7 +264,6 @@ class _InspectorScreenState extends State<InspectorScreen> {
         location: isAtHQ ? 'HQ' : 'Field',
       );
     } catch (e) {
-      // Offline fallback: save to offline queue
       isOfflineMode = true;
       await OfflineSyncService.queueCheckIn(payload);
     }
@@ -252,7 +272,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
       final pending = await OfflineSyncService.getPendingCount();
       setState(() {
         _isCheckedIn = true;
-        _checkInTime = DateTime.now().toString().substring(11, 16);
+        _checkInTime = nowStr;
+        _checkInPhoto = photo;
+        _checkInLat = pos?.latitude;
+        _checkInLng = pos?.longitude;
         _isLoading = false;
         _pendingSyncCount = pending;
       });
@@ -279,25 +302,113 @@ class _InspectorScreenState extends State<InspectorScreen> {
         ),
       );
 
-      QRCodeScreen.show(
-        context,
-        record: {
-          'type': 'checkin',
-          'employeeName': user?.fullName ?? '',
-          'date': DateTime.now().toString().split(' ')[0],
-          'time': DateTime.now().toString().substring(11, 19),
-          'latitude': pos.latitude,
-          'longitude': pos.longitude,
-          'id': DateTime.now().millisecondsSinceEpoch,
-          'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
-        },
-        title: isOfflineMode ? 'إثبات الحضور (وضع عدم الاتصال)' : 'إثبات الحضور',
-      );
+      _showAttendanceProof(isOffline: isOfflineMode);
     }
   }
 
-  Future<void> _checkOut() async {
-    final loc = AppLocalizations.of(context);
+  void _handleSmartCheckOut() {
+    final now = DateTime.now();
+    final bool isEarly = now.hour < 15 || (now.hour == 15 && now.minute < 30);
+
+    if (isEarly) {
+      _showEarlyCheckOutDialog();
+    } else {
+      _executeCheckOut(notes: null);
+    }
+  }
+
+  void _showEarlyCheckOutDialog() {
+    final reasonCtrl = TextEditingController();
+    String selectedReason = 'مهمة تفتيشية خارجية مسائية';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.CardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.schedule, color: AppTheme.WarningColor, size: 24),
+              SizedBox(width: 8),
+              Text(
+                'تنبيه الانصراف قبل الوقت',
+                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.WarningColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.3)),
+                ),
+                child: const Text(
+                  '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر توثيق المبرر الإداري أو المهمة المكلف بها.',
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'نوع المبرر الإداري:',
+                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<String>(
+                value: selectedReason,
+                dropdownColor: AppTheme.CardColor,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'مهمة تفتيشية خارجية مسائية', child: Text('مهمة تفتيشية خارجية مسائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                  DropdownMenuItem(value: 'حالة اضطرارية شخصية / وعكة صحية', child: Text('حالة اضطرارية شخصية / وعكة صحية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                  DropdownMenuItem(value: 'إذن خروج رسمي من رئيس المصلحة', child: Text('إذن خروج رسمي من رئيس المصلحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                  DropdownMenuItem(value: 'مرافقة لجنة ولائية مشتركة', child: Text('مرافقة لجنة ولائية مشتركة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                ],
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selectedReason = val);
+                },
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: reasonCtrl,
+                decoration: InputDecoration(
+                  labelText: 'تفاصيل وملاحظات إضافية (اختياري)',
+                  labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                final fullReason = '$selectedReason ${reasonCtrl.text.trim().isNotEmpty ? "— ${reasonCtrl.text.trim()}" : ""}';
+                Navigator.pop(ctx);
+                _executeCheckOut(notes: fullReason);
+              },
+              icon: const Icon(Icons.check, size: 16),
+              label: const Text('تأكيد الانصراف بالمبرر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.WarningColor),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _executeCheckOut({String? notes}) async {
     setState(() => _isLoading = true);
     Position? pos = await _getPosition();
     pos ??= Position(
@@ -317,18 +428,13 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
     final user = context.read<AuthService>().currentUser;
     final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
-    final distance = AppConstants.distanceBetween(
-      pos.latitude,
-      pos.longitude,
-      AppConstants.hqLatitude,
-      AppConstants.hqLongitude,
-    );
 
     final payload = {
       'employeeId': user?.employeeId ?? 1,
       'latitude': pos.latitude,
       'longitude': pos.longitude,
       'location': isAtHQ ? 'HQ' : 'Field',
+      'notes': notes,
     };
 
     bool isOfflineMode = false;
@@ -339,6 +445,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
         user!.employeeId!,
         latitude: pos.latitude,
         longitude: pos.longitude,
+        notes: notes,
       );
     } catch (e) {
       isOfflineMode = true;
@@ -350,26 +457,20 @@ class _InspectorScreenState extends State<InspectorScreen> {
       setState(() {
         _isCheckedIn = false;
         _checkInTime = null;
+        _checkInPhoto = null;
         _isLoading = false;
         _pendingSyncCount = pending;
       });
 
-      final message = isOfflineMode
-          ? (loc.isArabic
-              ? '📡 تم حفظ الانصراف محلياً (بدون نت) — ستتم المزامنة تلقائياً'
-              : '📡 Départ enregistré hors ligne — synchro auto')
-          : (isAtHQ
-              ? (loc.isArabic ? '✅ تم الانصراف من المقر' : '✅ Départ du siège')
-              : (loc.isArabic
-                  ? '✅ تم الانصراف من مكان العمل (${distance.round()}م عن المقر)'
-                  : '✅ Départ du lieu de travail (${distance.round()}m du siège)'));
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
-          backgroundColor: isOfflineMode
-              ? const Color(0xFFD97706)
-              : AppTheme.SuccessColor,
+          content: Text(
+            isOfflineMode
+                ? '📡 تم حفظ الانصراف محلياً — ستتم المزامنة تلقائياً'
+                : '✅ تم تسجيل الانصراف بنجاح وإغلاق بطاقة الدوام لليوم',
+            style: const TextStyle(fontFamily: 'Tajawal'),
+          ),
+          backgroundColor: isOfflineMode ? const Color(0xFFD97706) : AppTheme.SuccessColor,
           duration: const Duration(seconds: 4),
         ),
       );
@@ -383,12 +484,184 @@ class _InspectorScreenState extends State<InspectorScreen> {
           'time': DateTime.now().toString().substring(11, 19),
           'latitude': pos.latitude,
           'longitude': pos.longitude,
+          'notes': notes ?? 'انصراف نظامي',
           'id': DateTime.now().millisecondsSinceEpoch,
           'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
         },
-        title: isOfflineMode ? 'إثبات الانصراف (وضع عدم الاتصال)' : 'إثبات الانصراف',
+        title: isOfflineMode ? 'إثبات الانصراف (وضع عدم الاتصال)' : 'إثبات الانصراف الرسمي',
       );
     }
+  }
+
+  void _showAttendanceProof({bool isOffline = false}) {
+    final user = context.read<AuthService>().currentUser;
+    QRCodeScreen.show(
+      context,
+      record: {
+        'type': 'checkin',
+        'employeeName': user?.fullName ?? '',
+        'date': DateTime.now().toString().split(' ')[0],
+        'time': _checkInTime ?? DateTime.now().toString().substring(11, 19),
+        'latitude': _checkInLat ?? AppConstants.hqLatitude,
+        'longitude': _checkInLng ?? AppConstants.hqLongitude,
+        'photo': _checkInPhoto,
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'status': isOffline ? 'OFFLINE_PENDING_SYNC' : 'VERIFIED_ACTIVE',
+      },
+      title: isOffline ? 'إثبات الحضور (محلي)' : 'بطاقة الإثبات الرقمي (حضور معتمد)',
+    );
+  }
+
+  void _showVisitProofModal(Map<String, dynamic> visit) {
+    final user = context.read<AuthService>().currentUser;
+    final bool isOffline = visit['IsOffline'] == true;
+    final String shop = (visit['TraderName'] ?? visit['ShopName'] ?? 'معاينة تجارية').toString();
+    final String time = _formatTime(visit['CreatedAt'] ?? visit['VisitTime'] ?? visit['CheckInTime']);
+    final dynamic lat = visit['Latitude'];
+    final dynamic lng = visit['Longitude'];
+    final String? photoBase64 = visit['Photo']?.toString();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.CardColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.AccentColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.storefront, color: AppTheme.AccentColor, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        shop,
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'توقيت المعاينة: $time • ${isOffline ? "قيد المزامنة" : "مثبتة سحابياً"}',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12,
+                          color: AppTheme.TextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isOffline ? const Color(0xFFD97706) : AppTheme.SuccessColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    isOffline ? 'معلق' : 'معتمد',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (photoBase64 != null && photoBase64.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  base64Decode(photoBase64),
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (lat != null && lng != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.gps_fixed, color: AppTheme.AccentColor, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'الإحداثيات: ${lat.toString().substring(0, lat.toString().length > 7 ? 7 : lat.toString().length)}, ${lng.toString().substring(0, lng.toString().length > 7 ? 7 : lng.toString().length)}',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  QRCodeScreen.show(
+                    context,
+                    record: {
+                      'type': 'visit',
+                      'employeeName': user?.fullName ?? '',
+                      'shopName': shop,
+                      'time': time,
+                      'latitude': lat,
+                      'longitude': lng,
+                      'id': visit['Id'] ?? DateTime.now().millisecondsSinceEpoch,
+                      'status': isOffline ? 'OFFLINE_PENDING_SYNC' : 'VERIFIED_VISIT',
+                    },
+                    title: 'رمز الإثبات الرقمي للزيارة (QR Pass)',
+                  );
+                },
+                icon: const Icon(Icons.qr_code_2),
+                label: const Text('عرض رمز الاستجابة السريعة (QR Pass)', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.AccentColor,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _recordVisit() async {
@@ -414,145 +687,153 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
     final nameCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
+    String shopType = 'محل تجزئة / سوبرماركت';
 
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.CardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          loc.recordVisit,
-          textDirection: TextDirection.rtl,
-          style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.SuccessColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    color: AppTheme.SuccessColor,
-                    size: 18,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.CardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            loc.recordVisit,
+            textDirection: TextDirection.rtl,
+            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.SuccessColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${finalPos.latitude.toStringAsFixed(4)}, ${finalPos.longitude.toStringAsFixed(4)}',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 11,
-                      color: AppTheme.SuccessColor,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on, color: AppTheme.SuccessColor, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${finalPos.latitude.toStringAsFixed(4)}, ${finalPos.longitude.toStringAsFixed(4)}',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.SuccessColor),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: nameCtrl,
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(
+                    labelText: 'اسم المحل / التاجر المعاين',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: shopType,
+                  dropdownColor: AppTheme.CardColor,
+                  decoration: InputDecoration(
+                    labelText: 'طبيعة النشاط التجاري',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'محل تجزئة / سوبرماركت', child: Text('محل تجزئة / مواد غذائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                    DropdownMenuItem(value: 'مخبزة / صناعة حلويات', child: Text('مخبزة / صناعة حلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                    DropdownMenuItem(value: 'قصابة / لحوم ودواجن', child: Text('قصابة / لحوم ودواجن', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                    DropdownMenuItem(value: 'سوق الجملة للخضر والفواكه', child: Text('سوق الجملة للخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                    DropdownMenuItem(value: 'وحدة إنتاج / مصنع', child: Text('وحدة إنتاج / تحويل صناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                    DropdownMenuItem(value: 'أخرى', child: Text('أخرى', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setDialogState(() => shopType = val);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesCtrl,
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(
+                    labelText: 'ملاحظات المعاينة (الأسعار، النظافة، الفوترة...)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(loc.cancel, style: const TextStyle(fontFamily: 'Tajawal')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final user = context.read<AuthService>().currentUser;
+                final payload = {
+                  'employeeId': user?.employeeId ?? 1,
+                  'latitude': finalPos.latitude,
+                  'longitude': finalPos.longitude,
+                  'photo': photo,
+                  'shopName': nameCtrl.text.trim().isEmpty ? 'محل تجاري' : nameCtrl.text.trim(),
+                  'shopType': shopType,
+                  'notes': notesCtrl.text.trim(),
+                };
+
+                bool isOfflineMode = false;
+                try {
+                  final api = context.read<AuthService>().api;
+                  await api.recordVisit(
+                    employeeId: user!.employeeId!,
+                    latitude: finalPos.latitude,
+                    longitude: finalPos.longitude,
+                    photo: photo,
+                    shopName: payload['shopName'] as String,
+                    shopType: shopType,
+                    notes: payload['notes'] as String,
+                  );
+                } catch (e) {
+                  isOfflineMode = true;
+                  await OfflineSyncService.queueVisit(payload);
+                }
+
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (!mounted) return;
+
+                _loadStatus();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isOfflineMode ? '📡 تم حفظ الزيارة محلياً في انتظار المزامنة' : '✅ تم توثيق الزيارة بنجاح',
+                      style: const TextStyle(fontFamily: 'Tajawal'),
                     ),
+                    backgroundColor: isOfflineMode ? const Color(0xFFD97706) : AppTheme.SuccessColor,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameCtrl,
-              textDirection: TextDirection.rtl,
-              decoration: InputDecoration(
-                labelText: loc.shopName,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: notesCtrl,
-              textDirection: TextDirection.rtl,
-              decoration: InputDecoration(
-                labelText: loc.notes,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+                );
+
+                QRCodeScreen.show(
+                  context,
+                  record: {
+                    'type': 'visit',
+                    'employeeName': user?.fullName ?? '',
+                    'shopName': payload['shopName'],
+                    'date': DateTime.now().toString().split(' ')[0],
+                    'time': DateTime.now().toString().substring(11, 19),
+                    'latitude': finalPos.latitude,
+                    'longitude': finalPos.longitude,
+                    'id': DateTime.now().millisecondsSinceEpoch,
+                    'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
+                  },
+                  title: isOfflineMode ? 'إثبات الزيارة (وضع عدم الاتصال)' : 'إثبات الزيارة الميدانية',
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.SuccessColor),
+              child: Text(loc.save, style: const TextStyle(fontFamily: 'Tajawal')),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel, style: const TextStyle(fontFamily: 'Tajawal')),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final user = context.read<AuthService>().currentUser;
-              final payload = {
-                'employeeId': user?.employeeId ?? 1,
-                'latitude': finalPos.latitude,
-                'longitude': finalPos.longitude,
-                'photo': photo,
-                'shopName': nameCtrl.text.trim().isEmpty ? 'محل تجاري' : nameCtrl.text.trim(),
-                'shopType': 'معاينة ميدانية',
-                'notes': notesCtrl.text.trim(),
-              };
-
-              bool isOfflineMode = false;
-              try {
-                final api = context.read<AuthService>().api;
-                await api.recordVisit(
-                  employeeId: user!.employeeId!,
-                  latitude: finalPos.latitude,
-                  longitude: finalPos.longitude,
-                  photo: photo,
-                  shopName: payload['shopName'] as String,
-                  notes: payload['notes'] as String,
-                );
-              } catch (e) {
-                isOfflineMode = true;
-                await OfflineSyncService.queueVisit(payload);
-              }
-
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (!mounted) return;
-
-              _loadStatus();
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isOfflineMode
-                        ? '📡 تم حفظ الزيارة محلياً في انتظار المزامنة'
-                        : '✅ تم توثيق الزيارة بنجاح',
-                    style: const TextStyle(fontFamily: 'Tajawal'),
-                  ),
-                  backgroundColor: isOfflineMode
-                      ? const Color(0xFFD97706)
-                      : AppTheme.SuccessColor,
-                ),
-              );
-
-              QRCodeScreen.show(
-                context,
-                record: {
-                  'type': 'visit',
-                  'employeeName': user?.fullName ?? '',
-                  'shopName': payload['shopName'],
-                  'date': DateTime.now().toString().split(' ')[0],
-                  'time': DateTime.now().toString().substring(11, 19),
-                  'latitude': finalPos.latitude,
-                  'longitude': finalPos.longitude,
-                  'id': DateTime.now().millisecondsSinceEpoch,
-                  'status': isOfflineMode ? 'OFFLINE_PENDING_SYNC' : 'SYNCED',
-                },
-                title: isOfflineMode ? 'إثبات الزيارة (وضع عدم الاتصال)' : 'إثبات الزيارة',
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.SuccessColor,
-            ),
-            child: Text(loc.save, style: const TextStyle(fontFamily: 'Tajawal')),
-          ),
-        ],
       ),
     );
   }
@@ -587,7 +868,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
               ),
               const SizedBox(width: 10),
               Text(
-                loc.isArabic ? 'التفتيش الميداني' : 'Contrôle Terrain',
+                loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
                 style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontSize: 15,
@@ -597,7 +878,6 @@ class _InspectorScreenState extends State<InspectorScreen> {
             ],
           ),
           actions: [
-            // Sync status badge and button
             if (_pendingSyncCount > 0)
               InkWell(
                 onTap: _isSyncing ? null : () => _syncPendingItems(silent: false),
@@ -664,7 +944,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Offline banner if pending items exist
+              // Offline banner
               if (_pendingSyncCount > 0)
                 Container(
                   width: double.infinity,
@@ -752,25 +1032,20 @@ class _InspectorScreenState extends State<InspectorScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            loc.roleInspector,
+                            user?.serviceName ?? loc.roleInspector,
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 12,
-                              color: Colors.white60,
+                              color: Colors.white70,
                             ),
                           ),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _isCheckedIn
-                            ? AppTheme.SuccessColor
-                            : AppTheme.WarningColor,
+                        color: _isCheckedIn ? AppTheme.SuccessColor : AppTheme.WarningColor,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -786,7 +1061,131 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              // Active Assignment / Mission Order Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.assignment, color: Color(0xFF38BDF8), size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'أمر المهمة والقطاع التفتيشي لليوم',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF38BDF8),
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'ساري المفعول',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _activeProgram != null
+                          ? (_activeProgram!['Title']?.toString() ?? 'برنامج مراقبة الأسعار وإشهارها')
+                          : 'مراقبة الممارسات التجارية والمطابقة وقمع الغش',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _activeProgram != null
+                          ? 'القطاع المستهدف: ${_activeProgram!['TargetArea'] ?? "بلدية سطيف والعلمة"} • ${_activeProgram!['FocusPoints'] ?? "تجار الجملة والتجزئة"}'
+                          : 'القطاع: وسط مدينة سطيف والأسواق الجوارية • الهدف: التحقق من إشهار الأسعار والفوترة ومطابقة المواد الحساسة',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Digital Proofs & QR Passes Action Banner
+              if (_isCheckedIn)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF312E81), Color(0xFF1E1B4B)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF818CF8).withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF818CF8).withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.qr_code_2, color: Color(0xFFA5B4FC), size: 28),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'محفظة الإثباتات الرقمية (QR Pass)',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'عرض بطاقة الحضور والزيارات المثبتة للمسؤولين',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _showAttendanceProof(isOffline: false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF818CF8),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text(
+                          'عرض البطاقة',
+                          style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // Attendance Card
               Container(
@@ -865,8 +1264,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       SizedBox(
                         width: double.infinity,
                         height: 52,
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _checkOut,
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _handleSmartCheckOut,
                           icon: _isLoading
                               ? const SizedBox(
                                   width: 20,
@@ -876,17 +1275,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Icon(Icons.exit_to_app),
-                          label: Text(
-                            loc.checkOut,
-                            style: const TextStyle(
+                              : const Icon(Icons.exit_to_app, color: AppTheme.WarningColor),
+                          label: const Text(
+                            'تسجيل الانصراف الرسمي',
+                            style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                              fontSize: 14,
+                              color: AppTheme.WarningColor,
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.WarningColor,
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppTheme.WarningColor, width: 1.5),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -900,9 +1300,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                             Icon(
                               Icons.fingerprint,
                               size: 56,
-                              color: AppTheme.TextSecondary.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: AppTheme.TextSecondary.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 10),
                             Text(
@@ -932,9 +1330,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                 )
                               : const Icon(Icons.fingerprint),
                           label: Text(
-                            _isLoading
-                                ? loc.checkInProgress
-                                : loc.checkInWithCamera,
+                            _isLoading ? loc.checkInProgress : loc.checkInWithCamera,
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontWeight: FontWeight.bold,
@@ -956,17 +1352,17 @@ class _InspectorScreenState extends State<InspectorScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Visit Button
+              // Visit Action
               if (_isCheckedIn) ...[
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
                     onPressed: _recordVisit,
-                    icon: const Icon(Icons.store),
-                    label: Text(
-                      loc.recordVisit,
-                      style: const TextStyle(
+                    icon: const Icon(Icons.add_a_photo),
+                    label: const Text(
+                      'توثيق معاينة ميدانية جديدة بالصورة والـ GPS',
+                      style: TextStyle(
                         fontFamily: 'Tajawal',
                         fontWeight: FontWeight.bold,
                       ),
@@ -1022,97 +1418,93 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ..._todayVisits.map(
                     (v) {
                       final bool isItemOffline = v['IsOffline'] == true;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.CardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isItemOffline
-                                ? const Color(0xFFD97706).withValues(alpha: 0.5)
-                                : AppTheme.BorderColor.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: (isItemOffline
-                                        ? const Color(0xFFD97706)
-                                        : AppTheme.SuccessColor)
-                                    .withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.store,
-                                color: isItemOffline
-                                    ? const Color(0xFFD97706)
-                                    : AppTheme.SuccessColor,
-                                size: 18,
-                              ),
+                      return InkWell(
+                        onTap: () => _showVisitProofModal(v),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppTheme.CardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isItemOffline
+                                  ? const Color(0xFFD97706).withValues(alpha: 0.5)
+                                  : AppTheme.BorderColor.withValues(alpha: 0.3),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        '${v['TraderName'] ?? v['ShopName'] ?? (loc.isArabic ? 'زيارة' : 'Visite')}',
-                                        style: const TextStyle(
-                                          fontFamily: 'Tajawal',
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      if (isItemOffline) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFD97706)
-                                                .withValues(alpha: 0.2),
-                                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: (isItemOffline
+                                          ? const Color(0xFFD97706)
+                                          : AppTheme.SuccessColor)
+                                      .withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.store,
+                                  color: isItemOffline
+                                      ? const Color(0xFFD97706)
+                                      : AppTheme.SuccessColor,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          '${v['TraderName'] ?? v['ShopName'] ?? (loc.isArabic ? 'معاينة تجارية' : 'Visite')}',
+                                          style: const TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
                                           ),
-                                          child: const Text(
-                                            'معلق للمزامنة',
-                                            style: TextStyle(
-                                              fontFamily: 'Tajawal',
-                                              fontSize: 9,
-                                              color: Color(0xFFFCD34D),
+                                        ),
+                                        if (isItemOffline) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFD97706)
+                                                  .withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'معلق للمزامنة',
+                                              style: TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 9,
+                                                color: Color(0xFFFCD34D),
+                                              ),
                                             ),
                                           ),
-                                        ),
+                                        ],
                                       ],
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${v['LocationName'] ?? (v['ShopName'] ?? '')} • ${_formatTime(v['CreatedAt'] ?? v['VisitTime'] ?? v['CheckInTime'])}',
-                                    style: const TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 11,
-                                      color: AppTheme.TextSecondary,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${v['LocationName'] ?? (v['ShopName'] ?? '')} • ${_formatTime(v['CreatedAt'] ?? v['VisitTime'] ?? v['CheckInTime'])}',
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 11,
+                                        color: AppTheme.TextSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Icon(
-                              isItemOffline
-                                  ? Icons.sync_problem
-                                  : Icons.check_circle,
-                              color: isItemOffline
-                                  ? const Color(0xFFD97706)
-                                  : AppTheme.SuccessColor,
-                              size: 18,
-                            ),
-                          ],
+                              const Icon(Icons.qr_code, color: AppTheme.AccentColor, size: 20),
+                            ],
+                          ),
                         ),
                       );
                     },

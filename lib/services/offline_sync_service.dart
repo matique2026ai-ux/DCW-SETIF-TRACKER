@@ -77,8 +77,8 @@ class OfflineSyncService {
     final str = prefs.getString(_pendingQueueKey);
     if (str == null || str.isEmpty) return [];
     try {
-      final List decoded = jsonDecode(str);
-      return decoded.cast<Map<String, dynamic>>();
+      final List<dynamic> decoded = jsonDecode(str) as List<dynamic>;
+      return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (_) {
       return [];
     }
@@ -96,8 +96,8 @@ class OfflineSyncService {
     final str = prefs.getString(_cachedVisitsKey);
     if (str == null || str.isEmpty) return [];
     try {
-      final List decoded = jsonDecode(str);
-      return decoded.cast<Map<String, dynamic>>();
+      final List<dynamic> decoded = jsonDecode(str) as List<dynamic>;
+      return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (_) {
       return [];
     }
@@ -109,7 +109,7 @@ class OfflineSyncService {
     final str = prefs.getString(_cachedAttendanceKey);
     if (str == null || str.isEmpty) return null;
     try {
-      final Map<String, dynamic> decoded = jsonDecode(str);
+      final Map<String, dynamic> decoded = Map<String, dynamic>.from(jsonDecode(str) as Map);
       final today = DateTime.now().toIso8601String().split('T')[0];
       if (decoded['date'] == today) {
         return decoded;
@@ -133,7 +133,7 @@ class OfflineSyncService {
 
     for (final item in pending) {
       final type = item['type'];
-      final payload = Map<String, dynamic>.from(item['payload'] ?? {});
+      final payload = Map<String, dynamic>.from((item['payload'] as Map?) ?? {});
 
       try {
         if (type == 'checkin') {
@@ -143,6 +143,7 @@ class OfflineSyncService {
             longitude: (payload['longitude'] as num?)?.toDouble(),
             photo: payload['photo'] as String?,
             location: payload['location'] as String?,
+            notes: payload['notes'] as String?,
           );
           syncedCount++;
         } else if (type == 'checkout') {
@@ -151,6 +152,7 @@ class OfflineSyncService {
             latitude: (payload['latitude'] as num?)?.toDouble(),
             longitude: (payload['longitude'] as num?)?.toDouble(),
             location: payload['location'] as String?,
+            notes: payload['notes'] as String?,
           );
           syncedCount++;
         } else if (type == 'visit') {

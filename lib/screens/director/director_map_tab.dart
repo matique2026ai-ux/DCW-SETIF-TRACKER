@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 
 class DirectorMapTab extends StatefulWidget {
   const DirectorMapTab({super.key});
@@ -50,13 +52,47 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         .toList();
     final absent = _mapData.where((e) => e['hasCheckedIn'] != true).toList();
 
+    // Collect all visits markers
+    final List<Marker> visitMarkers = [];
+    for (final emp in _mapData) {
+      final visits = (emp['visits'] as List?) ?? [];
+      for (final v in visits) {
+        if (v['latitude'] != null && v['longitude'] != null) {
+          final double vLat = (v['latitude'] as num).toDouble();
+          final double vLng = (v['longitude'] as num).toDouble();
+          final visitMap = Map<String, dynamic>.from(v as Map);
+          final String empName = emp['name']?.toString() ?? 'مفتش ميداني';
+          visitMarkers.add(
+            Marker(
+              point: LatLng(vLat, vLng),
+              width: 36,
+              height: 36,
+              child: GestureDetector(
+                onTap: () => _showVisitDetailsModal(visitMap, empName),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black45, blurRadius: 6),
+                    ],
+                  ),
+                  child: const Icon(Icons.storefront, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+          );
+        }
+      }
+    }
+
     return Stack(
       children: [
         FlutterMap(
           mapController: _mapController,
           options: const MapOptions(initialCenter: _setifCenter, initialZoom: 13),
           children: [
-            // Dynamic TileLayer based on selected style
             if (_selectedMapStyle == 'satellite') ...[
               TileLayer(
                 urlTemplate:
@@ -144,6 +180,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                   ),
                 ),
 
+                // Field Visit Markers (Stores inspected today)
+                ...visitMarkers,
+
                 // Active Inspectors Markers
                 ..._mapData
                     .where(
@@ -153,35 +192,65 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                       final lat = (emp['latitude'] as num).toDouble();
                       final lng = (emp['longitude'] as num).toDouble();
                       final isOut = emp['isCheckedOut'] == true;
+                      final int vCount = (emp['visitsCount'] as num?)?.toInt() ?? 0;
+
                       return Marker(
                         point: LatLng(lat, lng),
-                        width: 42,
-                        height: 42,
+                        width: 48,
+                        height: 48,
                         child: GestureDetector(
-                          onTap: () => _showInfo(emp),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isOut
-                                  ? AppTheme.WarningColor
-                                  : AppTheme.SuccessColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (isOut
-                                          ? AppTheme.WarningColor
-                                          : AppTheme.SuccessColor)
-                                      .withValues(alpha: 0.6),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
+                          onTap: () => _showInspectorModal(emp),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: isOut
+                                      ? const Color(0xFF64748B)
+                                      : AppTheme.SuccessColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (isOut
+                                              ? const Color(0xFF64748B)
+                                              : AppTheme.SuccessColor)
+                                          .withValues(alpha: 0.6),
+                                      blurRadius: 10,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 22,
-                            ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              if (vCount > 0)
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AppTheme.AccentColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '$vCount',
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       );
@@ -221,11 +290,11 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                         present.length,
                         AppTheme.SuccessColor,
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
+                      _legend('معاينات ميدانية', visitMarkers.length, const Color(0xFF38BDF8)),
+                      const SizedBox(width: 14),
                       _legend(loc.absent, absent.length, AppTheme.DangerColor),
                       const Spacer(),
-                      _legend(loc.total, _mapData.length, AppTheme.AccentColor),
-                      const SizedBox(width: 8),
                       GestureDetector(
                         onTap: _loadData,
                         child: Container(
@@ -248,53 +317,46 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
 
         // Map Style Switcher (Floating below Stats Card)
         Positioned(
-          top: 74,
+          top: 72,
           right: 12,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: AppTheme.CardColor.withValues(alpha: 0.95),
+              color: AppTheme.CardColor.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppTheme.BorderColor.withValues(alpha: 0.4),
+                color: AppTheme.BorderColor.withValues(alpha: 0.3),
               ),
-              boxShadow: const [
-                BoxShadow(color: Colors.black38, blurRadius: 8),
-              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _styleChip('satellite', '🛰️ أقمار صناعية'),
-                const SizedBox(width: 2),
-                _styleChip('voyager', '🗺️ عصرية'),
-                const SizedBox(width: 2),
-                _styleChip('dark', '🌙 تكتيكية'),
+                _styleChip('satellite', 'أقمار صناعية'),
+                _styleChip('voyager', 'شوارع'),
+                _styleChip('dark', 'ليلي'),
               ],
             ),
           ),
         ),
 
-        // Zoom & Recenter Controls
+        // Map Control Buttons
         Positioned(
           bottom: 24,
-          right: 12,
+          left: 16,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _actionButton(Icons.add, () {
-                final currentZoom = _mapController.camera.zoom;
                 _mapController.move(
                   _mapController.camera.center,
-                  currentZoom + 1,
+                  _mapController.camera.zoom + 1,
                 );
               }),
               const SizedBox(height: 8),
               _actionButton(Icons.remove, () {
-                final currentZoom = _mapController.camera.zoom;
                 _mapController.move(
                   _mapController.camera.center,
-                  currentZoom - 1,
+                  _mapController.camera.zoom - 1,
                 );
               }),
               const SizedBox(height: 8),
@@ -369,7 +431,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         ),
         const SizedBox(width: 5),
         Text(
-          '$label ',
+          '$label: ',
           style: const TextStyle(
             fontFamily: 'Tajawal',
             fontSize: 11,
@@ -380,7 +442,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           '$count',
           style: TextStyle(
             fontFamily: 'Tajawal',
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -389,75 +451,70 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     );
   }
 
-  void _showInfo(Map<String, dynamic> emp) {
-    final loc = AppLocalizations.of(context);
-    final checkInStr = emp['checkInTime'] != null
+  void _showInspectorModal(Map<String, dynamic> emp) {
+    final String name = (emp['name'] ?? 'مفتش').toString();
+    final String service = (emp['service'] ?? 'مديرية التجارة').toString();
+    final String checkInStr = emp['checkInTime'] != null
         ? emp['checkInTime'].toString().replaceAll('T', ' ').substring(0, 16)
         : '---';
+    final bool isPresent = emp['hasCheckedIn'] == true;
+    final bool isOut = emp['isCheckedOut'] == true;
+    final List<dynamic> visits = (emp['visits'] as List<dynamic>?) ?? [];
+    final String? checkInPhoto = emp['checkInPhoto']?.toString();
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
           color: AppTheme.CardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
-                width: 40,
+                width: 44,
                 height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.BorderColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.SuccessColor,
-                        AppTheme.SuccessColor.withValues(alpha: 0.7),
-                      ],
-                    ),
+                    color: isPresent ? AppTheme.SuccessColor.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 24),
+                  child: Icon(Icons.person, color: isPresent ? AppTheme.SuccessColor : Colors.grey, size: 28),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${emp['name']}',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Text(name, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 2),
-                      Text(
-                        '${emp['service'] ?? ''}',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 12,
-                          color: AppTheme.TextSecondary,
-                        ),
-                      ),
+                      Text(service, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
                     ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isOut ? const Color(0xFF64748B) : (isPresent ? AppTheme.SuccessColor : AppTheme.DangerColor),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    isOut ? 'انصرف' : (isPresent ? 'نشط في الميدان' : 'غائب'),
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -465,22 +522,173 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             const SizedBox(height: 16),
             const Divider(color: AppTheme.BorderColor),
             const SizedBox(height: 8),
-            _infoRow(Icons.access_time, loc.checkIn, checkInStr),
-            const SizedBox(height: 8),
-            _infoRow(
-              Icons.location_on,
-              loc.inField,
-              emp['hasCheckedIn'] == true ? '✅' : '❌',
-            ),
-            if (emp['latitude'] != null) ...[
+            _infoRow(Icons.access_time, 'توقيت الحضور', checkInStr),
+            if (emp['notes'] != null && emp['notes'].toString().isNotEmpty) ...[
               const SizedBox(height: 8),
-              _infoRow(
-                Icons.map,
-                'GPS',
-                '${(emp['latitude'] as num).toStringAsFixed(4)}, ${(emp['longitude'] as num).toStringAsFixed(4)}',
+              _infoRow(Icons.notes, 'ملاحظة الانصراف/المبرر', emp['notes'].toString()),
+            ],
+            const SizedBox(height: 8),
+            _infoRow(Icons.store, 'المعاينات المنجزة اليوم', '${visits.length} معاينات'),
+            if (checkInPhoto != null && checkInPhoto.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text('صورة إثبات الحضور الميداني:', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.memory(
+                  base64Decode(checkInPhoto),
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
             ],
             const SizedBox(height: 16),
+            if (visits.isNotEmpty) ...[
+              const Text('سجل المحلات المعاينة اليوم:', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ...visits.map((v) => Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black26,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.storefront, color: Color(0xFF38BDF8), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${v['shopName']} • ${v['time'] != null ? v['time'].toString().substring(11, 16) : ""}',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.qr_code, color: AppTheme.AccentColor, size: 18),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _showVisitDetailsModal(Map<String, dynamic>.from(v as Map), name);
+                          },
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  QRCodeScreen.show(
+                    context,
+                    record: {
+                      'type': 'inspector_badge',
+                      'employeeName': name,
+                      'service': service,
+                      'date': DateTime.now().toString().split(' ')[0],
+                      'checkInTime': checkInStr,
+                      'visitsCount': visits.length,
+                      'status': 'VERIFIED_OFFICIAL_INSPECTOR',
+                    },
+                    title: 'البطاقة الرقمية الرسمية للمفتش',
+                  );
+                },
+                icon: const Icon(Icons.qr_code_2),
+                label: const Text('فحص الإثبات الرقمي والـ QR للعون', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showVisitDetailsModal(Map<String, dynamic> v, String inspectorName) {
+    final String shop = (v['shopName'] ?? 'محل تجاري').toString();
+    final String? photo = v['photo']?.toString();
+    final dynamic lat = v['latitude'];
+    final dynamic lng = v['longitude'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.CardColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(width: 44, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.verified, color: AppTheme.SuccessColor, size: 24),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(shop, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('المفتش: $inspectorName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (photo != null && photo.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  base64Decode(photo),
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (lat != null && lng != null)
+              Text('الإحداثيات الجغرافية: $lat, $lng', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70)),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  QRCodeScreen.show(
+                    context,
+                    record: {
+                      'type': 'visit_evidence',
+                      'shop': shop,
+                      'inspector': inspectorName,
+                      'latitude': lat,
+                      'longitude': lng,
+                      'id': v['id'] ?? DateTime.now().millisecondsSinceEpoch,
+                    },
+                    title: 'إثبات المعاينة الميدانية (QR)',
+                  );
+                },
+                icon: const Icon(Icons.qr_code),
+                label: const Text('عرض رمز الاستجابة السريعة للزيارة', style: TextStyle(fontFamily: 'Tajawal')),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
+              ),
+            ),
           ],
         ),
       ),
@@ -500,12 +708,14 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             color: AppTheme.TextSecondary,
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
