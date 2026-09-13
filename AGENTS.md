@@ -15,14 +15,14 @@
 
 ## ⚠️ دليل وقواعد العمل للوكلاء والمطورين
 
-1. **لا تلمس ولا تعدل قاعدة البيانات الأصلية القديمة بدون اختبار**: يدعم النظام Dual DB (PostgreSQL على Render و SQL Server محلياً عبر ODBC).
+1. **قاعدة البيانات**: يدعم النظام Dual DB (PostgreSQL على Render و SQL Server محلياً عبر ODBC).
 2. **فحص الكود بعد كل تعديل**:
    - تشغيل `C:\src\flutter\bin\flutter.bat analyze`
 3. **البناء والتصدير**:
    - بناء الويب: `flutter build web --release --dart-define=API_URL=https://drh-setif-api.onrender.com`
    - نسخ محتويات `build/web/` إلى `DCW-SETIF-BACKEND/public/`
    - بناء الـ APK: `flutter build apk --release --dart-define=API_URL=https://drh-setif-api.onrender.com`
-   - نسخ ملف `app-release.apk` إلى `DCW-SETIF-BACKEND/public/download/`
+   - نسخ ملف `app-release.apk` إلى `DCW-SETIF-BACKEND/public/download/` و `DCW-SETIF-BACKEND/public/`
 4. **حفظ وتحديث ملفات التوثيق**: دائماً قم بعمل `git commit` مع رسالة واضحة وتحديث `AGENTS.md` و `README.md`.
 
 ---
@@ -31,9 +31,11 @@
 
 | الدور الوظيفي | اسم المستخدم (Username) | كلمة المرور (Password) | الرمز البرمجي (Role) | الوصف |
 | :--- | :--- | :--- | :--- | :--- |
-| **مفتش رئيسي (Agent)** | `agent` | `Agent@2024` | `inspector` | تسجيل حضور/انصراف، زيارات ميدانية، QR، العمل بدون إنترنت |
+| **مفتش رئيسي (كريبع كمال)** | `kriba` | `Agent@2024` | `inspector` | حساب البث المباشر التجريبي، تسجيل حضور/انصراف، زيارات ميدانية |
+| **مفتش رئيسي (عام)** | `agent` | `Agent@2024` | `inspector` | تسجيل حضور/انصراف، زيارات ميدانية، QR، العمل بدون إنترنت |
+| **مكتب المستخدمين** | `bureau_user` | `bureau123` | `bureau_chief` | إدارة حالة الموظفين الـ 267، تعيين قادة الفرق، النقل والتحويل |
 | **رئيس مكتب المستخدمين** | `chef_bureau` | `Bureau@2024` | `bureau_chief` | إدارة المستخدمين والموظفين |
-| **المدير الولائي** | `directeur` | `directeur123` | `director` | لوحة القيادة، خريطة الأقمار الصناعية، مقارنة الأدلة |
+| **المدير الولائي** | `directeur` | `directeur123` | `director` | لوحة القيادة، خريطة الأقمار الصناعية، مقارنة الأدلة الميدانية |
 | **رئيس مصلحة المنافسة** | `chef_concurrence` | `chef123` | `head_of_department` | متابعة المفتشين والزيارات |
 | **رئيس مصلحة حماية المستهلك** | `chef_consommation` | `chef123` | `head_of_department` | متابعة الرقابة وقمع الغش |
 | **مدير النظام (Admin)** | `tracker_admin` | `admin123` | `admin` | إدارة كاملة للنظام |
@@ -45,19 +47,23 @@
 
 ## 🚀 الميزات والوظائف المنجزة (Features Implemented)
 
-### 1. العمل في وضع عدم الاتصال والمزامنة التلقائية (Offline-First Storage & Auto-Sync)
+### 1. شعار الميدالية الذهبية ثلاثية الأبعاد (3D Golden Medallion & Clean Login)
+- تصميم شعار ذهبي ثلاثي الأبعاد مع طبقة لمعان مخصصة عبر `CustomPainter` لتعمل بكفاءة على كافة المتصفحات وهواتف الأندرويد والـ iOS دون أي تشويه أو دوائر بيضاء.
+- تدفق تسجيل دخول مرن يسمح باختيار أي دور وظيفي وتجربة الحسابات المختلفة.
+
+### 2. العمل في وضع عدم الاتصال والمزامنة التلقائية (Offline-First Storage & Auto-Sync)
 - خدمة `OfflineSyncService` لحفظ الحضور والانصراف والزيارات محلياً في `SharedPreferences` عند غياب النت.
 - توليد رمز QR فوري ومحلي في الميدان كإثبات رسمي بحالة `OFFLINE_PENDING_SYNC`.
 - شارة وزر مزامنة ذكي `🔄 X معلق` في الـ AppBar مع مزامنة جماعية `syncAll()` فور عودة الاتصال.
-- استبقاء الجلسة `tryAutoLogin()` لفتح التطبيق دون تسجيل دخول متكرر في المناطق منعدمة التغطية.
 
-### 2. واجهة وتطبيق الآيفون (iOS Safari PWA)
-- دعم كامل لتثبيت التطبيق على الشاشة الرئيسية (Add to Home Screen) ليعمل بملء الشاشة وبدون اتصال.
+### 3. احترام الخصوصية وتوقيت الجزائر (Algeria TZ & Privacy Masking)
+- مزامنة كافة العمليات بتوقيت الجزائر الرسمي `Africa/Algiers` (UTC+1).
+- إخفاء إحداثيات المفتش الجغرافية تلقائياً من خريطة المدير فور تسجيل الانصراف.
 
-### 3. لوحة المدير وخريطة المراقبة (Director Command Center)
-- خريطة فضائية HD Satellite Map لمراقبة تموضع المفتشين والزيارات في سطيف.
-- مواجهة الأدلة الرقمية والتقارير الشهرية والمقتطعات المالية.
+### 4. لوحة المدير وخريطة المراقبة الميدانية (Director Live Satellite Map)
+- خريطة فضائية HD Satellite Map لمراقبة تموضع المفتشين النشطين ومواقع الزيارات في سطيف.
+- إمكانية تصفير السجلات بضغطة زر لبدء تجارب حية جديدة.
 
-### 4. رمز الاستجابة السريعة (QR Code)
-- حفظ صورة الـ QR في المجلد الرئيسي `QR_Code_DCW_SETIF.png` وعبر الرابط المباشر `https://drh-setif-api.onrender.com/qr-code.png`.
-- الرابط المختصر: `https://tinyurl.com/24ywuw53`.
+### 5. تحميل التطبيق ورمز الاستجابة السريعة (QR & APK Download)
+- روابط تحميل مباشرة وسريعة: `https://drh-setif-api.onrender.com/app-release.apk`
+- ملف الـ APK الرئيسي: `DCW-SETIF-TRACKER.apk`.
