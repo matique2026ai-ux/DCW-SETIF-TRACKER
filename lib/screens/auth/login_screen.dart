@@ -8,6 +8,7 @@ import 'package:drh_setif_tracker/screens/director/director_screen.dart';
 import 'package:drh_setif_tracker/screens/head/head_screen.dart';
 import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
+import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -203,54 +204,13 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Logo
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFD4AF37),
-                                Color(0xFFFDE68A),
-                                Color(0xFF92400E),
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                                blurRadius: 30,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(3),
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topRight,
-                                  end: Alignment.bottomLeft,
-                                  colors: [
-                                    Color(0xFF2D1035),
-                                    Color(0xFF1A0A1F),
-                                  ],
-                                ),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.shield_outlined,
-                                  size: 48,
-                                  color: Color(0xFFD4AF37),
-                                ),
-                              ),
-                            ),
-                          ),
+                        // 3D Pure Gold Bullion Emblem with natural gleam
+                        const GoldenEmblemCoin(
+                          size: 110,
+                          animateGleam: true,
+                          showOuterGlow: true,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
                         // Title
                         Text(

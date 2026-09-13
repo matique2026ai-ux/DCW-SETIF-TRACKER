@@ -107,17 +107,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 userAgentPackageName: 'DCW-SETIF-TRACKER',
                 maxZoom: 19,
               ),
-            ] else if (_selectedMapStyle == 'dark') ...[
-              TileLayer(
-                urlTemplate:
-                    'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-                userAgentPackageName: 'DCW-SETIF-TRACKER',
-                maxZoom: 19,
-              ),
             ] else ...[
               TileLayer(
                 urlTemplate:
-                    'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'DCW-SETIF-TRACKER',
                 maxZoom: 19,
               ),
@@ -316,27 +309,70 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           ),
         ),
 
-        // Map Style Switcher (Floating below Stats Card)
+        // Top Controls: Map Style Switcher + Search Agent Button
         Positioned(
           top: 72,
           right: 12,
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppTheme.CardColor.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.BorderColor.withValues(alpha: 0.3),
+          left: 12,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Search Agent Button
+              GestureDetector(
+                onTap: _showSearchInspectorSheet,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.CardColor.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                    ),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black38, blurRadius: 8),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.search, size: 16, color: Color(0xFFD4AF37)),
+                      SizedBox(width: 6),
+                      Text(
+                        'بحث عن عون...',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _styleChip('satellite', 'أقمار صناعية'),
-                _styleChip('voyager', 'شوارع'),
-                _styleChip('dark', 'ليلي'),
-              ],
-            ),
+
+              // Map Layer Switcher (100% Free - Satellite vs Streets)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppTheme.CardColor.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppTheme.BorderColor.withValues(alpha: 0.4),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black38, blurRadius: 8),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _styleChip('satellite', 'أقمار صناعية'),
+                    _styleChip('osm', 'خريطة الشوارع'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
 
@@ -720,6 +756,185 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showSearchInspectorSheet() {
+    String query = '';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final q = query.trim().toLowerCase();
+          final filtered = _mapData.where((emp) {
+            if (q.isEmpty) return true;
+            final name = (emp['name'] ?? '').toString().toLowerCase();
+            final service = (emp['service'] ?? '').toString().toLowerCase();
+            return name.contains(q) || service.contains(q);
+          }).toList();
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              color: AppTheme.CardColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person_search, color: Color(0xFFD4AF37)),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'البحث عن عون ومتابعة حالته الميدانية',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: TextField(
+                    textDirection: TextDirection.rtl,
+                    onChanged: (val) => setSheetState(() => query = val),
+                    decoration: InputDecoration(
+                      hintText: 'ابحث بالاسم، اللقب أو المصلحة...',
+                      hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                  ),
+                ),
+                const Divider(color: Colors.white12, height: 16),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'لم يتم العثور على أي عون يطابق البحث',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              color: AppTheme.TextSecondary,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final emp = filtered[index];
+                            final name = emp['name']?.toString() ?? 'عون رقابة';
+                            final service = emp['service']?.toString() ?? 'مديرية التجارة';
+                            final bool hasCheckedIn = emp['hasCheckedIn'] == true;
+                            final bool isCheckedOut = emp['isCheckedOut'] == true;
+                            final visits = (emp['visits'] as List?) ?? [];
+                            final double? lat = (emp['latitude'] as num?)?.toDouble();
+                            final double? lng = (emp['longitude'] as num?)?.toDouble();
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.black26,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: hasCheckedIn
+                                      ? AppTheme.SuccessColor.withValues(alpha: 0.4)
+                                      : Colors.white10,
+                                ),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: hasCheckedIn
+                                      ? (isCheckedOut
+                                          ? Colors.grey.withValues(alpha: 0.3)
+                                          : AppTheme.SuccessColor.withValues(alpha: 0.2))
+                                      : AppTheme.DangerColor.withValues(alpha: 0.2),
+                                  child: Icon(
+                                    hasCheckedIn ? Icons.location_on : Icons.person_off,
+                                    color: hasCheckedIn
+                                        ? (isCheckedOut ? Colors.grey : AppTheme.SuccessColor)
+                                        : AppTheme.DangerColor,
+                                    size: 20,
+                                  ),
+                                ),
+                                title: Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '$service • ${hasCheckedIn ? (isCheckedOut ? 'انصرف' : 'في الميدان (${visits.length} زيارات)') : 'لم يسجل الحضور اليوم'}',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 11,
+                                    color: hasCheckedIn ? AppTheme.SuccessColor : AppTheme.TextSecondary,
+                                  ),
+                                ),
+                                trailing: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 14,
+                                  color: Color(0xFFD4AF37),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  if (lat != null && lng != null && (lat != 0 || lng != 0)) {
+                                    _mapController.move(LatLng(lat, lng), 16);
+                                    _showInspectorModal(emp);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '⚠️ العون ($name) لم يسجل حضوره اليوم بعد لتحديد موقعه المباشر',
+                                          style: const TextStyle(fontFamily: 'Tajawal'),
+                                        ),
+                                        backgroundColor: AppTheme.CardColor,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

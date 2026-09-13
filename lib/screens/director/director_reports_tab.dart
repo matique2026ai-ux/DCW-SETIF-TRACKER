@@ -14,6 +14,8 @@ class DirectorReportsTab extends StatefulWidget {
 class _DirectorReportsTabState extends State<DirectorReportsTab> {
   List<Map<String, dynamic>> _employees = [];
   List<Map<String, dynamic>> _attendance = [];
+  List<Map<String, dynamic>> _deductions = [];
+  String _searchQuery = '';
   bool _isLoading = true;
 
   @override
@@ -27,10 +29,12 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       final api = context.read<AuthService>().api;
       final emp = await api.getEmployees();
       final att = await api.getAttendance();
+      final ded = await api.getDeductions();
       if (mounted) {
         setState(() {
           _employees = emp;
           _attendance = att;
+          _deductions = ded;
           _isLoading = false;
         });
       }
@@ -55,6 +59,15 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
     final absent = _employees
         .where((e) => !checkedInIds.contains(e['Id']))
         .toList();
+
+    final q = _searchQuery.trim().toLowerCase();
+    final filteredAbsent = absent.where((e) {
+      if (q.isEmpty) return true;
+      final nameAr = '${e['NomAr'] ?? ''} ${e['PrenomAr'] ?? ''}'.toLowerCase();
+      final nameFr = '${e['Nom'] ?? ''} ${e['Prenom'] ?? ''}'.toLowerCase();
+      final service = (e['Service'] ?? '').toString().toLowerCase();
+      return nameAr.contains(q) || nameFr.contains(q) || service.contains(q);
+    }).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -86,16 +99,53 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
             ],
           ),
           const SizedBox(height: 24),
-          Text(
-            loc.absentToday,
-            style: const TextStyle(
-              fontFamily: 'Tajawal',
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${loc.absentToday} (${absent.length})',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'لم يسجلوا الحضور اليوم',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Live Search Bar for Absent Employees
+          TextField(
+            textDirection: TextDirection.rtl,
+            onChanged: (val) => setState(() => _searchQuery = val),
+            decoration: InputDecoration(
+              hintText: 'ابحث بالاسم، اللقب أو المصلحة بين الموظفين...',
+              hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
+              filled: true,
+              fillColor: AppTheme.CardColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppTheme.BorderColor.withValues(alpha: 0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppTheme.BorderColor.withValues(alpha: 0.3)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
           ),
-          const SizedBox(height: 12),
-          absent.isEmpty
+          const SizedBox(height: 14),
+
+          filteredAbsent.isEmpty
               ? Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
@@ -108,17 +158,19 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   child: Center(
                     child: Column(
                       children: [
-                        const Icon(
-                          Icons.check_circle,
+                        Icon(
+                          absent.isEmpty ? Icons.check_circle : Icons.search_off,
                           size: 48,
-                          color: AppTheme.SuccessColor,
+                          color: absent.isEmpty ? AppTheme.SuccessColor : AppTheme.TextSecondary,
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          loc.noAbsence,
+                          absent.isEmpty
+                              ? loc.noAbsence
+                              : 'لم يتم العثور على أي موظف يطابق البحث',
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
-                            color: AppTheme.SuccessColor,
+                            color: AppTheme.TextSecondary,
                             fontSize: 14,
                           ),
                         ),
@@ -127,7 +179,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   ),
                 )
               : Column(
-                  children: absent.asMap().entries.map((entry) {
+                  children: filteredAbsent.asMap().entries.map((entry) {
                     final e = entry.value;
                     final name = e['NomAr'] != null
                         ? '${e['NomAr']} ${e['PrenomAr']}'
@@ -303,7 +355,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'القرائن الرقمية المسجلة اليوم',
+                    'القرائن والوضعية الحالية المسجلة بالنظام',
                     style: TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 13,
@@ -314,20 +366,22 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   const SizedBox(height: 8),
                   _proofTile(
                     icon: Icons.timer_off_outlined,
-                    title: 'نقطة الانطلاق (08:00 - 08:30)',
-                    status: 'لم يسجل الحضور بمقر المديرية ❌',
+                    title: 'تسجيل الحضور اليومي',
+                    status: 'لم يسجل الحضور اليوم عبر التطبيق ❌',
                   ),
                   const SizedBox(height: 8),
                   _proofTile(
                     icon: Icons.storefront_outlined,
-                    title: 'المهام الميدانية',
-                    status: '0 زيارات / 0 صور مسجلة ❌',
+                    title: 'المهام والمعاينات الميدانية',
+                    status: '0 زيارات تجارية مسجلة اليوم',
                   ),
                   const SizedBox(height: 8),
                   _proofTile(
-                    icon: Icons.location_off_outlined,
-                    title: 'تحديد الموقع GPS',
-                    status: 'الهاتف غير متصل بالنظام ❌',
+                    icon: Icons.history_edu_outlined,
+                    title: 'السوابق الإدارية والخصومات',
+                    status: _deductions.where((d) => d['EmployeeId'] == emp['Id']).isEmpty
+                        ? 'السجل الإداري نظيف (0 سوابق خصم) ✔️'
+                        : 'يوجد ${_deductions.where((d) => d['EmployeeId'] == emp['Id']).length} طلبات خصم سابقة في النظام ⚠️',
                   ),
                   const SizedBox(height: 20),
                   SizedBox(

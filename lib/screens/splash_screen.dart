@@ -9,6 +9,7 @@ import 'package:drh_setif_tracker/screens/director/director_screen.dart';
 import 'package:drh_setif_tracker/screens/head/head_screen.dart';
 import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
+import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -209,92 +210,33 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Golden ring around logo
+                  // Golden Coin Medallion with Shimmer
                   AnimatedBuilder(
                     animation: _pulseScale,
                     builder: (context, child) {
                       return Transform.scale(
                         scale: _pulseScale.value,
-                        child: Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFD4AF37),
-                                Color(0xFFFDE68A),
-                                Color(0xFFD4AF37),
-                                Color(0xFF92400E),
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                                blurRadius: 40,
-                                spreadRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topRight,
-                                  end: Alignment.bottomLeft,
-                                  colors: [
-                                    Color(0xFF1A0A1F),
-                                    Color(0xFF2D1035),
-                                  ],
+                        child: AnimatedBuilder(
+                          animation: _logoScale,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: _logoScale.value,
+                              child: Opacity(
+                                opacity: _logoOpacity.value,
+                                child: const GoldenEmblemCoin(
+                                  size: 195,
+                                  animateGleam: true,
+                                  showOuterGlow: true,
                                 ),
                               ),
-                              child: Center(
-                                child: AnimatedBuilder(
-                                  animation: _logoScale,
-                                  builder: (context, child) {
-                                    return Transform.scale(
-                                      scale: _logoScale.value,
-                                      child: Opacity(
-                                        opacity: _logoOpacity.value,
-                                        child: const Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.shield_outlined,
-                                              size: 52,
-                                              color: Color(0xFFD4AF37),
-                                            ),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              'DCW',
-                                              style: TextStyle(
-                                                fontFamily: 'Tajawal',
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFFD4AF37),
-                                                letterSpacing: 3,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       );
                     },
                   ),
 
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 32),
 
                   // Directorat name
                   AnimatedBuilder(
