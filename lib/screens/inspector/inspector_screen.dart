@@ -203,6 +203,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
   Future<Position?> _getPosition() async {
     try {
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        // Location services disabled on device
+      }
+
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -214,11 +219,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
       try {
         return await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium,
-          timeLimit: const Duration(seconds: 3),
+          desiredAccuracy: LocationAccuracy.best,
+          timeLimit: const Duration(seconds: 10),
         );
       } catch (_) {
-        return await Geolocator.getLastKnownPosition();
+        try {
+          return await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 5),
+          );
+        } catch (_) {
+          return await Geolocator.getLastKnownPosition();
+        }
       }
     } catch (_) {
       return null;
