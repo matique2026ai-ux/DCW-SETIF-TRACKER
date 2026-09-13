@@ -2,7 +2,7 @@ import 'dart:math';
 
 class AppConstants {
   static const String appName = 'DCW-SETIF-TRACKER';
-  static const String appNameAr = 'نظام تتبع المفتشين';
+  static const String appNameAr = 'منصة الرقابة والتفتيش الميداني';
 
   // Directorate HQ (مقر المديرية - سطيف)
   static const double hqLatitude = 36.1898;

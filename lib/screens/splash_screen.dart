@@ -315,8 +315,8 @@ class _SplashScreenState extends State<SplashScreen>
                           opacity: _textOpacity.value,
                           child: Text(
                             loc.isArabic
-                                ? 'نظام تتبع المفتشين'
-                                : 'Système de Suivi des Inspecteurs',
+                                ? 'منصة الرقابة والتفتيش الميداني'
+                                : 'Plateforme de Contrôle et d\'Inspection',
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 26,

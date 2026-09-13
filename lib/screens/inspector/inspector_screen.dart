@@ -274,19 +274,19 @@ class _InspectorScreenState extends State<InspectorScreen> {
   Future<void> _recordVisit() async {
     final loc = AppLocalizations.of(context);
     setState(() => _isLoading = true);
-    Position? pos = await _getPosition();
-    pos ??= Position(
-      latitude: AppConstants.hqLatitude,
-      longitude: AppConstants.hqLongitude,
-      timestamp: DateTime.now(),
-      accuracy: 5.0,
-      altitude: 0.0,
-      altitudeAccuracy: 0.0,
-      heading: 0.0,
-      headingAccuracy: 0.0,
-      speed: 0.0,
-      speedAccuracy: 0.0,
-    );
+    final Position finalPos = (await _getPosition()) ??
+        Position(
+          latitude: AppConstants.hqLatitude,
+          longitude: AppConstants.hqLongitude,
+          timestamp: DateTime.now(),
+          accuracy: 5.0,
+          altitude: 0.0,
+          altitudeAccuracy: 0.0,
+          heading: 0.0,
+          headingAccuracy: 0.0,
+          speed: 0.0,
+          speedAccuracy: 0.0,
+        );
 
     final photo = await _takePhoto();
     setState(() => _isLoading = false);
@@ -324,7 +324,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}',
+                    '${finalPos.latitude.toStringAsFixed(4)}, ${finalPos.longitude.toStringAsFixed(4)}',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 11,
@@ -370,8 +370,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 final user = context.read<AuthService>().currentUser;
                 await api.recordVisit(
                   employeeId: user!.employeeId!,
-                  latitude: pos.latitude,
-                  longitude: pos.longitude,
+                  latitude: finalPos.latitude,
+                  longitude: finalPos.longitude,
                   photo: photo,
                   shopName: nameCtrl.text,
                   notes: notesCtrl.text,
@@ -394,8 +394,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         '',
                     'date': DateTime.now().toString().split(' ')[0],
                     'time': DateTime.now().toString().substring(11, 19),
-                    'latitude': pos.latitude,
-                    'longitude': pos.longitude,
+                    'latitude': finalPos.latitude,
+                    'longitude': finalPos.longitude,
                     'id': DateTime.now().millisecondsSinceEpoch,
                   },
                   title: 'إثبات الزيارة',

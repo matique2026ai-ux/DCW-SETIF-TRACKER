@@ -12,7 +12,7 @@ class AppLocalizations {
 
   // Splash
   String get splashTitle =>
-      isArabic ? 'نظام تتبع المفتشين' : 'Système de Suivi des Inspecteurs';
+      isArabic ? 'منصة الرقابة والتفتيش الميداني' : 'Plateforme d\'Inspection et de Contrôle';
   String get splashDirectorate => isArabic
       ? 'مديرية التجارة وترقية الصادرات'
       : 'Direction du Commerce et de la Promotion des Exportations';
