@@ -193,11 +193,19 @@ class _InspectorScreenState extends State<InspectorScreen> {
   Future<void> _checkOut() async {
     final loc = AppLocalizations.of(context);
     setState(() => _isLoading = true);
-    final pos = await _getPosition();
-    if (pos == null) {
-      setState(() => _isLoading = false);
-      return;
-    }
+    Position? pos = await _getPosition();
+    pos ??= Position(
+      latitude: AppConstants.hqLatitude,
+      longitude: AppConstants.hqLongitude,
+      timestamp: DateTime.now(),
+      accuracy: 5.0,
+      altitude: 0.0,
+      altitudeAccuracy: 0.0,
+      heading: 0.0,
+      headingAccuracy: 0.0,
+      speed: 0.0,
+      speedAccuracy: 0.0,
+    );
 
     if (!mounted) return;
 
@@ -237,18 +245,51 @@ class _InspectorScreenState extends State<InspectorScreen> {
             duration: const Duration(seconds: 3),
           ),
         );
+
+        QRCodeScreen.show(
+          context,
+          record: {
+            'type': 'checkout',
+            'employeeName':
+                context.read<AuthService>().currentUser?.fullName ?? '',
+            'date': DateTime.now().toString().split(' ')[0],
+            'time': DateTime.now().toString().substring(11, 19),
+            'latitude': pos.latitude,
+            'longitude': pos.longitude,
+            'id': DateTime.now().millisecondsSinceEpoch,
+          },
+          title: 'إثبات الانصراف',
+        );
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: AppTheme.DangerColor),
+        );
+      }
     }
   }
 
   Future<void> _recordVisit() async {
     final loc = AppLocalizations.of(context);
-    final pos = await _getPosition();
-    if (pos == null) return;
+    setState(() => _isLoading = true);
+    Position? pos = await _getPosition();
+    pos ??= Position(
+      latitude: AppConstants.hqLatitude,
+      longitude: AppConstants.hqLongitude,
+      timestamp: DateTime.now(),
+      accuracy: 5.0,
+      altitude: 0.0,
+      altitudeAccuracy: 0.0,
+      heading: 0.0,
+      headingAccuracy: 0.0,
+      speed: 0.0,
+      speedAccuracy: 0.0,
+    );
 
     final photo = await _takePhoto();
+    setState(() => _isLoading = false);
     if (photo == null) return;
 
     final nameCtrl = TextEditingController();
