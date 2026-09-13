@@ -182,6 +182,18 @@ class ApiService {
     }
   }
 
+  Future<void> cancelCheckOut(int employeeId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/attendance/cancel-checkout'),
+      headers: _headers,
+      body: jsonEncode({'employeeId': employeeId}),
+    );
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'خطأ في استئناف الدوام');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getAttendance({
     String? date,
     int? employeeId,

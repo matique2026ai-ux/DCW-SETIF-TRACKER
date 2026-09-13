@@ -22,10 +22,12 @@ class InspectorScreen extends StatefulWidget {
 
 class _InspectorScreenState extends State<InspectorScreen> {
   bool _isCheckedIn = false;
+  bool _isCheckedOut = false;
   bool _isLoading = false;
   bool _isSyncing = false;
   int _pendingSyncCount = 0;
   String? _checkInTime;
+  String? _checkOutTime;
   String? _checkInPhoto;
   double? _checkInLat;
   double? _checkInLng;
@@ -90,8 +92,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
       if (mounted) {
         setState(() {
           if (att != null && att['Id'] != null) {
-            _isCheckedIn = true;
+            final isOut = att['IsCheckedOut'] == true || att['IsCheckedOut'] == 1 || att['CheckOutTime'] != null;
+            _isCheckedOut = isOut;
+            _isCheckedIn = !isOut;
             _checkInTime = _formatTime(att['CheckInTime']);
+            _checkOutTime = _formatTime(att['CheckOutTime']);
             _checkInPhoto = att['CheckInPhoto']?.toString();
             _checkInLat = att['CheckInLatitude'] != null
                 ? double.tryParse(att['CheckInLatitude'].toString())
@@ -99,6 +104,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
             _checkInLng = att['CheckInLongitude'] != null
                 ? double.tryParse(att['CheckInLongitude'].toString())
                 : null;
+          } else {
+            _isCheckedIn = false;
+            _isCheckedOut = false;
+            _checkInTime = null;
+            _checkOutTime = null;
           }
           _todayVisits = [...offlineVisits, ...visits];
           _visitCount = _todayVisits.length;
@@ -114,8 +124,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
       if (mounted) {
         setState(() {
           if (cachedAtt != null) {
-            _isCheckedIn = cachedAtt['isCheckedIn'] == true;
+            final isOut = cachedAtt['isCheckedOut'] == true;
+            _isCheckedOut = isOut;
+            _isCheckedIn = cachedAtt['isCheckedIn'] == true && !isOut;
             _checkInTime = cachedAtt['checkInTime']?.toString();
+            _checkOutTime = cachedAtt['checkOutTime']?.toString();
             _checkInPhoto = cachedAtt['photo']?.toString();
             _checkInLat = double.tryParse(cachedAtt['latitude']?.toString() ?? '');
             _checkInLng = double.tryParse(cachedAtt['longitude']?.toString() ?? '');
@@ -358,7 +371,96 @@ class _InspectorScreenState extends State<InspectorScreen> {
     if (isEarly) {
       _showEarlyCheckOutDialog();
     } else {
-      _executeCheckOut(notes: null);
+      _showNormalCheckOutConfirmDialog();
+    }
+  }
+
+  void _showNormalCheckOutConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.CardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Row(
+          children: [
+            Icon(Icons.exit_to_app, color: AppTheme.WarningColor, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'تأكيد تسجيل الانصراف',
+              style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'هل أنت متأكد من رغبتك في تسجيل الانصراف وإنهاء الدوام لليوم؟',
+              style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
+            ),
+            SizedBox(height: 10),
+            Text(
+              '🔒 تنبيه: سيتم إيقاف بث موقع الـ GPS وإغلاق بطاقة الدوام لهذا اليوم.',
+              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('تراجع / إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _executeCheckOut(notes: null);
+            },
+            icon: const Icon(Icons.check, size: 16),
+            label: const Text('نعم، تأكيد الانصراف', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.WarningColor,
+              foregroundColor: Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _cancelCheckOut() async {
+    setState(() => _isLoading = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final user = context.read<AuthService>().currentUser;
+    final int empId = user?.employeeId ?? user?.id ?? 1;
+
+    try {
+      final api = context.read<AuthService>().api;
+      await api.cancelCheckOut(empId);
+      if (mounted) {
+        setState(() {
+          _isCheckedOut = false;
+          _isCheckedIn = true;
+          _checkOutTime = null;
+          _isLoading = false;
+        });
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('✅ تم استئناف الدوام وإعادة تفعيل بطاقة الحضور بنجاح', style: TextStyle(fontFamily: 'Tajawal')),
+            backgroundColor: AppTheme.SuccessColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('⚠️ خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
+            backgroundColor: AppTheme.WarningColor,
+          ),
+        );
+      }
     }
   }
 
@@ -503,10 +605,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final pending = await OfflineSyncService.getPendingCount();
 
     if (mounted) {
+      final nowStr = DateTime.now().toString().substring(11, 16);
       setState(() {
         _isCheckedIn = false;
-        _checkInTime = null;
-        _checkInPhoto = null;
+        _isCheckedOut = true;
+        _checkOutTime = nowStr;
         _isLoading = false;
         _pendingSyncCount = pending;
       });
@@ -1195,11 +1298,15 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _isCheckedIn ? AppTheme.SuccessColor : AppTheme.WarningColor,
+                        color: _isCheckedOut
+                            ? const Color(0xFF6366F1)
+                            : (_isCheckedIn ? AppTheme.SuccessColor : AppTheme.WarningColor),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        _isCheckedIn ? loc.checkedIn : loc.notCheckedIn,
+                        _isCheckedOut
+                            ? 'تم الانصراف'
+                            : (_isCheckedIn ? loc.checkedIn : loc.notCheckedIn),
                         style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontSize: 10,
@@ -1441,6 +1548,92 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
+                        ),
+                      ),
+                    ] else if (_isCheckedOut) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.verified,
+                                  color: Color(0xFF818CF8),
+                                  size: 24,
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'تم تسجيل الانصراف وإغلاق بطاقة الدوام بنجاح',
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFA5B4FC),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Column(
+                                  children: [
+                                    const Text('وقت الحضور', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60)),
+                                    const SizedBox(height: 2),
+                                    Text('$_checkInTime', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.SuccessColor)),
+                                  ],
+                                ),
+                                Container(width: 1, height: 28, color: Colors.white24),
+                                Column(
+                                  children: [
+                                    const Text('وقت الانصراف', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60)),
+                                    const SizedBox(height: 2),
+                                    Text('$_checkOutTime', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFFCD34D))),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              '🔒 تم حجب البث المباشر للـ GPS لانتهاء الدوام الرسمي',
+                              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _isLoading ? null : _cancelCheckOut,
+                                icon: const Icon(Icons.replay, size: 16, color: Color(0xFF818CF8)),
+                                label: const Text(
+                                  'استئناف الدوام (إلغاء الانصراف بالخطأ)',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: Color(0xFFA5B4FC),
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF818CF8), width: 1.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ] else ...[
