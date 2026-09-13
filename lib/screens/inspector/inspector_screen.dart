@@ -142,6 +142,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
           _isSyncing = false;
         });
 
+        if (synced > 0) {
+          _loadStatus();
+        }
+
         if (!silent && mounted) {
           if (synced > 0) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -154,20 +158,45 @@ class _InspectorScreenState extends State<InspectorScreen> {
               ),
             );
           } else if (remaining > 0) {
+            final List<dynamic> errors = (result['errors'] as List<dynamic>?) ?? [];
+            final String errorMsg = errors.isNotEmpty
+                ? errors.first.toString()
+                : '⚠️ تعذر المزامنة: يرجى التحقق من اتصال السيرفر';
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  '⚠️ تعذر المزامنة: يرجى التحقق من اتصال الإنترنت',
-                  style: TextStyle(fontFamily: 'Tajawal'),
+                  errorMsg,
+                  style: const TextStyle(fontFamily: 'Tajawal'),
                 ),
                 backgroundColor: AppTheme.WarningColor,
+                action: SnackBarAction(
+                  label: 'مسح العالق',
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    await OfflineSyncService.clearAll();
+                    if (mounted) {
+                      setState(() => _pendingSyncCount = 0);
+                      _loadStatus();
+                    }
+                  },
+                ),
               ),
             );
           }
         }
       }
-    } catch (_) {
-      if (mounted) setState(() => _isSyncing = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+        if (!silent) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
+              backgroundColor: AppTheme.WarningColor,
+            ),
+          );
+        }
+      }
     }
   }
 

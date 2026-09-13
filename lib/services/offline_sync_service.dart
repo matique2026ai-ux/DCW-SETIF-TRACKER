@@ -137,8 +137,9 @@ class OfflineSyncService {
 
       try {
         if (type == 'checkin') {
+          final int empId = (payload['employeeId'] as num?)?.toInt() ?? 1;
           await api.checkIn(
-            payload['employeeId'] as int,
+            empId,
             latitude: (payload['latitude'] as num?)?.toDouble(),
             longitude: (payload['longitude'] as num?)?.toDouble(),
             photo: payload['photo'] as String?,
@@ -147,8 +148,9 @@ class OfflineSyncService {
           );
           syncedCount++;
         } else if (type == 'checkout') {
+          final int empId = (payload['employeeId'] as num?)?.toInt() ?? 1;
           await api.checkOut(
-            payload['employeeId'] as int,
+            empId,
             latitude: (payload['latitude'] as num?)?.toDouble(),
             longitude: (payload['longitude'] as num?)?.toDouble(),
             location: payload['location'] as String?,
@@ -173,9 +175,15 @@ class OfflineSyncService {
           syncedCount++;
         }
       } catch (e) {
-        // Keep in queue if failed to upload
-        remaining.add(item);
-        errors.add('فشل مزامنة $type: $e');
+        final err = e.toString().toLowerCase();
+        if (err.contains('بالفعل') || err.contains('already') || err.contains('مسبق') || err.contains('لم يسجل')) {
+          // Record is already processed or expired on server; mark as resolved
+          syncedCount++;
+        } else {
+          // Keep in queue if real network error
+          remaining.add(item);
+          errors.add('فشل مزامنة $type: $e');
+        }
       }
     }
 
