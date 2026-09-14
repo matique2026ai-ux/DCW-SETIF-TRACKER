@@ -25,9 +25,9 @@ class AppConstants {
   static const String appNameAr = 'منصة الرقابة والتفتيش الميداني';
 
   // Main Directorate HQ (مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف — حي المعبودة، شارع جودي حمو)
-  static const double hqLatitude = 36.1930704;
-  static const double hqLongitude = 5.3959613;
-  static const double hqRadiusMeters = 1500.0;
+  static const double hqLatitude = 36.1900575;
+  static const double hqLongitude = 5.3990134;
+  static const double hqRadiusMeters = 250.0;
 
   // Regional Inspectorates, Airport Border Inspectorate & Commercial Annexes of Setif Province
   // (المفتشيات الإقليمية، المفتشية الحدودية بالمطار، والملحقات التجارية الثلاث: عين آزال، عين الكبيرة، عين أرنات)
@@ -36,9 +36,9 @@ class AppConstants {
       id: 'hq_setif',
       nameAr: 'المقر الرئيسي للمديرية الولائية (سطيف - المعبودة)',
       nameFr: 'Siège de la Direction de Wilaya (Sétif - El Maabouda)',
-      latitude: 36.1930704,
-      longitude: 5.3959613,
-      radiusMeters: 1500.0,
+      latitude: 36.1900575,
+      longitude: 5.3990134,
+      radiusMeters: 250.0,
       isMainDirectorate: true,
     ),
     InspectorateHQ(
