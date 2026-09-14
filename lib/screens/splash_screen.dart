@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'dart:math';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
@@ -13,398 +11,193 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _logoController;
-  late AnimationController _textController;
+    with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
-  late AnimationController _pulseController;
-  late AnimationController _rotateController;
-  late AnimationController _barController;
-
-  late Animation<double> _logoScale;
-  late Animation<double> _logoOpacity;
-  late Animation<double> _textSlide;
-  late Animation<double> _textOpacity;
-  late Animation<double> _fadeOpacity;
-  late Animation<double> _pulseScale;
-  late Animation<double> _rotateAngle;
-  late Animation<double> _barProgress;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    _logoController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    _textController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-    _rotateController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat();
-    _barController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1400),
     );
 
-    _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
     );
-    _logoOpacity = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeIn));
-    _textSlide = Tween<double>(begin: 50.0, end: 0.0).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeOutBack),
-    );
-    _textOpacity = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeIn));
-    _fadeOpacity = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
-    _pulseScale = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-    _rotateAngle = Tween<double>(
-      begin: 0,
-      end: 2 * pi,
-    ).animate(CurvedAnimation(parent: _rotateController, curve: Curves.linear));
-    _barProgress = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _barController, curve: Curves.easeInOut));
 
-    _startAnimation();
+    _scaleAnimation = Tween<double>(begin: 0.94, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _fadeController,
+        curve: const Interval(0.0, 0.9, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _startFlow();
   }
 
-  Future<void> _startAnimation() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _logoController.forward();
-    await Future.delayed(const Duration(milliseconds: 600));
-    _textController.forward();
-    await Future.delayed(const Duration(milliseconds: 400));
+  Future<void> _startFlow() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
     _fadeController.forward();
-    _barController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 2200));
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 800),
-          pageBuilder: (_, __, ___) => const LoginScreen(),
-          transitionsBuilder: (_, anim, __, child) {
-            return FadeTransition(
-              opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
-              child: child,
-            );
-          },
-        ),
-      );
-    }
+    await Future.delayed(const Duration(milliseconds: 2400));
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 700),
+        pageBuilder: (_, __, ___) => const LoginScreen(),
+        transitionsBuilder: (_, anim, __, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _logoController.dispose();
-    _textController.dispose();
     _fadeController.dispose();
-    _pulseController.dispose();
-    _rotateController.dispose();
-    _barController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final isAr = loc.isArabic;
+    final fontFam = isAr ? 'Tajawal' : 'Roboto';
 
     return Scaffold(
+      backgroundColor: const Color(0xFF140719),
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1A0A1F),
-              Color(0xFF2D1035),
-              Color(0xFF881337),
-              Color(0xFF4C0519),
+              Color(0xFF1F0B26),
+              Color(0xFF280B30),
+              Color(0xFF1A0720),
             ],
-            stops: [0.0, 0.3, 0.7, 1.0],
           ),
         ),
-        child: Stack(
-          children: [
-            // Rotating background ring
-            AnimatedBuilder(
-              animation: _rotateAngle,
-              builder: (context, child) {
-                return CustomPaint(
-                  size: const Size(double.infinity, double.infinity),
-                  painter: _RotatingRingPainter(angle: _rotateAngle.value),
-                );
-              },
-            ),
+        child: SafeArea(
+          child: Center(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Spacer(flex: 3),
 
-            // Floating particles
-            AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, child) {
-                return CustomPaint(
-                  size: const Size(double.infinity, double.infinity),
-                  painter: _ParticlesPainter(pulse: _pulseScale.value),
-                );
-              },
-            ),
+                      // Official Emblem Medallion
+                      const GoldenEmblemCoin(
+                        size: 150,
+                        showOuterGlow: true,
+                      ),
+                      const SizedBox(height: 32),
 
-            // Main content
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Golden Coin Medallion with Shimmer
-                  AnimatedBuilder(
-                    animation: _pulseScale,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseScale.value,
-                        child: AnimatedBuilder(
-                          animation: _logoScale,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: _logoScale.value,
-                              child: Opacity(
-                                opacity: _logoOpacity.value,
-                                child: const GoldenEmblemCoin(
-                                  size: 195,
-                                  animateGleam: true,
-                                  showOuterGlow: true,
-                                ),
-                              ),
-                            );
-                          },
+                      // Directorate and State Text
+                      Text(
+                        loc.splashDirectorate,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: fontFam,
+                          fontSize: isAr ? 15 : 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.90),
+                          letterSpacing: isAr ? 0 : 0.3,
+                          height: 1.4,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                      const SizedBox(height: 6),
 
-                  const SizedBox(height: 32),
+                      Text(
+                        loc.isArabic ? 'ولاية سطيف' : 'Wilaya de Sétif',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: fontFam,
+                          fontSize: isAr ? 14 : 13,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFFD4AF37),
+                          letterSpacing: isAr ? 0 : 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
 
-                  // Directorat name
-                  AnimatedBuilder(
-                    animation: _textSlide,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, _textSlide.value),
-                        child: Opacity(
-                          opacity: _textOpacity.value,
-                          child: Column(
-                            children: [
-                              Text(
-                                loc.splashDirectorate,
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 15,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                loc.isArabic ? 'ولاية سطيف' : 'Wilaya de Sétif',
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 14,
-                                  color: Color(0xFFD4AF37),
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
+                      // Main Platform Name
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF881337).withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                            width: 1,
                           ),
                         ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // App title
-                  AnimatedBuilder(
-                    animation: _textSlide,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, _textSlide.value + 10),
-                        child: Opacity(
-                          opacity: _textOpacity.value,
-                          child: Text(
-                            loc.isArabic
-                                ? 'منصة الرقابة والتفتيش الميداني'
-                                : 'Plateforme de Contrôle et d\'Inspection',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1,
-                            ),
+                        child: Text(
+                          loc.splashTitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: fontFam,
+                            fontSize: isAr ? 20 : 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: isAr ? 0 : 0.4,
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
 
-                  const SizedBox(height: 50),
+                      const Spacer(flex: 2),
 
-                  // Loading bar
-                  AnimatedBuilder(
-                    animation: _fadeOpacity,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity: _fadeOpacity.value,
-                        child: Column(
-                          children: [
-                            AnimatedBuilder(
-                              animation: _barProgress,
-                              builder: (context, child) {
-                                return Container(
-                                  width: 200,
-                                  height: 3,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: FractionallySizedBox(
-                                    alignment: Alignment.centerRight,
-                                    widthFactor: _barProgress.value,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [
-                                            Color(0xFFD4AF37),
-                                            Color(0xFFFDE68A),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              loc.isArabic
-                                  ? 'جاري التحميل...'
-                                  : 'Chargement...',
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.5),
-                              ),
-                            ),
-                          ],
+                      // Subtle Loading Bar
+                      SizedBox(
+                        width: 140,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: const LinearProgressIndicator(
+                            minHeight: 3,
+                            backgroundColor: Color(0xFF381440),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+                      ),
+                      const SizedBox(height: 12),
 
-            // Version at bottom
-            Positioned(
-              bottom: 30,
-              left: 0,
-              right: 0,
-              child: FadeTransition(
-                opacity: _fadeOpacity,
-                child: Text(
-                  'v2.0.0 • DCW-SETIF-TRACKER',
-                  style: TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.3),
+                      Text(
+                        loc.splashLoading,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: fontFam,
+                          fontSize: 11,
+                          color: Colors.white38,
+                        ),
+                      ),
+
+                      const Spacer(flex: 1),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _RotatingRingPainter extends CustomPainter {
-  final double angle;
-  _RotatingRingPainter({required this.angle});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.42;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..shader = SweepGradient(
-        startAngle: angle,
-        endAngle: angle + pi,
-        colors: [
-          const Color(0xFFD4AF37).withValues(alpha: 0.0),
-          const Color(0xFFD4AF37).withValues(alpha: 0.3),
-          const Color(0xFFD4AF37).withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RotatingRingPainter oldDelegate) =>
-      oldDelegate.angle != angle;
-}
-
-class _ParticlesPainter extends CustomPainter {
-  final double pulse;
-  _ParticlesPainter({required this.pulse});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    final random = Random(42);
-
-    for (int i = 0; i < 20; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = random.nextDouble() * size.height;
-      final r = (random.nextDouble() * 2 + 0.5) * pulse;
-      final opacity = (random.nextDouble() * 0.15 + 0.05) * pulse;
-
-      paint.color = const Color(0xFFD4AF37).withValues(alpha: opacity);
-      canvas.drawCircle(Offset(x, y), r, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ParticlesPainter oldDelegate) =>
-      oldDelegate.pulse != pulse;
 }

@@ -135,6 +135,9 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final langProvider = context.watch<LanguageProvider>();
+    final isAr = loc.isArabic;
+    final fontFam = isAr ? 'Tajawal' : 'Roboto';
+
 
     return Scaffold(
       body: Container(
@@ -209,38 +212,44 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // 3D Pure Gold Bullion Emblem with natural gleam
+                        // Official 3D Medallion Emblem
                         const GoldenEmblemCoin(
-                          size: 110,
-                          animateGleam: true,
+                          size: 120,
                           showOuterGlow: true,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 22),
 
                         // Title
                         Text(
                           loc.isArabic
                               ? 'منصة الرقابة والتفتيش الميداني'
                               : 'Plateforme de Contrôle et d\'Inspection',
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 24,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: fontFam,
+                            fontSize: isAr ? 22 : 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                            letterSpacing: isAr ? 0 : 0.4,
+                            height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           loc.isArabic
                               ? 'مديرية التجارة الداخلية وضبط السوق — سطيف'
-                              : 'Direction du Commerce Intérieur — Sétif',
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 13,
-                            color: Color(0xFFD4AF37),
+                              : 'Direction du Commerce Intérieur et de la Régulation — Sétif',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: fontFam,
+                            fontSize: isAr ? 13 : 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFD4AF37),
+                            letterSpacing: isAr ? 0 : 0.3,
+                            height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 36),
 
                         // Username field
                         AnimatedBuilder(
@@ -254,12 +263,17 @@ class _LoginScreenState extends State<LoginScreen>
                               child: TextField(
                                 controller: _usernameCtrl,
                                 textDirection: TextDirection.ltr,
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
+                                style: TextStyle(
+                                  fontFamily: fontFam,
                                   color: Colors.white,
+                                  fontSize: 14,
                                 ),
                                 decoration: InputDecoration(
                                   labelText: loc.loginUsername,
+                                  labelStyle: TextStyle(
+                                    fontFamily: fontFam,
+                                    fontSize: 13,
+                                  ),
                                   prefixIcon: const Icon(
                                     Icons.person_outline,
                                     color: Color(0xFFD4AF37),
@@ -297,13 +311,18 @@ class _LoginScreenState extends State<LoginScreen>
                           controller: _passwordCtrl,
                           obscureText: _obscure,
                           textDirection: TextDirection.ltr,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
+                          style: TextStyle(
+                            fontFamily: fontFam,
                             color: Colors.white,
+                            fontSize: 14,
                           ),
                           onSubmitted: (_) => _login(),
                           decoration: InputDecoration(
                             labelText: loc.loginPassword,
+                            labelStyle: TextStyle(
+                              fontFamily: fontFam,
+                              fontSize: 13,
+                            ),
                             prefixIcon: const Icon(
                               Icons.lock_outline,
                               color: Color(0xFFD4AF37),
@@ -345,9 +364,10 @@ class _LoginScreenState extends State<LoginScreen>
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               _error!,
-                              style: const TextStyle(
-                                fontFamily: 'Tajawal',
-                                color: Color(0xFFEF4444),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: fontFam,
+                                color: const Color(0xFFEF4444),
                                 fontSize: 13,
                               ),
                             ),
@@ -379,15 +399,17 @@ class _LoginScreenState extends State<LoginScreen>
                                   )
                                 : Text(
                                     loc.loginButton,
-                                    style: const TextStyle(
-                                      fontFamily: 'Tajawal',
+                                    style: TextStyle(
+                                      fontFamily: fontFam,
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
+                                      letterSpacing: isAr ? 0 : 0.4,
                                     ),
                                   ),
                           ),
                         ),
                         const SizedBox(height: 20),
+
 
                         // Demo users
                         Container(
