@@ -11,6 +11,7 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/screens/common/qr_scanner_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justification_submission_modal.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 
@@ -270,6 +271,37 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
   Future<void> _checkIn() async {
     final loc = AppLocalizations.of(context);
+
+    // 1. Mandatory QR Code Scan
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QRScannerScreen(
+          title: loc.isArabic ? 'مسح رمز الحضور الرسمي (QR)' : 'Scanner le QR Présence',
+          instruction: loc.isArabic
+              ? 'وجّه الكاميرا نحو رمز الاستجابة السريعة (QR) المعلق بنقطة الحضور'
+              : 'Pointez la caméra vers le QR Code officiel au point de présence',
+        ),
+      ),
+    );
+
+    if (scannedCode == null || scannedCode.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              loc.isArabic
+                  ? '⚠️ مسح رمز الاستجابة السريعة (QR Code) إلزامي لإتمام تسجيل الحضور'
+                  : '⚠️ Le scan du QR Code est obligatoire pour enregistrer la présence',
+              style: const TextStyle(fontFamily: 'Tajawal'),
+            ),
+            backgroundColor: AppTheme.WarningColor,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     Position? pos = await _getPosition();
@@ -285,8 +317,6 @@ class _InspectorScreenState extends State<InspectorScreen> {
       speed: 0.0,
       speedAccuracy: 0.0,
     );
-
-    final photo = await _pickPhoto();
 
     if (!mounted) return;
 
@@ -305,7 +335,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
       'employeeId': empId,
       'latitude': pos.latitude,
       'longitude': pos.longitude,
-      'photo': photo,
+      'photo': null,
+      'qrCode': scannedCode,
       'location': isAtHQ ? 'HQ' : 'Field',
     };
 
@@ -317,7 +348,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
         empId,
         latitude: pos.latitude,
         longitude: pos.longitude,
-        photo: photo,
+        photo: null,
         location: isAtHQ ? 'HQ' : 'Field',
       );
     } catch (e) {
@@ -333,7 +364,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
       setState(() {
         _isCheckedIn = true;
         _checkInTime = nowStr;
-        _checkInPhoto = photo;
+        _checkInPhoto = null;
         _checkInLat = pos?.latitude;
         _checkInLng = pos?.longitude;
         _isLoading = false;
@@ -342,15 +373,15 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
       final message = isOfflineMode
           ? (loc.isArabic
-              ? '📡 تم حفظ الحضور محلياً (بدون نت) — ستتم المزامنة تلقائياً'
+              ? '📡 تم التحقق من الرمز وحفظ الحضور محلياً — ستتم المزامنة تلقائياً'
               : '📡 Présence enregistrée hors ligne — synchro auto')
           : (isAtHQ
               ? (loc.isArabic
-                  ? '✅ تم تسجيل الحضور من مقر المديرية'
-                  : '✅ Présence enregistrée au siège')
+                  ? '✅ تم التحقق من الرمز وتسجيل الحضور من مقر المديرية'
+                  : '✅ Présence enregistrée au siège via QR Code')
               : (loc.isArabic
-                  ? '⚠️ تم التسجيل خارج المقر (${distance.round()}م)'
-                  : '⚠️ Enregistré hors siège (${distance.round()}m)'));
+                  ? '⚠️ تم تسجيل الحضور بالرمز خارج المقر (${distance.round()}م)'
+                  : '⚠️ Enregistré via QR hors siège (${distance.round()}m)'));
 
       messenger.showSnackBar(
         SnackBar(

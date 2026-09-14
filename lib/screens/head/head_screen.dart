@@ -7,6 +7,7 @@ import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
 
 
 
@@ -390,6 +391,23 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37)),
+              tooltip: 'رمز الحضور الرسمي للمصلحة (QR)',
+              onPressed: () {
+                QRCodeScreen.show(
+                  context,
+                  record: {
+                    'type': 'DCW_SETIF_OFFICIAL_CHECKPOINT',
+                    'employeeName': user?.serviceName ?? 'مصلحة الرقابة — سطيف',
+                    'date': DateTime.now().toIso8601String().split('T')[0],
+                    'latitude': AppConstants.hqLatitude,
+                    'longitude': AppConstants.hqLongitude,
+                  },
+                  title: 'رمز الحضور الرسمي — ${user?.serviceName ?? 'مصلحة الرقابة'}',
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.refresh, color: AppTheme.AccentColor),
               onPressed: _loadAllData,
