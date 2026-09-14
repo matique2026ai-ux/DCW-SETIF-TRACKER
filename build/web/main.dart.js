@@ -59179,7 +59179,7 @@ return s},
 $S:774}
 A.aoq.prototype={
 $3(a,b,c){var s=null,r=A.X(14),q=B.aY.ae(0.3),p=A.d7(s,s,B.bZ,s,s,s,s,s,s,B.J,s,s,B.a7i,s,new A.bm(A.X(12),B.S),s,s,s,B.b8,s),o=A.bck(s,s,new A.cE(4,A.X(12),B.dB),s,s,s,s,s,s,new A.cE(4,A.X(12),B.dB),s,s,s,B.mJ,!0,s,s,s,s,new A.cE(4,A.X(12),B.t1),s,s,s,s,s,A.cK(s,s,B.ci.ae(0.6),s,s,s,s,s,"Tajawal",s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s,s,B.eW,s,s,s,s,s,s,s,s),n=A.bev(s,s,s,s,B.qT,s,s,s,s,s,s,s,new A.bm(A.X(10),B.S),s),m=B.aY.ae(0.3)
-return new A.w6(B.bmD,"DCW-SETIF-TRACKER",A.CJ(B.a_F,B.a0r,B.bT,new A.z3(s,B.al,s,s,4,s,new A.bm(r,new A.b2(q,1,B.a3,-1))),B.a3G,new A.qW(B.al,s,s,s,new A.bm(A.X(20),B.S),s,s,s,s,s,s,s,s,s),new A.v0(m,s,s,s,s,s),new A.zY(p),"Tajawal",o,B.bZ,B.cG,n,!0),b.a,B.b58,B.b3M,!1,s)},
+return new A.w6(B.bmD,"\u0645\u062f\u064a\u0631\u064a\u0629 \u0627\u0644\u062a\u062c\u0627\u0631\u0629 \u0633\u0637\u064a\u0641 \u2014 \u0645\u0646\u0635\u0629 \u0627\u0644\u0631\u0642\u0627\u0628\u0629 \u0648\u0627\u0644\u062a\u0641\u062a\u064a\u0634",A.CJ(B.a_F,B.a0r,B.bT,new A.z3(s,B.al,s,s,4,s,new A.bm(r,new A.b2(q,1,B.a3,-1))),B.a3G,new A.qW(B.al,s,s,s,new A.bm(A.X(20),B.S),s,s,s,s,s,s,s,s,s),new A.v0(m,s,s,s,s,s),new A.zY(p),"Tajawal",o,B.bZ,B.cG,n,!0),b.a,B.b58,B.b3M,!1,s)},
 $S:791}
 A.aKy.prototype={}
 A.nx.prototype={
@@ -59314,7 +59314,7 @@ return A.i5(!1,r,!0,A.a6(s,A.aQ(A.b([A.a6(s,A.dn(c,a,s,24),B.B,s,s,new A.aa(o,s,
 as4(a){switch(a){case"admin":return"\u0645\u0633\u0624\u0648\u0644 \u0627\u0644\u0646\u0638\u0627\u0645 (Admin)"
 case"director":return"\u0627\u0644\u0645\u062f\u064a\u0631 \u0627\u0644\u0648\u0644\u0627\u0626\u064a"
 case"head_of_department":return"\u0631\u0626\u064a\u0633 \u0645\u0635\u0644\u062d\u0629"
-case"bureau_chief":return"\u0631\u0626\u064a\u0633 \u0645\u0643\u062a\u0628 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u064a\u0646"
+case"bureau_chief":return"\u0631\u0626\u064a\u0633 \u0645\u0643\u062a\u0628"
 case"inspector":default:return"\u0645\u0641\u062a\u0634 \u0645\u064a\u062f\u0627\u0646\u064a"}},
 w7(a){switch(a){case"admin":return B.M
 case"director":return B.bb
