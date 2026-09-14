@@ -63,7 +63,34 @@ class _AdminScreenState extends State<AdminScreen>
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
-    return _users.where((u) {
+    final effectiveUsers = _users.isNotEmpty
+        ? _users
+        : _employees.map((e) {
+            final id = e['Id'] ?? e['id'] ?? 0;
+            final nomAr = e['NomAr'] ?? e['nomar'] ?? e['Nom'] ?? '';
+            final prenomAr = e['PrenomAr'] ?? e['prenomar'] ?? e['Prenom'] ?? '';
+            final nom = (e['Nom'] ?? e['nom'] ?? '').toString().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final prenom = (e['Prenom'] ?? e['prenom'] ?? '').toString().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final username = prenom.isNotEmpty && nom.isNotEmpty ? '$prenom.$nom' : 'emp.$id';
+            final service = e['Service'] ?? e['service'] ?? '';
+            final grade = e['Grade'] ?? e['grade'] ?? '';
+            final isChief = grade.toString().contains('رئيس') || (e['FonctionExercee'] ?? '').toString().contains('رئيس');
+
+            return {
+              'id': id,
+              'username': username,
+              'fullName': '$nomAr $prenomAr'.trim().isNotEmpty ? '$nomAr $prenomAr'.trim() : 'موظف $id',
+              'role': isChief ? 'head_of_department' : 'inspector',
+              'isActive': true,
+              'employeeId': id,
+              'empNom': e['Nom'] ?? e['nom'],
+              'empPrenom': e['Prenom'] ?? e['prenom'],
+              'empService': service,
+              'empGrade': grade,
+            };
+          }).toList();
+
+    return effectiveUsers.where((u) {
       final matchesSearch = _searchQuery.isEmpty ||
           (u['username'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (u['fullName'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
