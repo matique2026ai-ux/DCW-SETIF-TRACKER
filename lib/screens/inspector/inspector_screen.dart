@@ -12,6 +12,8 @@ import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justification_submission_modal.dart';
+import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+
 
 class InspectorScreen extends StatefulWidget {
   const InspectorScreen({super.key});
@@ -1176,10 +1178,17 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 onPressed: () => _syncPendingItems(silent: false),
               ),
             IconButton(
-              icon: const Icon(Icons.language, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
+              tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
+              onPressed: () => ChangePasswordDialog.show(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.language, color: Colors.white70),
+              tooltip: loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
               onPressed: () =>
                   context.read<LanguageProvider>().toggleLanguage(),
             ),
+
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.white70),
               onPressed: () {

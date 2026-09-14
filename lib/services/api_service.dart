@@ -59,6 +59,153 @@ class ApiService {
     _token = token;
   }
 
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/change-password'),
+      headers: _headers,
+      body: jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(_parseError(response, 'فشل تغيير كلمة المرور'));
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSystemUsers() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/users'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } else {
+      throw Exception(_parseError(response, 'فشل جلب المستخدمين'));
+    }
+  }
+
+  Future<Map<String, dynamic>> createSystemUser({
+    required String username,
+    required String password,
+    required String fullName,
+    required String role,
+    int? employeeId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/users'),
+      headers: _headers,
+      body: jsonEncode({
+        'username': username,
+        'password': password,
+        'fullName': fullName,
+        'role': role,
+        'employeeId': employeeId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(_parseError(response, 'فشل إنشاء المستخدم'));
+    }
+  }
+
+  Future<Map<String, dynamic>> updateSystemUser({
+    required int id,
+    required String fullName,
+    required String role,
+    required bool isActive,
+    int? employeeId,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/auth/users/$id'),
+      headers: _headers,
+      body: jsonEncode({
+        'fullName': fullName,
+        'role': role,
+        'isActive': isActive,
+        'employeeId': employeeId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(_parseError(response, 'فشل تحديث المستخدم'));
+    }
+  }
+
+  Future<Map<String, dynamic>> resetUserPassword({
+    required int id,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/users/$id/reset-password'),
+      headers: _headers,
+      body: jsonEncode({'newPassword': newPassword}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(_parseError(response, 'فشل إعادة تعيين كلمة المرور'));
+    }
+  }
+
+  Future<Map<String, dynamic>> generateAllEmployeeAccounts({
+    String defaultPassword = 'Setif@2025',
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/generate-all-accounts'),
+      headers: _headers,
+      body: jsonEncode({'defaultPassword': defaultPassword}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(_parseError(response, 'فشل توليد الحسابات'));
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteSystemUser(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/auth/users/$id'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(_parseError(response, 'فشل حذف المستخدم'));
+    }
+  }
+
+  Future<Map<String, dynamic>> cleanTestData() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clean-test-data'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(_parseError(response, 'فشل تصفير السجلات'));
+    }
+  }
+
+
+
+
   Future<List<Map<String, dynamic>>> getEmployees({
     bool activeOnly = false,
     bool all = false,

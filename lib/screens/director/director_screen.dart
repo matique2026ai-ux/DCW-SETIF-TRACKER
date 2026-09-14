@@ -8,6 +8,8 @@ import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/director/director_map_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_reports_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_deductions_tab.dart';
+import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+
 
 class DirectorScreen extends StatefulWidget {
   const DirectorScreen({super.key});
@@ -76,7 +78,13 @@ class _DirectorScreenState extends State<DirectorScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.language, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
+              tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
+              onPressed: () => ChangePasswordDialog.show(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.language, color: Colors.white70),
+              tooltip: loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
               onPressed: () =>
                   context.read<LanguageProvider>().toggleLanguage(),
             ),
@@ -85,6 +93,7 @@ class _DirectorScreenState extends State<DirectorScreen> {
               onPressed: () => _showLogoutDialog(),
             ),
           ],
+
         ),
         body: IndexedStack(
           index: _currentIndex,

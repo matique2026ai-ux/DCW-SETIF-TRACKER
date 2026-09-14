@@ -7,6 +7,8 @@ import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+
 
 class HeadScreen extends StatefulWidget {
   const HeadScreen({super.key});

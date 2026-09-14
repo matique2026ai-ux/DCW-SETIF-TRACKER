@@ -8,7 +8,9 @@ import 'package:drh_setif_tracker/screens/director/director_screen.dart';
 import 'package:drh_setif_tracker/screens/head/head_screen.dart';
 import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
+import 'package:drh_setif_tracker/screens/admin/admin_screen.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -86,6 +88,8 @@ class _LoginScreenState extends State<LoginScreen>
       Widget nextScreen;
       switch (auth.currentUser?.role) {
         case 'admin':
+          nextScreen = const AdminScreen();
+          break;
         case 'director':
           nextScreen = const DirectorScreen();
           break;
@@ -98,6 +102,7 @@ class _LoginScreenState extends State<LoginScreen>
         default:
           nextScreen = const InspectorScreen();
       }
+
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
@@ -408,6 +413,11 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                               const SizedBox(height: 8),
+                              _demoUser(
+                                'tracker_admin',
+                                'admin123',
+                                loc.isArabic ? 'مسؤول النظام' : 'Admin Système',
+                              ),
                               _demoUser(
                                 'directeur',
                                 'directeur123',
