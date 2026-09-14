@@ -293,10 +293,13 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     ),
                   ),
 
-                // Active Inspectors Markers
+                // Active In-Field Inspectors Markers (Excludes checked out agents to respect privacy)
                 ..._mapData
                     .where(
-                      (e) => e['latitude'] != null && e['hasCheckedIn'] == true,
+                      (e) =>
+                          e['latitude'] != null &&
+                          e['hasCheckedIn'] == true &&
+                          e['isCheckedOut'] != true,
                     )
                     .map((emp) {
                       final lat = (emp['latitude'] as num).toDouble();
