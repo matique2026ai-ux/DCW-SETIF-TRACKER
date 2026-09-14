@@ -1456,7 +1456,7 @@ class _AdminScreenState extends State<AdminScreen>
       case 'head_of_department':
         return 'رئيس مصلحة';
       case 'bureau_chief':
-        return 'رئيس مكتب المستخدمين';
+        return 'رئيس مكتب';
       case 'inspector':
       default:
         return 'مفتش ميداني';
