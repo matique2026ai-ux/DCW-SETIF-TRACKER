@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
@@ -20,6 +21,8 @@ class DirectorMapTab extends StatefulWidget {
 class _DirectorMapTabState extends State<DirectorMapTab> {
   List<Map<String, dynamic>> _mapData = [];
   bool _isLoading = true;
+  bool _isLocating = false;
+  LatLng? _directorLiveLocation;
   Timer? _liveRefreshTimer;
   final MapController _mapController = MapController();
   String _selectedMapStyle = 'satellite'; // 'satellite', 'osm'
@@ -54,6 +57,79 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       }
     } catch (e) {
       if (mounted && !silent) setState(() => _isLoading = false);
+    }
+  }
+
+  void _zoomIn() {
+    try {
+      final currentZoom = _mapController.camera.zoom;
+      final target = (currentZoom + 1.2).clamp(3.0, 19.0);
+      _mapController.move(_mapController.camera.center, target);
+    } catch (_) {}
+  }
+
+  void _zoomOut() {
+    try {
+      final currentZoom = _mapController.camera.zoom;
+      final target = (currentZoom - 1.2).clamp(3.0, 19.0);
+      _mapController.move(_mapController.camera.center, target);
+    } catch (_) {}
+  }
+
+  Future<void> _locateDirectorLocation() async {
+    if (_isLocating) return;
+    setState(() => _isLocating = true);
+
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+
+      if (perm == LocationPermission.deniedForever || perm == LocationPermission.denied) {
+        _mapController.move(_setifCenter, 13.5);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('📍 تم التوجيه إلى مركز ولاية سطيف (صلاحية GPS غير مفعلة في المتصفح)', style: TextStyle(fontFamily: 'Tajawal')),
+              backgroundColor: AppTheme.WarningColor,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 8),
+      );
+
+      final livePoint = LatLng(pos.latitude, pos.longitude);
+      if (mounted) {
+        setState(() => _directorLiveLocation = livePoint);
+        _mapController.move(livePoint, 16.0);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎯 تم تحديد موقعك المباشر بنجاح (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})', style: const TextStyle(fontFamily: 'Tajawal')),
+            backgroundColor: AppTheme.SuccessColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      _mapController.move(_setifCenter, 13.5);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📍 تم التوجيه إلى مركز ولاية سطيف والمقر الرئيسي', style: TextStyle(fontFamily: 'Tajawal')),
+            backgroundColor: AppTheme.AccentColor,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
     }
   }
 
@@ -182,6 +258,40 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
 
                 // Field Visit Markers (Stores inspected today)
                 ...visitMarkers,
+
+                // Live Director / User Current Location Marker
+                if (_directorLiveLocation != null)
+                  Marker(
+                    point: _directorLiveLocation!,
+                    width: 52,
+                    height: 52,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0284C7).withValues(alpha: 0.25),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0284C7),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black45, blurRadius: 8),
+                            ],
+                          ),
+                          child: const Icon(Icons.person_pin_circle, color: Colors.white, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 // Active Inspectors Markers
                 ..._mapData
@@ -413,23 +523,25 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _actionButton(Icons.add, () {
-                _mapController.move(
-                  _mapController.camera.center,
-                  _mapController.camera.zoom + 1,
-                );
-              }),
-              const SizedBox(height: 8),
-              _actionButton(Icons.remove, () {
-                _mapController.move(
-                  _mapController.camera.center,
-                  _mapController.camera.zoom - 1,
-                );
-              }),
-              const SizedBox(height: 8),
-              _actionButton(Icons.my_location, () {
-                _mapController.move(_setifCenter, 13);
-              }),
+              _actionButton(
+                Icons.add,
+                _zoomIn,
+                tooltip: 'تكبير الخريطة (+)',
+              ),
+              const SizedBox(height: 10),
+              _actionButton(
+                Icons.remove,
+                _zoomOut,
+                tooltip: 'تصغير الخريطة (-)',
+              ),
+              const SizedBox(height: 10),
+              _actionButton(
+                Icons.my_location,
+                _locateDirectorLocation,
+                tooltip: 'تحديد موقعي المباشر (GPS)',
+                isLoading: _isLocating,
+                highlightColor: AppTheme.AccentColor,
+              ),
             ],
           ),
         ),
@@ -460,23 +572,59 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     );
   }
 
-  Widget _actionButton(IconData icon, VoidCallback onPressed) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: AppTheme.CardColor.withValues(alpha: 0.95),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: AppTheme.BorderColor.withValues(alpha: 0.4),
+  Widget _actionButton(
+    IconData icon,
+    VoidCallback onPressed, {
+    String? tooltip,
+    bool isLoading = false,
+    Color? highlightColor,
+  }) {
+    return Tooltip(
+      message: tooltip ?? '',
+      child: Material(
+        color: Colors.transparent,
+        elevation: 6,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: isLoading ? null : onPressed,
+          customBorder: const CircleBorder(),
+          splashColor: AppTheme.AccentColor.withValues(alpha: 0.4),
+          child: Ink(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1638),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: highlightColor ?? const Color(0xFFD4AF37).withValues(alpha: 0.6),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    )
+                  : Icon(
+                      icon,
+                      color: highlightColor ?? const Color(0xFFFFF6D6),
+                      size: 22,
+                    ),
+            ),
           ),
-          boxShadow: const [
-            BoxShadow(color: Colors.black26, blurRadius: 6),
-          ],
         ),
-        child: Icon(icon, color: AppTheme.TextPrimary, size: 20),
       ),
     );
   }
@@ -1094,26 +1242,15 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    QRCodeScreen.show(
-                      context,
-                      record: {
-                        'type': 'OFFICIAL_INSPECTORATE_CHECKPOINT',
-                        'inspectorateId': insp.id,
-                        'name': insp.nameAr,
-                        'latitude': insp.latitude,
-                        'longitude': insp.longitude,
-                        'date': DateTime.now().toIso8601String().split('T')[0],
-                      },
-                      title: 'رمز الحضور الرسمي — ${insp.nameAr}',
-                    );
+                    _mapController.move(LatLng(insp.latitude, insp.longitude), 16.0);
                   },
-                  icon: const Icon(Icons.qr_code_2, color: Colors.black),
+                  icon: const Icon(Icons.center_focus_strong, color: Colors.black),
                   label: Text(
-                    'استعراض رمز الإثبات الرقمي (${insp.nameAr})',
+                    'تركيز وتكبير الخريطة على ${insp.nameAr}',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 13,
                       color: Colors.black,
                     ),
                   ),
