@@ -35,14 +35,14 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
     super.initState();
     _sheenController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3600),
+      duration: const Duration(milliseconds: 3200),
     );
 
-    _sheenProgress = Tween<double>(begin: -0.6, end: 1.6).animate(
+    // Realistic sweep: light sweeps across in first 45% of time, pauses naturally for 55%
+    _sheenProgress = Tween<double>(begin: -0.8, end: 1.8).animate(
       CurvedAnimation(
         parent: _sheenController,
-        // Sweep in first 40% of cycle, then rest smoothly for remaining 60%
-        curve: const Interval(0.0, 0.42, curve: Curves.easeInOutCubic),
+        curve: const Interval(0.0, 0.45, curve: Curves.easeInOutSine),
       ),
     );
 
@@ -80,7 +80,7 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // 1. Soft Warm Ambient Halo Glow
+            // 1. Warm Ambient Gold Halo Glow
             if (widget.showOuterGlow)
               Container(
                 width: s * 0.95,
@@ -89,8 +89,8 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.22),
-                      blurRadius: s * 0.22,
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.25),
+                      blurRadius: s * 0.25,
                       spreadRadius: s * 0.02,
                       offset: const Offset(0, 4),
                     ),
@@ -103,7 +103,7 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
                 ),
               ),
 
-            // 2. Main 3D Medallion Coin with Sheen Mask
+            // 2. Main 3D Medallion Coin with Realistic Sheen
             ClipOval(
               child: SizedBox(
                 width: s,
@@ -111,10 +111,10 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Coin Base Layers
+                    // Coin Base Structure & Emblem
                     _buildCoinLayers(s),
 
-                    // Natural Metallic Sheen Sweep Overlay
+                    // Realistic Metallic Light Reflection Sweep
                     if (widget.animateGleam)
                       AnimatedBuilder(
                         animation: _sheenProgress,
@@ -122,7 +122,7 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
                           final p = _sheenProgress.value;
                           return Positioned.fill(
                             child: CustomPaint(
-                              painter: _NaturalSheenPainter(progress: p),
+                              painter: _RealisticMetallicSheenPainter(progress: p),
                             ),
                           );
                         },
@@ -254,52 +254,64 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
   }
 }
 
-/// Renders a natural, high-end metallic light reflection sheen across the surface
-class _NaturalSheenPainter extends CustomPainter {
+/// Renders a vivid, natural metallic specular sheen sweep that replicates
+/// sunlight glinting across a polished gold coin.
+class _RealisticMetallicSheenPainter extends CustomPainter {
   final double progress;
 
-  _NaturalSheenPainter({required this.progress});
+  _RealisticMetallicSheenPainter({required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (progress < -0.4 || progress > 1.4) return;
+    if (progress < -0.5 || progress > 1.5) return;
 
     final w = size.width;
     final h = size.height;
+    final diag = w * 1.5;
 
-    final rect = Rect.fromLTWH(0, 0, w, h);
+    canvas.save();
+    // Rotate canvas by -35 degrees to cast a realistic diagonal reflection angle
+    canvas.translate(w / 2, h / 2);
+    canvas.rotate(-0.61); // ~ -35 degrees
+    canvas.translate(-w / 2, -h / 2);
 
+    // Calculate light beam position along the diagonal
+    final currentX = progress * diag - (diag - w) / 2;
+    final beamWidth = w * 0.42;
 
+    final sheenRect = Rect.fromLTWH(
+      currentX - beamWidth / 2,
+      -h * 0.5,
+      beamWidth,
+      h * 2.0,
+    );
+
+    // Realistic multi-tier metallic reflection gradient
     final sheenShader = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
       colors: [
-        Colors.transparent,
-        const Color(0xFFFFF8D6).withValues(alpha: 0.0),
-        const Color(0xFFFFF8D6).withValues(alpha: 0.12),
-        const Color(0xFFFFFFFF).withValues(alpha: 0.35), // Polished highlight crest
-        const Color(0xFFFFF8D6).withValues(alpha: 0.12),
-        Colors.transparent,
+        Colors.white.withValues(alpha: 0.0),
+        const Color(0xFFFFF7D6).withValues(alpha: 0.15), // Soft outer halo
+        const Color(0xFFFFFBE8).withValues(alpha: 0.45), // Bright specular warm band
+        Colors.white.withValues(alpha: 0.85),           // Intense diamond razor core
+        const Color(0xFFFFFBE8).withValues(alpha: 0.45), // Trailing specular band
+        const Color(0xFFFFF7D6).withValues(alpha: 0.15), // Trailing halo
+        Colors.white.withValues(alpha: 0.0),
       ],
-      stops: [
-        (progress - 0.22).clamp(0.0, 1.0),
-        (progress - 0.10).clamp(0.0, 1.0),
-        (progress - 0.03).clamp(0.0, 1.0),
-        progress.clamp(0.0, 1.0),
-        (progress + 0.08).clamp(0.0, 1.0),
-        (progress + 0.20).clamp(0.0, 1.0),
-      ],
-    ).createShader(rect);
+      stops: const [0.0, 0.20, 0.40, 0.50, 0.60, 0.80, 1.0],
+    ).createShader(sheenRect);
 
     final sheenPaint = Paint()
       ..shader = sheenShader
       ..blendMode = BlendMode.screen;
 
-    canvas.drawRect(rect, sheenPaint);
+    canvas.drawRect(sheenRect, sheenPaint);
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _NaturalSheenPainter oldDelegate) =>
+  bool shouldRepaint(covariant _RealisticMetallicSheenPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
 
