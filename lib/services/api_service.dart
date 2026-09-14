@@ -84,16 +84,22 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getSystemUsers() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/auth/users'),
-      headers: _headers,
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/users'),
+        headers: _headers,
+      );
 
-    if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-    } else {
-      throw Exception(_parseError(response, 'فشل جلب المستخدمين'));
+      if (response.statusCode == 200) {
+        final list = jsonDecode(response.body) as List;
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      } else if (response.statusCode == 404) {
+        return [];
+      } else {
+        throw Exception(_parseError(response, 'فشل جلب المستخدمين'));
+      }
+    } catch (_) {
+      return [];
     }
   }
 

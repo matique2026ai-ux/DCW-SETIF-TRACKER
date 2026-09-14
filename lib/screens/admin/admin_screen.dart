@@ -44,10 +44,10 @@ class _AdminScreenState extends State<AdminScreen>
     setState(() => _isLoading = true);
     try {
       final api = context.read<AuthService>().api;
-      final usersFuture = api.getSystemUsers();
-      final empFuture = api.getEmployees(all: true);
-
-      final results = await Future.wait([usersFuture, empFuture]);
+      final results = await Future.wait([
+        api.getSystemUsers(),
+        api.getEmployees(all: true),
+      ]);
       if (mounted) {
         setState(() {
           _users = results[0];
@@ -58,12 +58,6 @@ class _AdminScreenState extends State<AdminScreen>
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في تحميل البيانات: $e'),
-            backgroundColor: AppTheme.DangerColor,
-          ),
-        );
       }
     }
   }
