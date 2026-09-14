@@ -4,7 +4,11 @@ import 'package:http/http.dart' as http;
 class ApiService {
   static String get baseUrl {
     const custom = String.fromEnvironment('API_URL', defaultValue: '');
-    if (custom.isNotEmpty) return '$custom/api';
+    if (custom.isNotEmpty) {
+      final trimmed = custom.endsWith('/') ? custom.substring(0, custom.length - 1) : custom;
+      if (trimmed.endsWith('/api')) return trimmed;
+      return '$trimmed/api';
+    }
     return 'https://drh-setif-api.onrender.com/api';
   }
 
