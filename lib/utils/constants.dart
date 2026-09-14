@@ -27,7 +27,7 @@ class AppConstants {
   // Main Directorate HQ (مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف — حي المعبودة، شارع جودي حمو)
   static const double hqLatitude = 36.1930704;
   static const double hqLongitude = 5.3959613;
-  static const double hqRadiusMeters = 600.0;
+  static const double hqRadiusMeters = 1500.0;
 
   // Regional Inspectorates, Airport Border Inspectorate & Commercial Annexes of Setif Province
   // (المفتشيات الإقليمية، المفتشية الحدودية بالمطار، والملحقات التجارية الثلاث: عين آزال، عين الكبيرة، عين أرنات)
@@ -38,7 +38,7 @@ class AppConstants {
       nameFr: 'Siège de la Direction de Wilaya (Sétif - El Maabouda)',
       latitude: 36.1930704,
       longitude: 5.3959613,
-      radiusMeters: 600.0,
+      radiusMeters: 1500.0,
       isMainDirectorate: true,
     ),
     InspectorateHQ(
@@ -47,7 +47,7 @@ class AppConstants {
       nameFr: 'Inspection Frontalière — Aéroport 8 Mai 1945 (Aïn Arnat)',
       latitude: 36.1781,
       longitude: 5.3247,
-      radiusMeters: 800.0,
+      radiusMeters: 1200.0,
     ),
     InspectorateHQ(
       id: 'insp_eulma',
@@ -55,7 +55,7 @@ class AppConstants {
       nameFr: 'Inspection Territoriale — El Eulma',
       latitude: 36.1554,
       longitude: 5.6908,
-      radiusMeters: 600.0,
+      radiusMeters: 1200.0,
     ),
     InspectorateHQ(
       id: 'insp_ain_oulmene',
@@ -63,7 +63,7 @@ class AppConstants {
       nameFr: 'Inspection Territoriale — Aïn Oulmène',
       latitude: 35.9189,
       longitude: 5.2978,
-      radiusMeters: 600.0,
+      radiusMeters: 1200.0,
     ),
     InspectorateHQ(
       id: 'insp_bougaa',
@@ -71,7 +71,7 @@ class AppConstants {
       nameFr: 'Inspection Territoriale — Bougaâ',
       latitude: 36.3325,
       longitude: 5.0886,
-      radiusMeters: 600.0,
+      radiusMeters: 1200.0,
     ),
     InspectorateHQ(
       id: 'annex_ain_azel',
@@ -79,7 +79,7 @@ class AppConstants {
       nameFr: 'Annexe Commerciale — Aïn Azel',
       latitude: 35.8686,
       longitude: 5.4667,
-      radiusMeters: 500.0,
+      radiusMeters: 1000.0,
     ),
     InspectorateHQ(
       id: 'annex_ain_kebira',
@@ -87,7 +87,7 @@ class AppConstants {
       nameFr: 'Annexe Commerciale — Aïn El Kebira',
       latitude: 36.3639,
       longitude: 5.5003,
-      radiusMeters: 500.0,
+      radiusMeters: 1000.0,
     ),
     InspectorateHQ(
       id: 'annex_ain_arnat',
@@ -95,7 +95,7 @@ class AppConstants {
       nameFr: 'Annexe Commerciale — Aïn Arnat',
       latitude: 36.1833,
       longitude: 5.3167,
-      radiusMeters: 500.0,
+      radiusMeters: 1000.0,
     ),
   ];
 
