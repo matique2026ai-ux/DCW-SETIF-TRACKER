@@ -1,13 +1,103 @@
 import 'dart:math';
 
+class InspectorateHQ {
+  final String id;
+  final String nameAr;
+  final String nameFr;
+  final double latitude;
+  final double longitude;
+  final double radiusMeters;
+  final bool isMainDirectorate;
+
+  const InspectorateHQ({
+    required this.id,
+    required this.nameAr,
+    required this.nameFr,
+    required this.latitude,
+    required this.longitude,
+    this.radiusMeters = 600.0,
+    this.isMainDirectorate = false,
+  });
+}
+
 class AppConstants {
   static const String appName = 'DCW-SETIF-TRACKER';
   static const String appNameAr = 'منصة الرقابة والتفتيش الميداني';
 
-  // Directorate HQ (مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف — حي المعبودة، شارع جودي حمو)
+  // Main Directorate HQ (مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف — حي المعبودة، شارع جودي حمو)
   static const double hqLatitude = 36.1930704;
   static const double hqLongitude = 5.3959613;
-  static const double hqRadiusMeters = 500.0;
+  static const double hqRadiusMeters = 600.0;
+
+  // Regional Inspectorates, Airport Border Inspectorate & Commercial Annexes of Setif Province
+  // (المفتشيات الإقليمية، المفتشية الحدودية بالمطار، والملحقات التجارية الثلاث: عين آزال، عين الكبيرة، عين أرنات)
+  static const List<InspectorateHQ> allInspectorates = [
+    InspectorateHQ(
+      id: 'hq_setif',
+      nameAr: 'المقر الرئيسي للمديرية الولائية (سطيف - المعبودة)',
+      nameFr: 'Siège de la Direction de Wilaya (Sétif - El Maabouda)',
+      latitude: 36.1930704,
+      longitude: 5.3959613,
+      radiusMeters: 600.0,
+      isMainDirectorate: true,
+    ),
+    InspectorateHQ(
+      id: 'insp_airport_arnat',
+      nameAr: 'المفتشية الحدودية لمراقبة الجودة — مطار 8 ماي 1945 (عين أرنات)',
+      nameFr: 'Inspection Frontalière — Aéroport 8 Mai 1945 (Aïn Arnat)',
+      latitude: 36.1781,
+      longitude: 5.3247,
+      radiusMeters: 800.0,
+    ),
+    InspectorateHQ(
+      id: 'insp_eulma',
+      nameAr: 'المفتشية الإقليمية للتجارة — العلمة',
+      nameFr: 'Inspection Territoriale — El Eulma',
+      latitude: 36.1554,
+      longitude: 5.6908,
+      radiusMeters: 600.0,
+    ),
+    InspectorateHQ(
+      id: 'insp_ain_oulmene',
+      nameAr: 'المفتشية الإقليمية للتجارة — عين ولمان',
+      nameFr: 'Inspection Territoriale — Aïn Oulmène',
+      latitude: 35.9189,
+      longitude: 5.2978,
+      radiusMeters: 600.0,
+    ),
+    InspectorateHQ(
+      id: 'insp_bougaa',
+      nameAr: 'المفتشية الإقليمية للتجارة — بوقاعة',
+      nameFr: 'Inspection Territoriale — Bougaâ',
+      latitude: 36.3325,
+      longitude: 5.0886,
+      radiusMeters: 600.0,
+    ),
+    InspectorateHQ(
+      id: 'annex_ain_azel',
+      nameAr: 'الملحقة التجارية — عين آزال',
+      nameFr: 'Annexe Commerciale — Aïn Azel',
+      latitude: 35.8686,
+      longitude: 5.4667,
+      radiusMeters: 500.0,
+    ),
+    InspectorateHQ(
+      id: 'annex_ain_kebira',
+      nameAr: 'الملحقة التجارية — عين الكبيرة',
+      nameFr: 'Annexe Commerciale — Aïn El Kebira',
+      latitude: 36.3639,
+      longitude: 5.5003,
+      radiusMeters: 500.0,
+    ),
+    InspectorateHQ(
+      id: 'annex_ain_arnat',
+      nameAr: 'الملحقة التجارية — عين أرنات',
+      nameFr: 'Annexe Commerciale — Aïn Arnat',
+      latitude: 36.1833,
+      longitude: 5.3167,
+      radiusMeters: 500.0,
+    ),
+  ];
 
   // Work hours
   static const int workStartHour = 8;
@@ -33,10 +123,43 @@ class AppConstants {
     return earthRadius * c;
   }
 
-  // Check if point is within HQ radius
+  // Check if point is within main HQ radius
   static bool isWithinHQ(double lat, double lng) {
-    final distance = distanceBetween(lat, lng, hqLatitude, hqLongitude);
-    return distance <= hqRadiusMeters;
+    return isWithinAnyHQ(lat, lng);
+  }
+
+  // Check if point is within any official HQ or regional inspectorate/annex
+  static bool isWithinAnyHQ(double lat, double lng) {
+    for (final insp in allInspectorates) {
+      final distance = distanceBetween(lat, lng, insp.latitude, insp.longitude);
+      if (distance <= insp.radiusMeters) return true;
+    }
+    return false;
+  }
+
+  // Find nearest inspectorate / HQ
+  static InspectorateHQ findNearestHQ(double lat, double lng) {
+    InspectorateHQ nearest = allInspectorates.first;
+    double minDistance = distanceBetween(lat, lng, nearest.latitude, nearest.longitude);
+
+    for (final insp in allInspectorates) {
+      final distance = distanceBetween(lat, lng, insp.latitude, insp.longitude);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearest = insp;
+      }
+    }
+    return nearest;
+  }
+
+  // Get detected location label for attendance
+  static String getDetectedLocationLabel(double lat, double lng) {
+    final nearest = findNearestHQ(lat, lng);
+    final distance = distanceBetween(lat, lng, nearest.latitude, nearest.longitude);
+    if (distance <= nearest.radiusMeters) {
+      return nearest.nameAr;
+    }
+    return 'مهمة ميدانية خارج المقرات (${nearest.nameAr} - ${distance.round()}م)';
   }
 
   static double _toRad(double deg) => deg * pi / 180;

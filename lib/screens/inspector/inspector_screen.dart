@@ -11,7 +11,6 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
-import 'package:drh_setif_tracker/screens/common/qr_scanner_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justification_submission_modal.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 
@@ -271,37 +270,6 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
   Future<void> _checkIn() async {
     final loc = AppLocalizations.of(context);
-
-    // 1. Mandatory QR Code Scan
-    final scannedCode = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => QRScannerScreen(
-          title: loc.isArabic ? 'مسح رمز الحضور الرسمي (QR)' : 'Scanner le QR Présence',
-          instruction: loc.isArabic
-              ? 'وجّه الكاميرا نحو رمز الاستجابة السريعة (QR) المعلق بنقطة الحضور'
-              : 'Pointez la caméra vers le QR Code officiel au point de présence',
-        ),
-      ),
-    );
-
-    if (scannedCode == null || scannedCode.trim().isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              loc.isArabic
-                  ? '⚠️ مسح رمز الاستجابة السريعة (QR Code) إلزامي لإتمام تسجيل الحضور'
-                  : '⚠️ Le scan du QR Code est obligatoire pour enregistrer la présence',
-              style: const TextStyle(fontFamily: 'Tajawal'),
-            ),
-            backgroundColor: AppTheme.WarningColor,
-          ),
-        );
-      }
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     Position? pos = await _getPosition();
@@ -320,24 +288,112 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
     if (!mounted) return;
 
-    final user = context.read<AuthService>().currentUser;
-    final int empId = user?.employeeId ?? user?.id ?? 1;
-    final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
+    final nearestHQ = AppConstants.findNearestHQ(pos.latitude, pos.longitude);
     final distance = AppConstants.distanceBetween(
       pos.latitude,
       pos.longitude,
-      AppConstants.hqLatitude,
-      AppConstants.hqLongitude,
+      nearestHQ.latitude,
+      nearestHQ.longitude,
     );
+    final bool isAtHQ = distance <= nearestHQ.radiusMeters;
 
+    String locationName = isAtHQ ? nearestHQ.nameAr : 'مهمة ميدانية خارج المقرات (${nearestHQ.nameAr} - ${distance.round()}م)';
+    String? missionReason;
+
+    // If outside all official inspectorates/HQ, allow choosing field mission mode or scanning QR
+    if (!isAtHQ) {
+      setState(() => _isLoading = false);
+      final fieldChoice = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          final reasonCtrl = TextEditingController(text: 'انطلاق مباشر في مهمة رقابية ميدانية');
+          return AlertDialog(
+            backgroundColor: AppTheme.CardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: const Row(
+              children: [
+                Icon(Icons.location_on, color: AppTheme.WarningColor, size: 24),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'تسجيل الحضور الميداني',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.WarningColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    '📍 أنت الآن خارج المقرات الرسمية (${nearestHQ.nameAr} على بعد ${distance.round()}م).\nيمكنك تأكيد الانطلاق المباشر في مهمة رقابية (سوق جملة، مداومة، بلدية نائية).',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'سبب الانطلاق المباشر / أمر المهمة:',
+                  style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: reasonCtrl,
+                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'مثال: مراقبة سوق الجملة / أمر بمهمة رقم...',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, reasonCtrl.text.trim()),
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('تأكيد الحضور الميداني', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.AccentColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (fieldChoice == null) return;
+      if (!mounted) return;
+      missionReason = fieldChoice.isNotEmpty ? fieldChoice : 'مهمة رقابية ميدانية مباشرة';
+      locationName = '$missionReason ($locationName)';
+      setState(() => _isLoading = true);
+    }
+
+    if (!mounted) return;
+    final auth = context.read<AuthService>();
+    final user = auth.currentUser;
+    final int empId = user?.employeeId ?? user?.id ?? 1;
     final nowStr = DateTime.now().toString().substring(11, 16);
+
     final payload = {
       'employeeId': empId,
       'latitude': pos.latitude,
       'longitude': pos.longitude,
-      'photo': null,
-      'qrCode': scannedCode,
-      'location': isAtHQ ? 'HQ' : 'Field',
+      'location': locationName,
+      'notes': missionReason,
     };
 
     bool isOfflineMode = false;
@@ -348,8 +404,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
         empId,
         latitude: pos.latitude,
         longitude: pos.longitude,
-        photo: null,
-        location: isAtHQ ? 'HQ' : 'Field',
+        location: locationName,
+        notes: missionReason,
       );
     } catch (e) {
       isOfflineMode = true;
@@ -373,22 +429,22 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
       final message = isOfflineMode
           ? (loc.isArabic
-              ? '📡 تم التحقق من الرمز وحفظ الحضور محلياً — ستتم المزامنة تلقائياً'
+              ? '📡 تم حفظ الحضور محلياً — ستتم المزامنة تلقائياً'
               : '📡 Présence enregistrée hors ligne — synchro auto')
           : (isAtHQ
               ? (loc.isArabic
-                  ? '✅ تم التحقق من الرمز وتسجيل الحضور من مقر المديرية'
-                  : '✅ Présence enregistrée au siège via QR Code')
+                  ? '✅ تم تسجيل الحضور رسميّاً: $locationName'
+                  : '✅ Présence enregistrée: $locationName')
               : (loc.isArabic
-                  ? '⚠️ تم تسجيل الحضور بالرمز خارج المقر (${distance.round()}م)'
-                  : '⚠️ Enregistré via QR hors siège (${distance.round()}m)'));
+                  ? '📍 تم تسجيل الحضور الميداني المباشر بنجاح'
+                  : '📍 Présence mission terrain enregistrée'));
 
       messenger.showSnackBar(
         SnackBar(
           content: Text(message, style: const TextStyle(fontFamily: 'Tajawal')),
           backgroundColor: isOfflineMode
               ? const Color(0xFFD97706)
-              : (isAtHQ ? AppTheme.SuccessColor : AppTheme.WarningColor),
+              : (isAtHQ ? AppTheme.SuccessColor : AppTheme.AccentColor),
           duration: const Duration(seconds: 4),
         ),
       );

@@ -128,63 +128,57 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
               ),
             ],
 
-            // 500m Directorate HQ Geofence Circle
+            // Geofence Circles for All Regional Inspectorates & Annexes in Setif Province
             CircleLayer(
-              circles: [
-                CircleMarker(
-                  point: _setifCenter,
-                  radius: 500,
+              circles: AppConstants.allInspectorates.map((insp) {
+                return CircleMarker(
+                  point: LatLng(insp.latitude, insp.longitude),
+                  radius: insp.radiusMeters,
                   useRadiusInMeter: true,
-                  color: AppTheme.AccentColor.withValues(alpha: 0.18),
-                  borderColor: AppTheme.AccentColor,
-                  borderStrokeWidth: 2,
-                ),
-              ],
+                  color: (insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF0284C7)).withValues(alpha: 0.15),
+                  borderColor: insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF0284C7),
+                  borderStrokeWidth: 1.5,
+                );
+              }).toList(),
             ),
 
             MarkerLayer(
               markers: [
-                // HQ Badge Marker
-                Marker(
-                  point: _setifCenter,
-                  width: 44,
-                  height: 44,
-                  child: Tooltip(
-                    message: 'مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف',
-                    child: GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              '🏢 مقر مديرية التجارة الداخلية وضبط السوق الوطنية — سطيف (نطاق الحضور: 500 متر)',
-                              style: TextStyle(fontFamily: 'Tajawal'),
-                            ),
-                            backgroundColor: AppTheme.CardColor,
+                // Regional Inspectorates & Main HQ Markers
+                ...AppConstants.allInspectorates.map((insp) {
+                  return Marker(
+                    point: LatLng(insp.latitude, insp.longitude),
+                    width: insp.isMainDirectorate ? 44 : 38,
+                    height: insp.isMainDirectorate ? 44 : 38,
+                    child: Tooltip(
+                      message: insp.nameAr,
+                      child: GestureDetector(
+                        onTap: () {
+                          _showInspectorateHQModal(insp);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF1E3A8A),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black54,
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppTheme.AccentColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black54,
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.account_balance,
-                          color: Colors.white,
-                          size: 22,
+                          child: Icon(
+                            insp.isMainDirectorate ? Icons.account_balance : Icons.apartment,
+                            color: Colors.white,
+                            size: insp.isMainDirectorate ? 22 : 18,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                }),
 
                 // Field Visit Markers (Stores inspected today)
                 ...visitMarkers,
@@ -385,6 +379,30 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 ),
               ),
             ],
+          ),
+        ),
+
+        // Regional Inspectorates Quick Jump Filter Chips
+        Positioned(
+          top: 118,
+          right: 12,
+          left: 12,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _inspectorateFilterChip('الكل', '📌 كل الولاية', _setifCenter, 11),
+                ...AppConstants.allInspectorates.map((insp) {
+                  return _inspectorateFilterChip(
+                    insp.id,
+                    insp.isMainDirectorate ? '🏢 المقر الرئيسي' : '🏛️ ${insp.nameAr.replaceAll('المفتشية الإقليمية للتجارة — ', '').replaceAll('الملحقة التجارية — ', 'ملحقة ')}',
+                    LatLng(insp.latitude, insp.longitude),
+                    15.5,
+                    inspectorate: insp,
+                  );
+                }),
+              ],
+            ),
           ),
         ),
 
@@ -947,6 +965,192 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           );
         },
       ),
+    );
+  }
+
+  Widget _inspectorateFilterChip(String id, String label, LatLng center, double zoom, {InspectorateHQ? inspectorate}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: GestureDetector(
+        onTap: () {
+          _mapController.move(center, zoom);
+          if (inspectorate != null) {
+            _showInspectorateHQModal(inspectorate);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.CardColor.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: inspectorate != null && inspectorate.isMainDirectorate
+                  ? const Color(0xFFD4AF37)
+                  : AppTheme.BorderColor.withValues(alpha: 0.4),
+            ),
+            boxShadow: const [
+              BoxShadow(color: Colors.black26, blurRadius: 4),
+            ],
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showInspectorateHQModal(InspectorateHQ insp) {
+    final nearbyEmps = _mapData.where((e) {
+      if (e['latitude'] == null || e['longitude'] == null) return false;
+      final lat = (e['latitude'] as num).toDouble();
+      final lng = (e['longitude'] as num).toDouble();
+      final d = AppConstants.distanceBetween(lat, lng, insp.latitude, insp.longitude);
+      return d <= insp.radiusMeters;
+    }).toList();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.CardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.4)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: (insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF0284C7)).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      insp.isMainDirectorate ? Icons.account_balance : Icons.apartment,
+                      color: insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF38BDF8),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          insp.nameAr,
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          insp.nameFr,
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 11,
+                            color: AppTheme.TextSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _hqStatItem('الأعوان الحاضرون بالمقر', '${nearbyEmps.length}', AppTheme.SuccessColor),
+                    _hqStatItem('نطاق الحضور الجغرافي', '${insp.radiusMeters.round()}م', const Color(0xFF38BDF8)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    QRCodeScreen.show(
+                      context,
+                      record: {
+                        'type': 'OFFICIAL_INSPECTORATE_CHECKPOINT',
+                        'inspectorateId': insp.id,
+                        'name': insp.nameAr,
+                        'latitude': insp.latitude,
+                        'longitude': insp.longitude,
+                        'date': DateTime.now().toIso8601String().split('T')[0],
+                      },
+                      title: 'رمز الحضور الرسمي — ${insp.nameAr}',
+                    );
+                  },
+                  icon: const Icon(Icons.qr_code_2, color: Colors.black),
+                  label: Text(
+                    'استعراض رمز الإثبات الرقمي (${insp.nameAr})',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _hqStatItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 11,
+            color: AppTheme.TextSecondary,
+          ),
+        ),
+      ],
     );
   }
 }
