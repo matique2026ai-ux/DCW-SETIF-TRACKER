@@ -61728,7 +61728,7 @@ $0(){this.a.a4X(this.b)},
 $S:0}
 A.aRj.prototype={
 $1(a){var s=J.a3(a)
-return s.h(a,"latitude")!=null&&J.c(s.h(a,"hasCheckedIn"),!0)},
+return s.h(a,"latitude")!=null&&J.c(s.h(a,"hasCheckedIn"),!0)&&!J.c(s.h(a,"isCheckedOut"),!0)},
 $S:11}
 A.aRk.prototype={
 $1(a){var s,r,q=null,p=J.a3(a),o=A.eV(p.h(a,"latitude")),n=A.eV(p.h(a,"longitude")),m=J.c(p.h(a,"isCheckedOut"),!0)
