@@ -669,12 +669,25 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     );
   }
 
+  String _formatAttendanceTime(dynamic rawTime) {
+    if (rawTime == null || rawTime.toString().isEmpty) return '---';
+    try {
+      final dt = DateTime.parse(rawTime.toString()).toLocal();
+      final hh = dt.hour.toString().padLeft(2, '0');
+      final mm = dt.minute.toString().padLeft(2, '0');
+      final yyyy = dt.year.toString();
+      final month = dt.month.toString().padLeft(2, '0');
+      final day = dt.day.toString().padLeft(2, '0');
+      return '$hh:$mm ($yyyy-$month-$day)';
+    } catch (_) {
+      return rawTime.toString().replaceAll('T', ' ').substring(0, 16);
+    }
+  }
+
   void _showInspectorModal(Map<String, dynamic> emp) {
     final String name = (emp['name'] ?? 'مفتش').toString();
     final String service = (emp['service'] ?? 'مديرية التجارة').toString();
-    final String checkInStr = emp['checkInTime'] != null
-        ? emp['checkInTime'].toString().replaceAll('T', ' ').substring(0, 16)
-        : '---';
+    final String checkInStr = _formatAttendanceTime(emp['checkInTime']);
     final bool isPresent = emp['hasCheckedIn'] == true;
     final bool isOut = emp['isCheckedOut'] == true;
     final List<dynamic> visits = (emp['visits'] as List<dynamic>?) ?? [];
