@@ -1236,29 +1236,71 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _mapController.move(LatLng(insp.latitude, insp.longitude), 16.0);
-                  },
-                  icon: const Icon(Icons.center_focus_strong, color: Colors.black),
-                  label: Text(
-                    'تركيز وتكبير الخريطة على ${insp.nameAr}',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Colors.black,
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _mapController.move(LatLng(insp.latitude, insp.longitude), 16.0);
+                        },
+                        icon: const Icon(Icons.center_focus_strong, color: Colors.black, size: 18),
+                        label: const Text(
+                          'تركيز الخريطة',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: Colors.black,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SizedBox(
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          QRCodeScreen.show(
+                            context,
+                            record: {
+                              'type': 'OFFICIAL_INSPECTORATE_BADGE',
+                              'inspectorateId': insp.id,
+                              'name': insp.nameAr,
+                              'latitude': insp.latitude,
+                              'longitude': insp.longitude,
+                              'date': DateTime.now().toIso8601String().split('T')[0],
+                            },
+                            title: 'الشارة الرقمية للمقر — ${insp.nameAr}',
+                          );
+                        },
+                        icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37), size: 18),
+                        label: const Text(
+                          'الشارة الرقمية (QR)',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFD4AF37)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
