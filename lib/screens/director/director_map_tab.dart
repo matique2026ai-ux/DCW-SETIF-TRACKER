@@ -693,6 +693,22 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     final List<dynamic> visits = (emp['visits'] as List<dynamic>?) ?? [];
     final String? checkInPhoto = emp['checkInPhoto']?.toString();
 
+    // Precise administrative status:
+    String statusText = 'غائب (لم يسجل)';
+    Color statusColor = AppTheme.DangerColor;
+    if (isOut) {
+      statusText = 'انصرف';
+      statusColor = const Color(0xFF64748B);
+    } else if (isPresent) {
+      if (visits.isNotEmpty) {
+        statusText = 'نشط في الميدان (${visits.length} معاينات)';
+        statusColor = const Color(0xFF38BDF8);
+      } else {
+        statusText = 'حاضر بالمقر (مسجل حضور)';
+        statusColor = AppTheme.SuccessColor;
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -721,10 +737,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: isPresent ? AppTheme.SuccessColor.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.person, color: isPresent ? AppTheme.SuccessColor : Colors.grey, size: 28),
+                  child: Icon(Icons.person, color: statusColor, size: 28),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -740,11 +756,11 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isOut ? const Color(0xFF64748B) : (isPresent ? AppTheme.SuccessColor : AppTheme.DangerColor),
+                    color: statusColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    isOut ? 'انصرف' : (isPresent ? 'نشط في الميدان' : 'غائب'),
+                    statusText,
                     style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
