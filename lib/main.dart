@@ -54,7 +54,7 @@ class DRHTrackerApp extends StatelessWidget {
       child: Consumer<LanguageProvider>(
         builder: (context, langProvider, _) {
           return MaterialApp(
-            title: 'DCW-SETIF-TRACKER',
+            title: 'مديرية التجارة سطيف — منصة الرقابة والتفتيش',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme,
             locale: langProvider.locale,
