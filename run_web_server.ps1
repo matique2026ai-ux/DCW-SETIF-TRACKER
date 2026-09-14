@@ -41,6 +41,9 @@ while ($listener.IsListening) {
         $mime = if ($mimeMap.ContainsKey($ext)) { $mimeMap[$ext] } else { "application/octet-stream" }
         $response.ContentType = $mime
         $response.AddHeader("Access-Control-Allow-Origin", "*")
+        $response.AddHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+        $response.AddHeader("Pragma", "no-cache")
+        $response.AddHeader("Expires", "0")
 
         $bytes = [System.IO.File]::ReadAllBytes($filePath)
         $response.ContentLength64 = $bytes.Length

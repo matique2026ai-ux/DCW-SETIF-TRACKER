@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 
-/// An ultra-premium, official institutional 3D gold emblem medallion
-/// designed for a government ministry/directorate.
+/// An ultra-premium, floating 3D gold coin emblem for the Directorate of Commerce - Setif.
 ///
-/// Features executive luxury aesthetics:
-/// - Multi-layered bevelled gold rim with metallic brushed depth
-/// - Royal burgundy textured core
-/// - Crisp official scales & shield crest
-/// - Ultra-smooth, natural metallic sheen sweep (Apple / Luxury Coin style)
-///   without any cartoonish star sparkles or neon outline lasers.
+/// Perfectly transparent background with no dark boxes or borders:
+/// - Pure transparent PNG circular coin
+/// - Subtle natural levitation / floating in mid-air
+/// - Warm ambient gold glow aura and realistic floating drop shadow
+/// - Polished metallic specular sheen sweep across the coin face
 class GoldenEmblemCoin extends StatefulWidget {
   final double size;
   final bool showOuterGlow;
   final bool animateGleam;
+  final bool enableFloating;
 
   const GoldenEmblemCoin({
     super.key,
     this.size = 130.0,
     this.showOuterGlow = true,
     this.animateGleam = true,
+    this.enableFloating = true,
   });
 
   @override
@@ -26,19 +26,24 @@ class GoldenEmblemCoin extends StatefulWidget {
 }
 
 class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _sheenController;
   late Animation<double> _sheenProgress;
+
+  late AnimationController _floatController;
+  late Animation<double> _floatOffset;
+  late Animation<double> _shadowScale;
 
   @override
   void initState() {
     super.initState();
+
+    // 1. Sheen Animation: sweeps across every 3.5 seconds
     _sheenController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
+      duration: const Duration(milliseconds: 3500),
     );
 
-    // Realistic sweep: light sweeps across in first 45% of time, pauses naturally for 55%
     _sheenProgress = Tween<double>(begin: -0.8, end: 1.8).animate(
       CurvedAnimation(
         parent: _sheenController,
@@ -46,8 +51,31 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
       ),
     );
 
+    // 2. Floating Levitation Animation: smooth gentle breathing motion
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    );
+
+    _floatOffset = Tween<double>(begin: -4.0, end: 4.0).animate(
+      CurvedAnimation(
+        parent: _floatController,
+        curve: Curves.easeInOutSine,
+      ),
+    );
+
+    _shadowScale = Tween<double>(begin: 0.90, end: 1.10).animate(
+      CurvedAnimation(
+        parent: _floatController,
+        curve: Curves.easeInOutSine,
+      ),
+    );
+
     if (widget.animateGleam) {
       _sheenController.repeat();
+    }
+    if (widget.enableFloating) {
+      _floatController.repeat(reverse: true);
     }
   }
 
@@ -61,11 +89,19 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
         _sheenController.stop();
       }
     }
+    if (widget.enableFloating != oldWidget.enableFloating) {
+      if (widget.enableFloating) {
+        _floatController.repeat(reverse: true);
+      } else {
+        _floatController.stop();
+      }
+    }
   }
 
   @override
   void dispose() {
     _sheenController.dispose();
+    _floatController.dispose();
     super.dispose();
   }
 
@@ -74,110 +110,125 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
     final s = widget.size;
 
     return Center(
-      child: SizedBox(
-        width: s,
-        height: s,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // 1. Warm Ambient Gold Halo Glow
-            if (widget.showOuterGlow)
-              Container(
-                width: s * 0.95,
-                height: s * 0.95,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFD700).withValues(alpha: 0.25),
-                      blurRadius: s * 0.25,
-                      spreadRadius: s * 0.02,
-                      offset: const Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      blurRadius: s * 0.16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-              ),
+      child: AnimatedBuilder(
+        animation: _floatController,
+        builder: (context, child) {
+          final dy = widget.enableFloating ? _floatOffset.value : 0.0;
+          final shadowFactor = widget.enableFloating ? _shadowScale.value : 1.0;
 
-            // 2. Main 3D Medallion Coin with Realistic Sheen
-            ClipOval(
-              child: SizedBox(
-                width: s,
-                height: s,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Coin Base Structure & Emblem
-                    _buildCoinLayers(s),
-
-                    // Realistic Metallic Light Reflection Sweep
-                    if (widget.animateGleam)
-                      AnimatedBuilder(
-                        animation: _sheenProgress,
-                        builder: (context, child) {
-                          final p = _sheenProgress.value;
-                          return Positioned.fill(
-                            child: CustomPaint(
-                              painter: _RealisticMetallicSheenPainter(progress: p),
-                            ),
-                          );
-                        },
+          return SizedBox(
+            width: s + 24,
+            height: s + 32,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 1. Soft Floor Shadow beneath the floating coin
+                if (widget.showOuterGlow)
+                  Positioned(
+                    bottom: 6 - dy * 0.4,
+                    child: Container(
+                      width: s * 0.65 * shadowFactor,
+                      height: 14 * shadowFactor,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.rectangle,
+                        borderRadius: BorderRadius.all(Radius.elliptical(s * 0.35, 7)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.45 / shadowFactor),
+                            blurRadius: 16 * shadowFactor,
+                            spreadRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.20 / shadowFactor),
+                            blurRadius: 18 * shadowFactor,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                    ),
+                  ),
 
-  Widget _buildCoinLayers(double s) {
-    return Container(
-      width: s,
-      height: s,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-            blurRadius: s * 0.15,
-            spreadRadius: s * 0.01,
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: s * 0.1,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: Image.asset(
-          'assets/images/gold_emblem.jpg',
-          width: s,
-          height: s,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'assets/images/official_logo.jpg',
-              width: s,
-              height: s,
-              fit: BoxFit.cover,
-            );
-          },
-        ),
+                // 2. The Floating Gold Coin (Translating vertically in mid-air)
+                Transform.translate(
+                  offset: Offset(0, dy),
+                  child: SizedBox(
+                    width: s,
+                    height: s,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Soft Ambient Gold Aura behind coin
+                        if (widget.showOuterGlow)
+                          Container(
+                            width: s * 0.92,
+                            height: s * 0.92,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFFD700).withValues(alpha: 0.30),
+                                  blurRadius: s * 0.22,
+                                  spreadRadius: 2,
+                                ),
+                                BoxShadow(
+                                  color: const Color(0xFFB8860B).withValues(alpha: 0.25),
+                                  blurRadius: s * 0.12,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Pristine Circular Coin Image
+                        ClipOval(
+                          child: Image.asset(
+                            'assets/images/gold_coin_floating.png',
+                            width: s,
+                            height: s,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/images/gold_emblem.jpg',
+                                width: s,
+                                height: s,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Realistic Metallic Specular Sheen Sweep
+                        if (widget.animateGleam)
+                          ClipOval(
+                            child: SizedBox(
+                              width: s,
+                              height: s,
+                              child: AnimatedBuilder(
+                                animation: _sheenProgress,
+                                builder: (context, child) {
+                                  final p = _sheenProgress.value;
+                                  return CustomPaint(
+                                    painter: _RealisticMetallicSheenPainter(progress: p),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
 /// Renders a vivid, natural metallic specular sheen sweep that replicates
-/// sunlight glinting across a polished gold coin.
+/// light glinting smoothly across a polished floating gold coin.
 class _RealisticMetallicSheenPainter extends CustomPainter {
   final double progress;
 
@@ -199,7 +250,7 @@ class _RealisticMetallicSheenPainter extends CustomPainter {
 
     // Calculate light beam position along the diagonal
     final currentX = progress * diag - (diag - w) / 2;
-    final beamWidth = w * 0.42;
+    final beamWidth = w * 0.38;
 
     final sheenRect = Rect.fromLTWH(
       currentX - beamWidth / 2,
@@ -214,11 +265,11 @@ class _RealisticMetallicSheenPainter extends CustomPainter {
       end: Alignment.centerRight,
       colors: [
         Colors.white.withValues(alpha: 0.0),
-        const Color(0xFFFFF7D6).withValues(alpha: 0.15), // Soft outer halo
-        const Color(0xFFFFFBE8).withValues(alpha: 0.45), // Bright specular warm band
-        Colors.white.withValues(alpha: 0.85),           // Intense diamond razor core
-        const Color(0xFFFFFBE8).withValues(alpha: 0.45), // Trailing specular band
-        const Color(0xFFFFF7D6).withValues(alpha: 0.15), // Trailing halo
+        const Color(0xFFFFF7D6).withValues(alpha: 0.15),
+        const Color(0xFFFFFBE8).withValues(alpha: 0.40),
+        Colors.white.withValues(alpha: 0.80),
+        const Color(0xFFFFFBE8).withValues(alpha: 0.40),
+        const Color(0xFFFFF7D6).withValues(alpha: 0.15),
         Colors.white.withValues(alpha: 0.0),
       ],
       stops: const [0.0, 0.20, 0.40, 0.50, 0.60, 0.80, 1.0],
@@ -236,5 +287,6 @@ class _RealisticMetallicSheenPainter extends CustomPainter {
   bool shouldRepaint(covariant _RealisticMetallicSheenPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+
 
 
