@@ -589,6 +589,38 @@ class _InspectorScreenState extends State<InspectorScreen> {
   }
 
   Future<void> _executeCheckOut({String? notes}) async {
+    final loc = AppLocalizations.of(context);
+
+    // 1. Mandatory QR Code Scan for Check-Out
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QRScannerScreen(
+          title: loc.isArabic ? 'مسح رمز الانصراف الرسمي (QR)' : 'Scanner le QR Départ',
+          instruction: loc.isArabic
+              ? 'وجّه الكاميرا نحو رمز الاستجابة السريعة (QR) بنقطة الحضور لتسجيل الانصراف'
+              : 'Pointez la caméra vers le QR Code officiel pour enregistrer le départ',
+        ),
+      ),
+    );
+
+    if (scannedCode == null || scannedCode.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              loc.isArabic
+                  ? '⚠️ مسح رمز الاستجابة السريعة (QR Code) إلزامي لإتمام تسجيل الانصراف'
+                  : '⚠️ Le scan du QR Code est obligatoire pour enregistrer le départ',
+              style: const TextStyle(fontFamily: 'Tajawal'),
+            ),
+            backgroundColor: AppTheme.WarningColor,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
     Position? pos = await _getPosition();
     pos ??= Position(
@@ -616,6 +648,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
       'longitude': pos.longitude,
       'location': isAtHQ ? 'HQ' : 'Field',
       'notes': notes,
+      'qrCode': scannedCode,
     };
 
     bool isOfflineMode = false;

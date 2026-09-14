@@ -158,7 +158,7 @@ class _AdminScreenState extends State<AdminScreen>
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: selectedRole,
+                    initialValue: selectedRole,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
                     decoration: const InputDecoration(
@@ -179,7 +179,7 @@ class _AdminScreenState extends State<AdminScreen>
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
-                    value: selectedEmpId,
+                    initialValue: selectedEmpId,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
                     decoration: const InputDecoration(
@@ -229,9 +229,10 @@ class _AdminScreenState extends State<AdminScreen>
               ),
               onPressed: () async {
                 if (usernameCtrl.text.trim().isEmpty || passwordCtrl.text.trim().isEmpty) return;
+                final messenger = ScaffoldMessenger.of(context);
+                final api = context.read<AuthService>().api;
                 Navigator.pop(ctx);
                 try {
-                  final api = context.read<AuthService>().api;
                   final res = await api.createSystemUser(
                     username: usernameCtrl.text.trim(),
                     password: passwordCtrl.text.trim(),
@@ -240,19 +241,14 @@ class _AdminScreenState extends State<AdminScreen>
                     employeeId: selectedEmpId,
                   );
                   _loadData();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(res['message']?.toString() ?? 'تم الحفظ'), backgroundColor: const Color(0xFF10B981)),
-                    );
-                  }
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(res['message']?.toString() ?? 'تم الحفظ'), backgroundColor: const Color(0xFF10B981)),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                    );
-                  }
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                  );
                 }
-
               },
               child: const Text('إنشاء الحساب', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
             ),
@@ -313,7 +309,7 @@ class _AdminScreenState extends State<AdminScreen>
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: selectedRole,
+                    initialValue: selectedRole,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
                     decoration: const InputDecoration(
@@ -334,7 +330,7 @@ class _AdminScreenState extends State<AdminScreen>
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
-                    value: selectedEmpId,
+                    initialValue: selectedEmpId,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
                     decoration: const InputDecoration(
@@ -363,13 +359,13 @@ class _AdminScreenState extends State<AdminScreen>
                     title: Text(
                       isActive ? 'الحساب نشط (Active)' : 'الحساب موقوف / مجمّد (Suspended)',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                         fontFamily: 'Tajawal',
                         color: isActive ? const Color(0xFF10B981) : AppTheme.DangerColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     value: isActive,
-                    activeColor: const Color(0xFF10B981),
+                    activeThumbColor: const Color(0xFF10B981),
                     inactiveThumbColor: AppTheme.DangerColor,
                     onChanged: (val) => setDialogState(() => isActive = val),
                   ),
@@ -388,9 +384,10 @@ class _AdminScreenState extends State<AdminScreen>
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final api = context.read<AuthService>().api;
                 Navigator.pop(ctx);
                 try {
-                  final api = context.read<AuthService>().api;
                   final res = await api.updateSystemUser(
                     id: user['id'] as int,
                     fullName: fullNameCtrl.text.trim().isNotEmpty ? fullNameCtrl.text.trim() : (user['username']?.toString() ?? ''),
@@ -399,19 +396,14 @@ class _AdminScreenState extends State<AdminScreen>
                     employeeId: selectedEmpId,
                   );
                   _loadData();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(res['message']?.toString() ?? 'تم تحديث الحساب بنجاح'), backgroundColor: const Color(0xFF10B981)),
-                    );
-                  }
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(res['message']?.toString() ?? 'تم تحديث الحساب بنجاح'), backgroundColor: const Color(0xFF10B981)),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                    );
-                  }
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                  );
                 }
-
               },
               child: const Text('حفظ التعديلات', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
             ),
@@ -1144,6 +1136,7 @@ class _AdminScreenState extends State<AdminScreen>
                         ),
                         tooltip: isActive ? 'تجميد / إيقاف الحساب' : 'تفعيل الحساب',
                         onPressed: () async {
+                          final messenger = ScaffoldMessenger.of(context);
                           try {
                             final api = context.read<AuthService>().api;
                             await api.updateSystemUser(
@@ -1155,11 +1148,9 @@ class _AdminScreenState extends State<AdminScreen>
                             );
                             _loadData();
                           } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                              );
-                            }
+                            messenger.showSnackBar(
+                              SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                            );
                           }
                         },
                       ),

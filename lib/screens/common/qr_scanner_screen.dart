@@ -65,9 +65,13 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         // Successful capture of the QR code checkpoint
         final bytes = await photo.readAsBytes();
         final base64Image = base64Encode(bytes);
-        Navigator.of(context).pop('DCW_SETIF_QR_CHECKPOINT:$base64Image');
+        if (mounted) {
+          Navigator.of(context).pop('DCW_SETIF_QR_CHECKPOINT:$base64Image');
+        }
       } else {
-        setState(() => _isProcessing = false);
+        if (mounted) {
+          setState(() => _isProcessing = false);
+        }
       }
     } catch (e) {
       if (mounted) {
