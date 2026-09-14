@@ -138,118 +138,40 @@ class _GoldenEmblemCoinState extends State<GoldenEmblemCoin>
   }
 
   Widget _buildCoinLayers(double s) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Heavy 3D Gold Outer Rim
-        Container(
+    return Container(
+      width: s,
+      height: s,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+            blurRadius: s * 0.15,
+            spreadRadius: s * 0.01,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: s * 0.1,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/gold_emblem.jpg',
           width: s,
           height: s,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFF6C2), // Specular Highlight
-                Color(0xFFD4AF37), // Pure Gold
-                Color(0xFFA87A13), // Deep Gold
-                Color(0xFF634305), // Dark Bronze Bevel
-                Color(0xFFD4AF37), // Accent
-                Color(0xFFFFF9DB), // Corner Specular
-              ],
-              stops: [0.0, 0.22, 0.48, 0.72, 0.88, 1.0],
-            ),
-          ),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset(
+              'assets/images/official_logo.jpg',
+              width: s,
+              height: s,
+              fit: BoxFit.cover,
+            );
+          },
         ),
-
-        // Precision Machined Inner Bevel Step
-        Container(
-          width: s * 0.92,
-          height: s * 0.92,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.bottomRight,
-              end: Alignment.topLeft,
-              colors: [
-                Color(0xFF523603), // Inverted shadow for 3D depth
-                Color(0xFFB8860B),
-                Color(0xFFFFDF79),
-              ],
-            ),
-          ),
-        ),
-
-        // Gold Ring Spacer
-        Container(
-          width: s * 0.88,
-          height: s * 0.88,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFE57F),
-                Color(0xFFD4AF37),
-                Color(0xFF8C5E06),
-              ],
-            ),
-          ),
-        ),
-
-        // Deep Royal Burgundy Core Medallion
-        Container(
-          width: s * 0.84,
-          height: s * 0.84,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              center: Alignment.center,
-              radius: 0.85,
-              colors: [
-                Color(0xFF5E0C22), // Rich Velvet Burgundy
-                Color(0xFF380513), // Deep Wine
-                Color(0xFF1E020A), // Dark Onyx Burgundy Edge
-              ],
-              stops: [0.0, 0.65, 1.0],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-                spreadRadius: -2,
-              ),
-            ],
-          ),
-        ),
-
-        // Subtle Concentric Guilloché Pattern Line
-        Container(
-          width: s * 0.76,
-          height: s * 0.76,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-              width: 1.2,
-            ),
-          ),
-        ),
-
-        // Official Crest / Insignia
-        Center(
-          child: SizedBox(
-            width: s * 0.55,
-            height: s * 0.55,
-            child: CustomPaint(
-              painter: _OfficialInsigniaPainter(),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
