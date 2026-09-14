@@ -9,8 +9,6 @@ import 'package:drh_setif_tracker/screens/director/director_map_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_reports_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_deductions_tab.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
-import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
-import 'package:drh_setif_tracker/utils/constants.dart';
 
 
 class DirectorScreen extends StatefulWidget {
@@ -79,25 +77,6 @@ class _DirectorScreenState extends State<DirectorScreen> {
             ],
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37)),
-              tooltip: loc.isArabic ? 'رمز الحضور الرسمي (QR)' : 'QR Code Officiel',
-              onPressed: () {
-                QRCodeScreen.show(
-                  context,
-                  record: {
-                    'type': 'DCW_SETIF_OFFICIAL_CHECKPOINT',
-                    'employeeName': 'مديرية التجارة الداخلية وضبط السوق لولاية سطيف',
-                    'date': DateTime.now().toIso8601String().split('T')[0],
-                    'latitude': AppConstants.hqLatitude,
-                    'longitude': AppConstants.hqLongitude,
-                  },
-                  title: loc.isArabic
-                      ? 'رمز الحضور الرسمي — مديرية التجارة سطيف'
-                      : 'QR Code Officiel de Présence — DCW Sétif',
-                );
-              },
-            ),
             IconButton(
               icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
               tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
