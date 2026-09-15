@@ -75,7 +75,11 @@
 ### 📌 تعليمات النشر والتحديث على Render:
 1. عند بناء الويب للإنتاج: يُبنى دائماً بالأمر `flutter build web --release --base-href "/"`
 2. يتم نسخ مخرجات `DCW-SETIF-TRACKER/build/web/*` إلى `DCW-SETIF-BACKEND/public/` لضمان توفر الواجهة في كلا الخدمتين كإجراء احتياطي.
-3. يتم عمل `git push` للمستودعين لتفعيل الـ Auto-Deploy في Render تلقائياً دون أي تدخل يدوي.
+3. يتم عمل `git push` للمستودعين لتفعيل الـ Auto-Deploy في Render تلقائياً.
+4. **رابط الـ Deploy Hook المباشر (لإطلاق الترقية السحابية الفورية برمجياً)**:
+   ```powershell
+   curl.exe -X POST "https://api.render.com/deploy/srv-dairbhdg1s2s738fig10?key=GLgWofYjMBE"
+   ```
 
 ---
 
