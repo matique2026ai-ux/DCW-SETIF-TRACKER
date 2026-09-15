@@ -674,4 +674,125 @@ class ApiService {
       throw Exception(_parseError(response, 'خطأ في تحديث حالة التبرير'));
     }
   }
+
+  // Settings API
+  Future<Map<String, dynamic>> getSettings() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/settings'), headers: _headers);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return {'morning_grace_time': '08:45', 'work_start_time': '08:00'};
+  }
+
+  Future<void> updateSetting(String key, String value, {String? description}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/settings'),
+      headers: _headers,
+      body: jsonEncode({'key': key, 'value': value, 'description': description}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response, 'خطأ في حفظ الإعداد'));
+    }
+  }
+
+  // Attendance Delays Summary API
+  Future<List<Map<String, dynamic>>> getDelaysSummary({String? month, int? employeeId, String? graceTime}) async {
+    final params = <String, String>{};
+    if (month != null) params['month'] = month;
+    if (employeeId != null) params['employeeId'] = employeeId.toString();
+    if (graceTime != null) params['graceTime'] = graceTime;
+
+    final uri = Uri.parse('$baseUrl/attendance/delays-summary').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) {
+        return data.cast<Map<String, dynamic>>();
+      } else if (data is Map) {
+        return [Map<String, dynamic>.from(data)];
+      }
+    }
+    return [];
+  }
+
+  // Administrative Inquiries (Demandes d'Explications) API
+  Future<List<Map<String, dynamic>>> getInquiries({String? status, int? employeeId}) async {
+    final params = <String, String>{};
+    if (status != null) params['status'] = status;
+    if (employeeId != null) params['employeeId'] = employeeId.toString();
+
+    final uri = Uri.parse('$baseUrl/inquiries').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception(_parseError(response, 'خطأ في جلب الاستفسارات الإدارية'));
+  }
+
+  Future<Map<String, dynamic>> createInquiry(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/inquiries'),
+      headers: _headers,
+      body: jsonEncode(data),
+    );
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception(_parseError(response, 'خطأ في توجيه الاستفسار الإداري'));
+  }
+
+  Future<void> replyToInquiry(int id, String reply, {String? attachment}) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/inquiries/$id/reply'),
+      headers: _headers,
+      body: jsonEncode({'reply': reply, 'attachment': attachment}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response, 'خطأ في إرسال الرد على الاستفسار'));
+    }
+  }
+
+  Future<void> submitDirectorDecision(int id, String decision, {String? notes, double? deductionDays}) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/inquiries/$id/decision'),
+      headers: _headers,
+      body: jsonEncode({
+        'decision': decision,
+        'notes': notes,
+        'deductionDays': deductionDays,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response, 'خطأ في تسجيل قرار المدير'));
+    }
+  }
+
+  Future<void> executeInquiryDeduction(int id, int executedBy, {String? executionNotes}) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/inquiries/$id/execute'),
+      headers: _headers,
+      body: jsonEncode({
+        'executedBy': executedBy,
+        'executionNotes': executionNotes,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response, 'خطأ في تسجيل تنفيذ الخصم'));
+    }
+  }
+
+  Future<void> deleteInquiry(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/inquiries/$id'),
+      headers: _headers,
+    );
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response, 'خطأ في حذف الاستفسار'));
+    }
+  }
 }

@@ -6,6 +6,7 @@ import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
+import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
 
 class BureauScreen extends StatefulWidget {
   const BureauScreen({super.key});
@@ -18,8 +19,10 @@ class _BureauScreenState extends State<BureauScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<Map<String, dynamic>> _employees = [];
-  List<Map<String, dynamic>> _deductions = [];
+  List<Map<String, dynamic>> _inquiries = [];
+  List<Map<String, dynamic>> _delaysSummary = [];
   List<String> _departments = [];
+  String _morningGraceTime = '08:45';
   bool _isLoading = true;
   String _searchQuery = '';
   String _statusFilter = 'all'; // all, active, sick_leave, annual_leave, brigade
@@ -42,13 +45,18 @@ class _BureauScreenState extends State<BureauScreen>
     try {
       final api = context.read<AuthService>().api;
       final emps = await api.getEmployees(all: true);
-      final deds = await api.getDeductions();
+      final inqs = await api.getInquiries();
+      final settings = await api.getSettings();
+      final grace = (settings['morning_grace_time'] ?? '08:45').toString();
+      final delays = await api.getDelaysSummary(graceTime: grace);
       final depts = await api.getAllDepartments();
 
       if (mounted) {
         setState(() {
           _employees = emps;
-          _deductions = deds;
+          _inquiries = inqs;
+          _morningGraceTime = grace;
+          _delaysSummary = delays;
           _departments = depts;
           _isLoading = false;
         });
@@ -58,19 +66,17 @@ class _BureauScreenState extends State<BureauScreen>
     }
   }
 
-  Future<void> _approveDeduction(int id) async {
+  Future<void> _updateGraceTime(String newTime) async {
     try {
-      final auth = context.read<AuthService>();
-      final userId = auth.currentUser?.id ?? 1;
-      await auth.api.approveDeduction(id: id, approvedBy: userId);
-      _loadAll();
+      final api = context.read<AuthService>().api;
+      await api.updateSetting('morning_grace_time', newTime);
+      setState(() => _morningGraceTime = newTime);
+      final delays = await api.getDelaysSummary(graceTime: newTime);
       if (mounted) {
+        setState(() => _delaysSummary = delays);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'تمت الموافقة على الخصم بنجاح',
-              style: TextStyle(fontFamily: 'Tajawal'),
-            ),
+          SnackBar(
+            content: Text('✅ تم ضبط فترة التسامح الصباحية إلى $newTime وتحديث حساب التأخرات'),
             backgroundColor: AppTheme.SuccessColor,
           ),
         );
@@ -78,42 +84,181 @@ class _BureauScreenState extends State<BureauScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
-            backgroundColor: AppTheme.DangerColor,
-          ),
+          SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
         );
       }
     }
   }
 
-  Future<void> _rejectDeduction(int id) async {
+  Future<void> _executeDeductionInPayroll(int inquiryId, String name) async {
     try {
       final auth = context.read<AuthService>();
       final userId = auth.currentUser?.id ?? 1;
-      await auth.api.rejectDeduction(id: id, approvedBy: userId);
+      await auth.api.executeInquiryDeduction(inquiryId, userId);
       _loadAll();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'تم رفض الخصم بنجاح',
-              style: TextStyle(fontFamily: 'Tajawal'),
-            ),
-            backgroundColor: AppTheme.WarningColor,
+          SnackBar(
+            content: Text('✅ تم تدوين وتنفيذ الخصم رسمياً في كشف راتب $name'),
+            backgroundColor: AppTheme.SuccessColor,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
-            backgroundColor: AppTheme.DangerColor,
-          ),
+          SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
         );
       }
     }
+  }
+
+  void _showSendInquiryDialog(Map<String, dynamic> emp, {int? lateMinutes, String? defaultSubject, String? defaultDetails}) {
+    final name = emp['NomAr'] != null
+        ? '${emp['NomAr']} ${emp['PrenomAr'] ?? ''}'
+        : '${emp['name'] ?? emp['Nom'] ?? ''} ${emp['Prenom'] ?? ''}';
+    final empId = emp['EmployeeId'] ?? emp['employeeId'] ?? emp['Id'] ?? emp['id'];
+
+    final subjectCtrl = TextEditingController(
+      text: defaultSubject ?? (lateMinutes != null && lateMinutes > 0
+          ? 'استفسار كتابي حول التأخر الصباحي عن العمل الميداني'
+          : 'استفسار كتابي حول الانضباط والغياب عن العمل'),
+    );
+    final detailsCtrl = TextEditingController(
+      text: defaultDetails ?? (lateMinutes != null && lateMinutes > 0
+          ? 'بناءً على البصمة الجغرافية وسجلات الحضور، سُجل بحقكم تأخر صباحي قدره $lateMinutes دقيقة عن موعد العمل وفترة التسامح القانونية.'
+          : 'بناءً على المعطيات المسجلة، لم تسجلوا أي حضور أو زيارات رقابية ميدانية في التاريخ المذكور دون ترخيص مسبق.'),
+    );
+    final minsCtrl = TextEditingController(text: lateMinutes != null ? lateMinutes.toString() : '0');
+
+    showDialog(
+      context: context,
+      builder: (dlgCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF16121E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.mail_outline, color: Color(0xFFD4AF37)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'توجيه استفسار إداري كتابي — $name',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFFD4AF37),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'مكتب المستخدمين يصدر هذا الاستفسار رسمياً ويمنح الموظف 48 ساعة لتقديم تبريراته عبر التطبيق:',
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: subjectCtrl,
+                textDirection: TextDirection.rtl,
+                decoration: InputDecoration(
+                  labelText: 'الموضوع',
+                  labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37)),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: minsCtrl,
+                keyboardType: TextInputType.number,
+                textDirection: TextDirection.ltr,
+                decoration: InputDecoration(
+                  labelText: 'دقائق التأخر المسجلة (إن وجدت)',
+                  labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: detailsCtrl,
+                maxLines: 3,
+                textDirection: TextDirection.rtl,
+                decoration: InputDecoration(
+                  labelText: 'تفاصيل الوقائع والإنذار',
+                  labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+                  filled: true,
+                  fillColor: Colors.black26,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dlgCtx),
+            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (subjectCtrl.text.trim().isEmpty) return;
+              try {
+                final auth = context.read<AuthService>();
+                final userId = auth.currentUser?.id ?? 1;
+                final created = await auth.api.createInquiry({
+                  'employeeId': empId,
+                  'type': (int.tryParse(minsCtrl.text) ?? 0) > 0 ? 'late_arrival' : 'unjustified_absence',
+                  'subject': subjectCtrl.text.trim(),
+                  'lateMinutes': int.tryParse(minsCtrl.text) ?? 0,
+                  'details': detailsCtrl.text.trim(),
+                  'sentBy': userId,
+                });
+
+                if (dlgCtx.mounted) Navigator.pop(dlgCtx);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✅ تم إرسال الاستفسار الإداري بنجاح إلى $name'),
+                    backgroundColor: AppTheme.SuccessColor,
+                    action: SnackBarAction(
+                      label: 'معاينة وطباعة',
+                      textColor: Colors.black,
+                      onPressed: () {
+                        InquiryLetterDialog.show(context, created);
+                      },
+                    ),
+                  ),
+                );
+                _loadAll();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('إرسال الاستفسار الرسمي', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openEditEmployeeModal(Map<String, dynamic> emp) {
@@ -169,9 +314,6 @@ class _BureauScreenState extends State<BureauScreen>
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final pendingDeds =
-        _deductions.where((d) => d['Status'] == 'pending').toList();
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -261,11 +403,11 @@ class _BureauScreenState extends State<BureauScreen>
               ),
               Tab(
                 icon: Badge(
-                  isLabelVisible: pendingDeds.isNotEmpty,
-                  label: Text('${pendingDeds.length}'),
+                  isLabelVisible: _inquiries.any((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent'),
+                  label: Text('${_inquiries.where((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent').length}'),
                   child: const Icon(Icons.gavel, size: 20),
                 ),
-                text: 'الخصومات (${pendingDeds.length})',
+                text: 'الانضباط والاستفسارات (${_inquiries.length})',
               ),
               const Tab(
                 icon: Icon(Icons.assignment_turned_in, size: 20),
@@ -282,7 +424,7 @@ class _BureauScreenState extends State<BureauScreen>
                 controller: _tabController,
                 children: [
                   _buildEmployeesTab(),
-                  _buildDeductionsTab(pendingDeds),
+                  _buildInquiriesAndDisciplineTab(),
                   const JustificationsReviewScreen(),
                 ],
               ),
@@ -748,235 +890,462 @@ class _BureauScreenState extends State<BureauScreen>
     );
   }
 
-  Widget _buildDeductionsTab(List<Map<String, dynamic>> pending) {
-    final loc = AppLocalizations.of(context);
+  Widget _buildInquiriesAndDisciplineTab() {
+    final pendingOrders = _inquiries.where((i) => i['Status'] == 'deduction_ordered').toList();
 
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: pending.isEmpty
-                ? AppTheme.SuccessColor.withValues(alpha: 0.1)
-                : AppTheme.WarningColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: (pending.isEmpty
-                      ? AppTheme.SuccessColor
-                      : AppTheme.WarningColor)
-                  .withValues(alpha: 0.3),
+    return RefreshIndicator(
+      onRefresh: _loadAll,
+      color: const Color(0xFFD4AF37),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 1. Morning Grace Period Configuration Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF261C14), AppTheme.CardColor],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.access_time_filled, color: Color(0xFFD4AF37), size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'فترة التسامح الصباحية (Seuil de Tolérance)',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFFD4AF37),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'الحضور بين 08:00 و $_morningGraceTime نظامي ومقبول، والتأخر يُحسب بعده.',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFD4AF37)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _morningGraceTime,
+                      dropdownColor: const Color(0xFF1E1026),
+                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFD4AF37),
+                        fontSize: 13,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
+                        DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
+                        DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
+                        DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
+                        DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null && val != _morningGraceTime) {
+                          _updateGraceTime(val);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              Icon(
-                pending.isEmpty ? Icons.check_circle : Icons.info_outline,
-                color: pending.isEmpty
-                    ? AppTheme.SuccessColor
-                    : AppTheme.WarningColor,
-                size: 20,
+
+          const SizedBox(height: 18),
+
+          // 2. Urgent Director Deduction Orders (Must Execute)
+          if (pendingOrders.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.DangerColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.DangerColor.withValues(alpha: 0.5)),
               ),
-              const SizedBox(width: 10),
-              Text(
-                '${loc.pendingDeductions}: ${pending.length}',
-                style: const TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (pending.isEmpty)
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
                 children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    size: 64,
-                    color: AppTheme.SuccessColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    loc.noPendingDeductions,
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 16,
-                      color: AppTheme.TextSecondary,
+                  const Icon(Icons.gavel, color: AppTheme.DangerColor, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'أوامر خصم معتمدة من المدير الولائي واجبة التنفيذ على الراتب (${pendingOrders.length})',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppTheme.DangerColor,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          )
-        else
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: pending.length,
-              itemBuilder: (ctx, i) {
-                final d = pending[i];
-                final name = d['NomAr'] != null
-                    ? '${d['NomAr']} ${d['PrenomAr']}'
-                    : '${d['Nom']} ${d['Prenom']}';
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.CardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppTheme.BorderColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: AppTheme.WarningColor.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.person,
-                              color: AppTheme.WarningColor,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  name,
-                                  style: const TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                Text(
-                                  '${d['Service'] ?? ''}',
-                                  style: const TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 11,
-                                    color: AppTheme.TextSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (d['DaysCount'] != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.DangerColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${d['DaysCount']} ${loc.days}',
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.DangerColor,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppTheme.BackgroundColor,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${d['Reason']}',
+            const SizedBox(height: 10),
+            ...pendingOrders.map((inq) {
+              final name = inq['NomAr'] != null
+                  ? '${inq['NomAr']} ${inq['PrenomAr'] ?? ''}'
+                  : '${inq['Nom'] ?? ''} ${inq['Prenom'] ?? ''}';
+              final days = inq['DeductionDays'] ?? 1.0;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.CardColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppTheme.DangerColor.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          name,
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
-                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.white,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.DangerColor.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'خصم $days يوم',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: AppTheme.DangerColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'السبب: ${inq['Subject']}',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                    ),
+                    if (inq['DirectorNotes'] != null)
                       Text(
-                        '${loc.from}: ${d['RequestedByName'] ?? '-'}',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 11,
-                          color: AppTheme.TextSecondary,
-                        ),
+                        'ملاحظات المدير: ${inq['DirectorNotes']}',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
                       ),
-                      const SizedBox(height: 14),
-                      Row(
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => InquiryLetterDialog.show(context, inq),
+                          icon: const Icon(Icons.picture_as_pdf, size: 14, color: Color(0xFFD4AF37)),
+                          label: const Text('مقرر الخصم الرسمي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37))),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFD4AF37)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          onPressed: () => _executeDeductionInPayroll(inq['Id'] as int, name),
+                          icon: const Icon(Icons.check_circle, size: 16),
+                          label: const Text('تأكيد التنفيذ في الراتب', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.DangerColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+          ],
+
+          // 3. Automated Delay & Absence Calculator Header
+          Row(
+            children: [
+              const Icon(Icons.history_toggle_off, color: Color(0xFFD4AF37), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'كشف حساب التأخرات المتراكمة ومقترحات الخصم القانونية',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 20),
+                onPressed: _loadAll,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // 4. Delay Summary List
+          ...(_delaysSummary.where((d) {
+            final lateDays = (d['lateDaysCount'] as num?)?.toInt() ?? 0;
+            final lateMins = (d['totalLateMinutes'] as num?)?.toInt() ?? 0;
+            return lateDays > 0 || lateMins > 0;
+          }).take(15).map((del) {
+            final name = (del['name'] ?? 'موظف').toString();
+            final lateMins = (del['totalLateMinutes'] as num?)?.toInt() ?? 0;
+            final lateHours = (del['totalLateHours'] as num?)?.toDouble() ?? 0.0;
+            final lateDays = (del['lateDaysCount'] as num?)?.toInt() ?? 0;
+            final suggestedDays = (del['suggestedDeductionDays'] as num?)?.toDouble() ?? 0.0;
+            final bool hasDeduction = suggestedDays > 0;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.CardColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: (hasDeduction ? AppTheme.WarningColor : AppTheme.BorderColor).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: (hasDeduction ? AppTheme.WarningColor : AppTheme.AccentColor).withValues(alpha: 0.15),
+                    child: Icon(
+                      Icons.schedule,
+                      color: hasDeduction ? AppTheme.WarningColor : AppTheme.AccentColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$lateDays أيام تأخر بعد $_morningGraceTime — إجمالي: $lateHours ساعة ($lateMins دقيقة)',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 10,
+                            color: AppTheme.TextSecondary,
+                          ),
+                        ),
+                        if (hasDeduction)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              'مقترح الخصم القانوني المحسوب: $suggestedDays يوم عمل',
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFD4AF37),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => _showSendInquiryDialog(
+                      del,
+                      lateMinutes: lateMins,
+                      defaultSubject: 'استفسار كتابي حول تراكم $lateHours ساعات تأخر صباحي',
+                      defaultDetails: 'سُجل بحقكم تراكم $lateHours ساعات تأخر عن موعد العمل وفترة التسامح ($lateDays مرات). يرجى تقديم التبريرات خلال 48 ساعة.',
+                    ),
+                    icon: const Icon(Icons.send, size: 14),
+                    label: const Text(
+                      'توجيه استفسار',
+                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          })),
+
+          const SizedBox(height: 18),
+
+          // 5. Active Inquiries Section
+          Row(
+            children: [
+              const Icon(Icons.mail, color: Colors.cyanAccent, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'سجل الاستفسارات الإدارية ومتابعة الردود (${_inquiries.length})',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (_inquiries.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  'لا توجد استفسارات إدارية مسجلة حالياً',
+                  style: TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary),
+                ),
+              ),
+            )
+          else
+            ..._inquiries.map((inq) {
+              final name = inq['NomAr'] != null
+                  ? '${inq['NomAr']} ${inq['PrenomAr'] ?? ''}'
+                  : '${inq['Nom'] ?? ''} ${inq['Prenom'] ?? ''}';
+              final status = inq['Status'] ?? 'sent';
+              Color stCol = AppTheme.WarningColor;
+              String stTxt = 'مرسل بانتظار رد الموظف';
+              if (status == 'answered') {
+                stCol = Colors.cyan;
+                stTxt = 'تم الرد — بانتظار قرار المدير';
+              } else if (status == 'justified') {
+                stCol = AppTheme.SuccessColor;
+                stTxt = '✅ محفوظ (مبرر مقبول)';
+              } else if (status == 'warning') {
+                stCol = Colors.orange;
+                stTxt = '⚠️ تنبيه إداري';
+              } else if (status == 'deduction_ordered') {
+                stCol = AppTheme.DangerColor;
+                stTxt = '❌ قرار خصم (${inq['DeductionDays'] ?? 1} يوم)';
+              } else if (status == 'executed') {
+                stCol = Colors.green;
+                stTxt = '✔️ تم التنفيذ في الراتب';
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.CardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _approveDeduction(d['Id'] as int),
-                              icon: const Icon(Icons.check, size: 18),
-                              label: Text(
-                                loc.approve,
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontWeight: FontWeight.bold,
+                          Row(
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: stCol.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  stTxt,
+                                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, fontWeight: FontWeight.bold, color: stCol),
                                 ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.SuccessColor,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${inq['Subject']}',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                          ),
+                          if (inq['EmployeeReply'] != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'رد الموظف: ${inq['EmployeeReply']}',
+                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.cyanAccent),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _rejectDeduction(d['Id'] as int),
-                              icon: const Icon(Icons.close, size: 18),
-                              label: Text(
-                                loc.reject,
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.DangerColor,
-                                side: const BorderSide(
-                                  color: AppTheme.DangerColor,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.print, color: Color(0xFFD4AF37), size: 20),
+                      onPressed: () => InquiryLetterDialog.show(context, inq),
+                      tooltip: 'معاينة وطباعة الاستمارة',
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
     );
   }
 }

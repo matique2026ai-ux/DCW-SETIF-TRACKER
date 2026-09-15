@@ -24,6 +24,7 @@ class _AdminScreenState extends State<AdminScreen>
   bool _isLoading = true;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _employees = [];
+  String _morningGraceTime = '08:45';
   String _searchQuery = '';
   String _filterRole = 'all';
 
@@ -47,11 +48,14 @@ class _AdminScreenState extends State<AdminScreen>
       final results = await Future.wait([
         api.getSystemUsers(),
         api.getEmployees(all: true),
+        api.getSettings(),
       ]);
       if (mounted) {
+        final settings = results[2] as Map<String, dynamic>;
         setState(() {
-          _users = results[0];
-          _employees = results[1];
+          _users = results[0] as List<Map<String, dynamic>>;
+          _employees = results[1] as List<Map<String, dynamic>>;
+          _morningGraceTime = (settings['morning_grace_time'] ?? '08:45').toString();
           _isLoading = false;
         });
       }
@@ -1245,6 +1249,92 @@ class _AdminScreenState extends State<AdminScreen>
                 _buildHealthRow('إجمالي الموظفين المسجلين', '${_employees.length} موظف', Icons.people, Colors.white),
                 const Divider(color: Color(0xFF3D1A45)),
                 _buildHealthRow('إجمالي حسابات النظام', '${_users.length} حساب', Icons.account_box, Colors.white),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Morning Grace Setting Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2E1C0A), Color(0xFF240D2D)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.access_time_filled, color: Color(0xFFD4AF37), size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'فترة التسامح الصباحية المعتمدة (Morning Grace Threshold)',
+                        style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFD4AF37)),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'الحضور بين 08:00 و $_morningGraceTime ص يُعتبر حضوراً نظامياً، والتأخر يُحسب بعده.',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFD4AF37)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _morningGraceTime,
+                      dropdownColor: const Color(0xFF1E1026),
+                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                      style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Color(0xFFD4AF37), fontSize: 13),
+                      items: const [
+                        DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
+                        DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
+                        DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
+                        DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
+                        DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
+                      ],
+                      onChanged: (val) async {
+                        if (val != null && val != _morningGraceTime) {
+                          try {
+                            final api = context.read<AuthService>().api;
+                            await api.updateSetting('morning_grace_time', val);
+                            setState(() => _morningGraceTime = val);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('✅ تم تعديل فترة التسامح الصباحية للنظام إلى $val'), backgroundColor: const Color(0xFF10B981)),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
