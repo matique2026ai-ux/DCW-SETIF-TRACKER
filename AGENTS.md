@@ -63,6 +63,22 @@
 
 ---
 
+## 🌐 بنية الاستضافة السحابية وتوزيع الخدمات على Render (Cloud Architecture & Hosting)
+
+> **تنبيه حاسم للوكلاء والمطورين**: المنظومة تعتمد معمارية منفصلة ومحسنة للأداء العالي (Decoupled Best Practice) عبر خدمتين مستقلتين على منصة Render:
+
+| الخدمة السحابية (Service) | نوع الخدمة في Render | الرابط الحي (Live URL) | المستودع المرتبط (Repository) | الدور والوظيفة |
+| :--- | :--- | :--- | :--- | :--- |
+| **واجهة الويب (Web App)** | `Static Site` | `https://dcw-setif-tracker.onrender.com` | `DCW-SETIF-TRACKER` | واجهة تطبيق Flutter Web فائقة السرعة، مستضافة على شبكة CDN عالمية بلا توقف أو تأخير إقلاع |
+| **خادم البيانات (Backend API)** | `Web Service` (Node.js) | `https://drh-setif-api.onrender.com/api` | `DCW-SETIF-BACKEND` | معالجة الطلبات، التوثيق، البصمة الجغرافية، والاتصال بقاعدة بيانات PostgreSQL السحابية |
+
+### 📌 تعليمات النشر والتحديث على Render:
+1. عند بناء الويب للإنتاج: يُبنى دائماً بالأمر `flutter build web --release --base-href "/"`
+2. يتم نسخ مخرجات `DCW-SETIF-TRACKER/build/web/*` إلى `DCW-SETIF-BACKEND/public/` لضمان توفر الواجهة في كلا الخدمتين كإجراء احتياطي.
+3. يتم عمل `git push` للمستودعين لتفعيل الـ Auto-Deploy في Render تلقائياً دون أي تدخل يدوي.
+
+---
+
 ## 🛠️ أوامر الصيانة والبناء (Build Commands)
 
 ```powershell

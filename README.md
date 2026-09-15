@@ -78,9 +78,10 @@
 
 ---
 
-## 🌐 السيرفر وقاعدة البيانات الحية (Live Backend API)
+## 🌐 الروابط الرسمية للمنظومة الحية (Render Cloud)
 
-* **الخادم السحابي:** `https://drh-setif-api.onrender.com/api`
+* **رابط تطبيق الويب المباشر (Static Site):** [https://dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)
+* **خادم الـ API وقاعدة البيانات (Web Service):** `https://drh-setif-api.onrender.com/api`
 * **المصادقة والأمان:** JSON Web Tokens (JWT) + تشفير كلمات المرور بـ Bcrypt.
 * **قاعدة البيانات:** متوافقة وموحدة مع PostgreSQL و SQL Server.
 
