@@ -925,7 +925,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final loc = AppLocalizations.of(context);
     final nameCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
-    String shopType = 'محل تجزئة / سوبرماركت';
+    final violationNotesCtrl = TextEditingController();
+    final seizureValueCtrl = TextEditingController();
+    String shopType = 'محل تجزئة / مواد غذائية';
+    bool violationFound = false;
+    String violationType = 'عدم إشهار الأسعار والتعريفات';
+    String legalAction = 'محضر متابعة قضائية';
     String? capturedPhoto;
     Position? currentPos;
     bool isLocating = true;
@@ -936,7 +941,6 @@ class _InspectorScreenState extends State<InspectorScreen> {
       barrierDismissible: !isSaving,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
-          // Fetch GPS in the background once when dialog opens
           if (isLocating && currentPos == null) {
             _getPosition().then((pos) {
               if (ctx.mounted) {
@@ -965,126 +969,247 @@ class _InspectorScreenState extends State<InspectorScreen> {
           return AlertDialog(
             backgroundColor: AppTheme.CardColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(
-              loc.recordVisit,
-              textDirection: TextDirection.rtl,
-              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.PrimaryColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.storefront, color: AppTheme.PrimaryColor, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    loc.recordVisit,
+                    textDirection: TextDirection.rtl,
+                    style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.SuccessColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.SuccessColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.SuccessColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on, color: AppTheme.SuccessColor, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isLocating
+                                  ? 'جاري تحديد إحداثيات الموقع الميداني (GPS)...'
+                                  : 'الموقع: ${displayLat.toStringAsFixed(5)}, ${displayLng.toStringAsFixed(5)} (دقيق)',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.SuccessColor),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: nameCtrl,
+                      textDirection: TextDirection.rtl,
+                      decoration: InputDecoration(
+                        labelText: 'اسم المحل التجاري / التاجر المعاين *',
+                        prefixIcon: const Icon(Icons.business, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: shopType,
+                      dropdownColor: AppTheme.CardColor,
+                      decoration: InputDecoration(
+                        labelText: 'طبيعة النشاط التجاري',
+                        prefixIcon: const Icon(Icons.category, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'محل تجزئة / مواد غذائية', child: Text('محل تجزئة / مواد غذائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'مخبزة / صناعة حلويات', child: Text('مخبزة / صناعة حلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'قصابة / لحوم ودواجن', child: Text('قصابة / لحوم ودواجن', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'سوق الجملة للخضر والفواكه', child: Text('سوق الجملة للخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'وحدة إنتاج / تحويل صناعي', child: Text('وحدة إنتاج / تحويل صناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'خدمات وإطعام سريع', child: Text('خدمات وإطعام سريع', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'استيراد وتصدير', child: Text('استيراد وتصدير', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'أخرى', child: Text('أخرى', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => shopType = val);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    // Violation Switch Container
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: violationFound ? Colors.red.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: violationFound ? Colors.red.withValues(alpha: 0.4) : Colors.white12,
+                        ),
+                      ),
+                      child: SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          violationFound ? '⚠️ تم رصد مخالفة / تحرير محضر' : '✅ الوضعية مطابقة (لا توجد مخالفة)',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: violationFound ? Colors.redAccent : Colors.white70,
+                          ),
+                        ),
+                        value: violationFound,
+                        activeThumbColor: Colors.redAccent,
+                        onChanged: (val) => setDialogState(() => violationFound = val),
+                      ),
+                    ),
+                    if (violationFound) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: violationType,
+                        dropdownColor: AppTheme.CardColor,
+                        decoration: InputDecoration(
+                          labelText: 'طبيعة المخالفة المرصودة',
+                          prefixIcon: const Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'عدم إشهار الأسعار والتعريفات', child: Text('عدم إشهار الأسعار والتعريفات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'عدم الفوترة / معاملات بدون فواتير', child: Text('عدم الفوترة / معاملات بدون فواتير', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'عرض مواد منتهية الصلاحية / غير صالحة', child: Text('عرض مواد منتهية الصلاحية / غير صالحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'انعدام النظافة وشروط الحفظ الصحي', child: Text('انعدام النظافة وشروط الحفظ الصحي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'ممارسة نشاط تجاري دون القيد في السجل', child: Text('ممارسة نشاط تجاري دون القيد في السجل', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'عدم مطابقة المنتوج للمواصفات القانونية', child: Text('عدم مطابقة المنتوج للمواصفات القانونية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'المضاربة غير المشروعة وإخفاء السلع', child: Text('المضاربة غير المشروعة وإخفاء السلع', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'أخرى', child: Text('أخرى', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setDialogState(() => violationType = val);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: legalAction,
+                        dropdownColor: AppTheme.CardColor,
+                        decoration: InputDecoration(
+                          labelText: 'الإجراء القانوني المتخذ',
+                          prefixIcon: const Icon(Icons.gavel, color: AppTheme.PrimaryColor, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'محضر متابعة قضائية', child: Text('محضر متابعة قضائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'محضر حجز سلع وبضائع', child: Text('محضر حجز سلع وبضائع', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'محضر إتلاف فوري للمنتوجات', child: Text('محضر إتلاف فوري للمنتوجات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'اقتراح غلق إداري للمحل', child: Text('اقتراح غلق إداري للمحل', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'استدعاء رسمي لمقر المديرية/المفتشية', child: Text('استدعاء رسمي لمقر المديرية/المفتشية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          DropdownMenuItem(value: 'إعذار لتسوية الوضعية القانونية', child: Text('إعذار لتسوية الوضعية القانونية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setDialogState(() => legalAction = val);
+                        },
+                      ),
+                      if (legalAction.contains('حجز') || legalAction.contains('إتلاف')) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: seizureValueCtrl,
+                          keyboardType: TextInputType.number,
+                          textDirection: TextDirection.ltr,
+                          decoration: InputDecoration(
+                            labelText: 'القيمة المالية التقديرية للمحجوزات (د.ج)',
+                            prefixIcon: const Icon(Icons.payments_outlined, size: 18),
+                            suffixText: 'د.ج',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: violationNotesCtrl,
+                        textDirection: TextDirection.rtl,
+                        decoration: InputDecoration(
+                          labelText: 'تفاصيل المخالفة والمواد المعنية',
+                          prefixIcon: const Icon(Icons.description, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesCtrl,
+                      textDirection: TextDirection.rtl,
+                      decoration: InputDecoration(
+                        labelText: 'ملاحظات عامة حول الزيارة الميدانية',
+                        prefixIcon: const Icon(Icons.notes, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    // Photo capture row
+                    if (capturedPhoto != null && capturedPhoto!.isNotEmpty) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.memory(
+                          base64Decode(capturedPhoto!),
+                          height: 130,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Row(
                       children: [
-                        const Icon(Icons.location_on, color: AppTheme.SuccessColor, size: 18),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final photo = await _pickPhoto(fromGallery: false);
+                              if (photo != null && ctx.mounted) {
+                                setDialogState(() => capturedPhoto = photo);
+                              }
+                            },
+                            icon: const Icon(Icons.camera_alt, size: 16),
+                            label: Text(
+                              capturedPhoto != null ? 'تغيير الصورة' : 'توثيق بالكاميرا',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11),
+                            ),
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            isLocating
-                                ? 'جاري تحديد إحداثيات الموقع (GPS)...'
-                                : '${displayLat.toStringAsFixed(4)}, ${displayLng.toStringAsFixed(4)} (دقيق)',
-                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.SuccessColor),
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final photo = await _pickPhoto(fromGallery: true);
+                              if (photo != null && ctx.mounted) {
+                                setDialogState(() => capturedPhoto = photo);
+                              }
+                            },
+                            icon: const Icon(Icons.photo_library, size: 16),
+                            label: const Text(
+                              'من المعرض',
+                              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: nameCtrl,
-                    textDirection: TextDirection.rtl,
-                    decoration: InputDecoration(
-                      labelText: 'اسم المحل / التاجر المعاين *',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: shopType,
-                    dropdownColor: AppTheme.CardColor,
-                    decoration: InputDecoration(
-                      labelText: 'طبيعة النشاط التجاري',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'محل تجزئة / سوبرماركت', child: Text('محل تجزئة / مواد غذائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                      DropdownMenuItem(value: 'مخبزة / صناعة حلويات', child: Text('مخبزة / صناعة حلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                      DropdownMenuItem(value: 'قصابة / لحوم ودواجن', child: Text('قصابة / لحوم ودواجن', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                      DropdownMenuItem(value: 'سوق الجملة للخضر والفواكه', child: Text('سوق الجملة للخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                      DropdownMenuItem(value: 'وحدة إنتاج / مصنع', child: Text('وحدة إنتاج / تحويل صناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                      DropdownMenuItem(value: 'أخرى', child: Text('أخرى', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setDialogState(() => shopType = val);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: notesCtrl,
-                    textDirection: TextDirection.rtl,
-                    decoration: InputDecoration(
-                      labelText: 'ملاحظات المعاينة (الأسعار، النظافة، الفوترة...)',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  // Photo capture row
-                  if (capturedPhoto != null && capturedPhoto!.isNotEmpty) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.memory(
-                        base64Decode(capturedPhoto!),
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                   ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final photo = await _pickPhoto(fromGallery: false);
-                            if (photo != null && ctx.mounted) {
-                              setDialogState(() => capturedPhoto = photo);
-                            }
-                          },
-                          icon: const Icon(Icons.camera_alt, size: 16),
-                          label: Text(
-                            capturedPhoto != null ? 'تغيير الصورة' : 'التقاط بالكاميرا',
-                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final photo = await _pickPhoto(fromGallery: true);
-                            if (photo != null && ctx.mounted) {
-                              setDialogState(() => capturedPhoto = photo);
-                            }
-                          },
-                          icon: const Icon(Icons.photo_library, size: 16),
-                          label: const Text(
-                            'من المعرض',
-                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
             actions: [
@@ -1103,6 +1228,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
                   final double posLat = currentPos?.latitude ?? AppConstants.hqLatitude;
                   final double posLng = currentPos?.longitude ?? AppConstants.hqLongitude;
+                  final double parsedSeizure = double.tryParse(seizureValueCtrl.text.trim()) ?? 0.0;
+                  final String finalLegalAction = violationFound ? legalAction : 'مطابقة وتوعية';
 
                   final payload = {
                     'employeeId': empId,
@@ -1112,6 +1239,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     'shopName': shopNameVal,
                     'shopType': shopType,
                     'notes': notesCtrl.text.trim(),
+                    'violationFound': violationFound,
+                    'violationType': violationFound ? violationType : null,
+                    'violationNotes': violationNotesCtrl.text.trim(),
+                    'legalAction': finalLegalAction,
+                    'seizureValue': parsedSeizure,
                   };
 
                   bool isOfflineMode = false;
@@ -1125,6 +1257,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       shopName: shopNameVal,
                       shopType: shopType,
                       notes: payload['notes'] as String,
+                      violationFound: violationFound,
+                      violationType: payload['violationType'] as String?,
+                      violationNotes: payload['violationNotes'] as String?,
+                      legalAction: finalLegalAction,
+                      seizureValue: parsedSeizure,
                     );
                   } catch (e) {
                     isOfflineMode = true;
@@ -1145,13 +1282,17 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     'Longitude': posLng,
                     'Photo': capturedPhoto,
                     'Notes': payload['notes'],
+                    'ViolationFound': violationFound,
+                    'ViolationType': violationType,
+                    'LegalAction': finalLegalAction,
+                    'SeizureValue': parsedSeizure,
                     'IsOffline': isOfflineMode,
                   };
 
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text(
-                        isOfflineMode ? '📡 تم حفظ المعاينة محلياً بنجاح' : '✅ تم توثيق المعاينة الميدانية بنجاح',
+                        isOfflineMode ? '📡 تم حفظ المعاينة محلياً بنجاح (وضع عدم الاتصال)' : '✅ تم توثيق المعاينة الميدانية بنجاح',
                         style: const TextStyle(fontFamily: 'Tajawal'),
                       ),
                       backgroundColor: isOfflineMode ? const Color(0xFFD97706) : AppTheme.SuccessColor,
@@ -1164,14 +1305,17 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     ),
                   );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.SuccessColor),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: violationFound ? Colors.orange.shade800 : AppTheme.SuccessColor,
+                  foregroundColor: Colors.white,
+                ),
                 child: isSaving
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : Text(loc.save, style: const TextStyle(fontFamily: 'Tajawal')),
+                    : Text(loc.save, style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
               ),
             ],
           );
@@ -1179,6 +1323,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1921,16 +2066,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                   children: [
                                     Row(
                                       children: [
-                                        Text(
-                                          '${v['TraderName'] ?? v['ShopName'] ?? (loc.isArabic ? 'معاينة تجارية' : 'Visite')}',
-                                          style: const TextStyle(
-                                            fontFamily: 'Tajawal',
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
+                                        Expanded(
+                                          child: Text(
+                                            '${v['TraderName'] ?? v['ShopName'] ?? (loc.isArabic ? 'معاينة تجارية' : 'Visite')}',
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
                                         if (isItemOffline) ...[
-                                          const SizedBox(width: 8),
+                                          const SizedBox(width: 6),
                                           Container(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 6, vertical: 2),
@@ -1951,15 +2098,61 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                         ],
                                       ],
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: 3),
                                     Text(
-                                      '${v['LocationName'] ?? (v['ShopName'] ?? '')} • ${_formatTime(v['CreatedAt'] ?? v['VisitTime'] ?? v['CheckInTime'])}',
+                                      '${v['ActivityType'] ?? v['ShopType'] ?? ''} • ${_formatTime(v['CreatedAt'] ?? v['VisitTime'] ?? v['CheckInTime'])}',
                                       style: const TextStyle(
                                         fontFamily: 'Tajawal',
                                         fontSize: 11,
                                         color: AppTheme.TextSecondary,
                                       ),
                                     ),
+                                    if (v['ViolationFound'] == true || v['ViolationFound'] == 1) ...[
+                                      const SizedBox(height: 4),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                                            ),
+                                            child: Text(
+                                              '⚠️ ${v['ViolationType'] ?? 'مخالفة مرصودة'}',
+                                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          if (v['LegalAction'] != null && v['LegalAction'].toString().isNotEmpty)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '⚖️ ${v['LegalAction']}',
+                                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF93C5FD)),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ] else ...[
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.SuccessColor.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text(
+                                          '✅ مطابقة وتوعية',
+                                          style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.SuccessColor),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),

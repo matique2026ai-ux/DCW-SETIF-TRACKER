@@ -172,6 +172,11 @@ class OfflineSyncService {
             photo: payload['photo'] as String?,
             accuracy: (payload['accuracy'] as num?)?.toDouble(),
             locationName: payload['locationName'] as String?,
+            violationFound: payload['violationFound'] == true,
+            violationType: payload['violationType'] as String?,
+            violationNotes: payload['violationNotes'] as String?,
+            legalAction: payload['legalAction'] as String?,
+            seizureValue: (payload['seizureValue'] as num?)?.toDouble(),
           );
           syncedCount++;
         }

@@ -217,134 +217,232 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
   void _showVisitDetailsModal(Map<String, dynamic> visit) {
     final String shop = (visit['ShopName'] ?? visit['TraderName'] ?? 'معاينة تفتيشية').toString();
-    final String inspectorName = visit['NomAr'] != null ? '${visit['NomAr']} ${visit['PrenomAr']}' : (visit['EmployeeName']?.toString() ?? 'المفتش');
+    final String inspectorName = visit['NomAr'] != null ? '${visit['NomAr']} ${visit['PrenomAr'] ?? ''}'.trim() : (visit['EmployeeName']?.toString() ?? 'المفتش');
     final String time = visit['CheckInTime'] != null ? visit['CheckInTime'].toString() : '';
     final String? photoBase64 = visit['Photo']?.toString();
     final dynamic lat = visit['Latitude'];
     final dynamic lng = visit['Longitude'];
     final String notes = (visit['Notes'] ?? 'معاينة ميدانية ومطابقة الشروط').toString();
+    final bool hasViolation = visit['ViolationFound'] == true || visit['ViolationFound'] == 1;
+    final String? violationType = visit['ViolationType']?.toString();
+    final String? violationNotes = visit['ViolationNotes']?.toString();
+    final String? legalAction = visit['LegalAction']?.toString();
+    final dynamic seizureVal = visit['SeizureValue'];
+    final bool isApproved = visit['IsApproved'] == true || visit['IsApproved'] == 1;
+    final int? visitId = (visit['Id'] as num?)?.toInt();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.CardColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: AppTheme.CardColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(22),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: AppTheme.PrimaryColor.withValues(alpha: 0.2), shape: BoxShape.circle),
-                  child: const Icon(Icons.verified_user, color: AppTheme.PrimaryColor, size: 24),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: hasViolation ? Colors.red.withValues(alpha: 0.15) : AppTheme.PrimaryColor.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        hasViolation ? Icons.warning_amber_rounded : Icons.verified_user,
+                        color: hasViolation ? Colors.redAccent : AppTheme.PrimaryColor,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(shop, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text('المفتش المحرر: $inspectorName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isApproved ? AppTheme.SuccessColor.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isApproved ? '✅ معتمدة ومؤشرة' : '⏳ قيد التأشير',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          color: isApproved ? AppTheme.SuccessColor : Colors.orangeAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (photoBase64 != null && photoBase64.isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      base64Decode(photoBase64),
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                // Violation and Legal action card
+                if (hasViolation) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.gavel, color: Colors.redAccent, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'طبيعة المخالفة: ${violationType ?? 'مخالفة مرصودة'}',
+                                style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.redAccent),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (legalAction != null && legalAction.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text('الإجراء القانوني: $legalAction', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFF93C5FD), fontWeight: FontWeight.bold)),
+                        ],
+                        if (seizureVal != null && (double.tryParse(seizureVal.toString()) ?? 0) > 0) ...[
+                          const SizedBox(height: 4),
+                          Text('القيمة التقديرية للمحجوزات: $seizureVal د.ج', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D), fontWeight: FontWeight.bold)),
+                        ],
+                        if (violationNotes != null && violationNotes.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text('تفاصيل المخالفة: $violationNotes', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70)),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white12)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(shop, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                      Text('المفتش المحرر: $inspectorName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
+                      Text('ملاحظات المفتش: $notes', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white)),
+                      if (lat != null && lng != null) ...[
+                        const SizedBox(height: 6),
+                        Text('الموقع: $lat, $lng', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60)),
+                      ],
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: AppTheme.SuccessColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                  child: const Text('محررة اليوم', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.SuccessColor, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (photoBase64 != null && photoBase64.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.memory(
-                  base64Decode(photoBase64),
-                  height: 190,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
-              ),
-              const SizedBox(height: 14),
-            ],
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white12)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('ملاحظات المفتش: $notes', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white)),
-                  if (lat != null && lng != null) ...[
-                    const SizedBox(height: 6),
-                    Text('الموقع: $lat, $lng', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60)),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      QRCodeScreen.show(
-                        context,
-                        record: {
-                          'type': 'visit_verified',
-                          'inspector': inspectorName,
-                          'shop': shop,
-                          'time': time,
-                          'latitude': lat,
-                          'longitude': lng,
-                          'status': 'APPROVED_BY_HEAD',
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          QRCodeScreen.show(
+                            context,
+                            record: {
+                              'type': 'visit_verified',
+                              'inspector': inspectorName,
+                              'shop': shop,
+                              'time': time,
+                              'latitude': lat,
+                              'longitude': lng,
+                              'violation': violationType ?? 'مطابقة',
+                              'action': legalAction ?? 'مطابقة وتوعية',
+                              'status': 'APPROVED_BY_HEAD',
+                            },
+                            title: 'الإثبات الرقمي وتأشير رئيس المصلحة',
+                          );
                         },
-                        title: 'الإثبات الرقمي وتأشير رئيس المصلحة',
-                      );
-                    },
-                    icon: const Icon(Icons.qr_code, size: 18),
-                    label: const Text('إثبات الـ QR', style: TextStyle(fontFamily: 'Tajawal')),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ تم تأشير واعتماد تقرير المعاينة رسمياً', style: TextStyle(fontFamily: 'Tajawal')),
-                          backgroundColor: AppTheme.SuccessColor,
+                        icon: const Icon(Icons.qr_code, size: 18),
+                        label: const Text('إثبات الـ QR', style: TextStyle(fontFamily: 'Tajawal')),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: isApproved || visitId == null
+                            ? null
+                            : () async {
+                                final user = context.read<AuthService>().currentUser;
+                                final api = context.read<AuthService>().api;
+                                final messenger = ScaffoldMessenger.of(context);
+                                try {
+                                  await api.approveVisit(
+                                    visitId: visitId,
+                                    approvedBy: user?.fullName ?? user?.serviceName ?? 'رئيس المصلحة المختصة',
+                                  );
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  if (mounted) _loadAllData();
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('✅ تم تأشير واعتماد تقرير المعاينة رسمياً بنجاح', style: TextStyle(fontFamily: 'Tajawal')),
+                                      backgroundColor: AppTheme.SuccessColor,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('⚠️ خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
+                                      backgroundColor: AppTheme.WarningColor,
+                                    ),
+                                  );
+                                }
+                              },
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: Text(
+                          isApproved ? 'معتمدة ومؤشرة' : 'تأشير واعتماد',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.check_circle_outline, size: 18),
-                    label: const Text('تأشير واعتماد', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.SuccessColor),
-                  ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isApproved ? Colors.grey.shade700 : AppTheme.SuccessColor,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

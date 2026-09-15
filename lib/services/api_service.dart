@@ -489,6 +489,25 @@ class ApiService {
     return [];
   }
 
+  Future<List<Map<String, dynamic>>> getAllVisits({String? date, int? employeeId, bool? isApproved}) async {
+    try {
+      final params = <String, String>{};
+      if (date != null) params['date'] = date;
+      if (employeeId != null) params['employeeId'] = employeeId.toString();
+      if (isApproved != null) params['isApproved'] = isApproved.toString();
+
+      final uri = Uri.parse('$baseUrl/visits').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers);
+      if (response.statusCode == 200) {
+        final body = response.body.trim();
+        if (body.startsWith('<') || body.isEmpty) return [];
+        final data = jsonDecode(body) as List;
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   Future<void> recordVisit({
     required int employeeId,
     required double latitude,
@@ -500,6 +519,11 @@ class ApiService {
     double? accuracy,
     String? locationName,
     int? assignmentId,
+    bool? violationFound,
+    String? violationType,
+    String? violationNotes,
+    String? legalAction,
+    double? seizureValue,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/visits'),
@@ -515,11 +539,33 @@ class ApiService {
         'photo': photo,
         'assignmentId': assignmentId,
         'notes': notes,
+        'violationFound': violationFound ?? false,
+        'violationType': violationType,
+        'violationNotes': violationNotes,
+        'legalAction': legalAction,
+        'seizureValue': seizureValue ?? 0,
       }),
     );
-    if (response.statusCode != 201) {
+    if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception(_parseError(response, 'خطأ في تسجيل الزيارة'));
     }
+  }
+
+  Future<Map<String, dynamic>> approveVisit({
+    required int visitId,
+    String? approvedBy,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/visits/$visitId/approve'),
+      headers: _headers,
+      body: jsonEncode({
+        'approvedBy': approvedBy ?? 'رئيس المصلحة المختصة',
+      }),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception(_parseError(response, 'خطأ في تأشير واعتماد المعاينة'));
   }
 
   Future<List<Map<String, dynamic>>> getDeductions({String? status}) async {
