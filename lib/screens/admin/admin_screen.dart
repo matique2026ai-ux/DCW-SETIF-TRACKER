@@ -818,8 +818,8 @@ class _AdminScreenState extends State<AdminScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -827,53 +827,62 @@ class _AdminScreenState extends State<AdminScreen>
                   ),
                 ),
                 child: const Center(
-                  child: Icon(Icons.admin_panel_settings, size: 22, color: Colors.white),
+                  child: Icon(Icons.admin_panel_settings, size: 20, color: Colors.white),
                 ),
               ),
-              const SizedBox(width: 12),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'لوحة تحكم مدير النظام (Admin Dashboard)',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              const SizedBox(width: 10),
+              const Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'مدير النظام (Admin)',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Text(
-                    'إدارة الحسابات، الصلاحيات، وحالة السيرفر',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 10,
-                      color: Color(0xFFD4AF37),
+                    Text(
+                      'إدارة الحسابات والسيرفر',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 10,
+                        color: Color(0xFFD4AF37),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh, color: AppTheme.AccentColor),
+              icon: const Icon(Icons.refresh, color: AppTheme.AccentColor, size: 20),
               tooltip: 'تحديث البيانات',
+              visualDensity: VisualDensity.compact,
               onPressed: _loadData,
             ),
             IconButton(
-              icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 20),
               tooltip: 'تغيير كلمة المرور',
+              visualDensity: VisualDensity.compact,
               onPressed: () => ChangePasswordDialog.show(context),
             ),
             IconButton(
-              icon: const Icon(Icons.language, color: Colors.white70),
+              icon: const Icon(Icons.language, color: Colors.white70, size: 20),
               tooltip: 'تغيير اللغة',
+              visualDensity: VisualDensity.compact,
               onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
             ),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white70),
+              icon: const Icon(Icons.logout, color: Colors.white70, size: 20),
               tooltip: 'تسجيل الخروج',
+              visualDensity: VisualDensity.compact,
               onPressed: () {
                 context.read<AuthService>().logout();
                 Navigator.pushReplacement(
@@ -885,13 +894,15 @@ class _AdminScreenState extends State<AdminScreen>
           ],
           bottom: TabBar(
             controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             indicatorColor: const Color(0xFFD4AF37),
             labelColor: const Color(0xFFD4AF37),
             unselectedLabelColor: Colors.white60,
             tabs: const [
-              Tab(icon: Icon(Icons.people_alt), text: 'إدارة المستخدمين والحسابات'),
-              Tab(icon: Icon(Icons.dns), text: 'حالة النظام والسيرفر'),
-              Tab(icon: Icon(Icons.preview), text: 'معاينة شاشات الأدوار'),
+              Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
+              Tab(icon: Icon(Icons.dns, size: 18), text: 'حالة النظام والسيرفر'),
+              Tab(icon: Icon(Icons.preview, size: 18), text: 'معاينة شاشات الأدوار'),
             ],
           ),
         ),
@@ -919,126 +930,187 @@ class _AdminScreenState extends State<AdminScreen>
       onRefresh: _loadData,
       color: const Color(0xFFD4AF37),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Stats Row
-            Row(
-              children: [
-                _buildStatCard('إجمالي الحسابات', '${_users.length}', Icons.account_circle, const Color(0xFF881337)),
-                const SizedBox(width: 10),
-                _buildStatCard('الحسابات النشطة', '$activeCount', Icons.check_circle, const Color(0xFF10B981)),
-                const SizedBox(width: 10),
-                _buildStatCard('المفتشون الميدانيون', '$inspectorsCount', Icons.explore, const Color(0xFFD4AF37)),
-                const SizedBox(width: 10),
-                _buildStatCard('إجمالي الموظفين', '${_employees.length}', Icons.badge, const Color(0xFF3B82F6)),
-              ],
+            // Stats Row (Horizontally scrollable for all screens)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildStatCard('إجمالي الحسابات', '${_users.length}', Icons.account_circle, const Color(0xFF881337)),
+                  const SizedBox(width: 8),
+                  _buildStatCard('الحسابات النشطة', '$activeCount', Icons.check_circle, const Color(0xFF10B981)),
+                  const SizedBox(width: 8),
+                  _buildStatCard('المفتشون الميدانيون', '$inspectorsCount', Icons.explore, const Color(0xFFD4AF37)),
+                  const SizedBox(width: 8),
+                  _buildStatCard('إجمالي الموظفين', '${_employees.length}', Icons.badge, const Color(0xFF3B82F6)),
+                ],
+              ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
 
-            // Action Buttons Bar
-            Row(
+            // Action Buttons Bar (Responsive Wrap)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 ElevatedButton.icon(
                   onPressed: _showBulkGenerateDialog,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD4AF37),
                     foregroundColor: const Color(0xFF1A0A1F),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  icon: const Icon(Icons.auto_awesome, size: 16),
                   label: const Text(
                     'توليد حسابات لجميع الـ 267 موظفاً',
-                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
-                const SizedBox(width: 10),
                 ElevatedButton.icon(
                   onPressed: _showAddUserDialog,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF881337),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  icon: const Icon(Icons.add, size: 18),
+                  icon: const Icon(Icons.add, size: 16),
                   label: const Text(
                     'إضافة مستخدم جديد',
-                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
 
             // Search and Filter
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
-                    decoration: InputDecoration(
-                      hintText: 'بحث باسم المستخدم أو الاسم أو اللقب...',
-                      hintStyle: const TextStyle(color: Colors.white38, fontFamily: 'Tajawal'),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
-                      filled: true,
-                      fillColor: const Color(0xFF240D2D),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF4A2050)),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 600) {
+                  return Column(
+                    children: [
+                      TextField(
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
+                        decoration: InputDecoration(
+                          hintText: 'بحث باسم المستخدم أو الاسم أو اللقب...',
+                          hintStyle: const TextStyle(color: Colors.white38, fontFamily: 'Tajawal', fontSize: 12),
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37), size: 18),
+                          filled: true,
+                          fillColor: const Color(0xFF240D2D),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF240D2D),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF4A2050)),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _filterRole,
+                          isExpanded: true,
+                          dropdownColor: const Color(0xFF2D1035),
+                          underline: const SizedBox(),
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('جميع الأدوار')),
+                            DropdownMenuItem(value: 'inspector', child: Text('المفتشون فقط')),
+                            DropdownMenuItem(value: 'head_of_department', child: Text('رؤساء المصالح')),
+                            DropdownMenuItem(value: 'bureau_chief', child: Text('رئيس مكتب المستخدمين')),
+                            DropdownMenuItem(value: 'director', child: Text('المدير الولائي')),
+                            DropdownMenuItem(value: 'admin', child: Text('مسؤولو النظام')),
+                            DropdownMenuItem(value: 'inactive', child: Text('الحسابات المعطلة')),
+                          ],
+                          onChanged: (val) => setState(() => _filterRole = val ?? 'all'),
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF240D2D),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF4A2050)),
-                  ),
-                  child: DropdownButton<String>(
-                    value: _filterRole,
-                    dropdownColor: const Color(0xFF2D1035),
-                    underline: const SizedBox(),
-                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('جميع الأدوار')),
-                      DropdownMenuItem(value: 'inspector', child: Text('المفتشون فقط')),
-                      DropdownMenuItem(value: 'head_of_department', child: Text('رؤساء المصالح')),
-                      DropdownMenuItem(value: 'bureau_chief', child: Text('رئيس مكتب المستخدمين')),
-                      DropdownMenuItem(value: 'director', child: Text('المدير الولائي')),
-                      DropdownMenuItem(value: 'admin', child: Text('مسؤولو النظام')),
-                      DropdownMenuItem(value: 'inactive', child: Text('الحسابات المعطلة')),
                     ],
-                    onChanged: (val) => setState(() => _filterRole = val ?? 'all'),
-                  ),
-                ),
-              ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                        decoration: InputDecoration(
+                          hintText: 'بحث باسم المستخدم أو الاسم أو اللقب...',
+                          hintStyle: const TextStyle(color: Colors.white38, fontFamily: 'Tajawal'),
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                          filled: true,
+                          fillColor: const Color(0xFF240D2D),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF240D2D),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF4A2050)),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _filterRole,
+                        dropdownColor: const Color(0xFF2D1035),
+                        underline: const SizedBox(),
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                        items: const [
+                          DropdownMenuItem(value: 'all', child: Text('جميع الأدوار')),
+                          DropdownMenuItem(value: 'inspector', child: Text('المفتشون فقط')),
+                          DropdownMenuItem(value: 'head_of_department', child: Text('رؤساء المصالح')),
+                          DropdownMenuItem(value: 'bureau_chief', child: Text('رئيس مكتب المستخدمين')),
+                          DropdownMenuItem(value: 'director', child: Text('المدير الولائي')),
+                          DropdownMenuItem(value: 'admin', child: Text('مسؤولو النظام')),
+                          DropdownMenuItem(value: 'inactive', child: Text('الحسابات المعطلة')),
+                        ],
+                        onChanged: (val) => setState(() => _filterRole = val ?? 'all'),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // Users List
             Text(
               'قائمة المستخدمين (${_filteredUsers.length}):',
               style: const TextStyle(
                 fontFamily: 'Tajawal',
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFFD4AF37),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
             ListView.separated(
               shrinkWrap: true,
@@ -1051,161 +1123,200 @@ class _AdminScreenState extends State<AdminScreen>
                 final roleStr = _formatRole(u['role']);
 
                 return Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF240D2D),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isActive
                           ? const Color(0xFF4A2050)
                           : AppTheme.DangerColor.withValues(alpha: 0.5),
                     ),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Avatar
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _getRoleColor(u['role']).withValues(alpha: 0.2),
-                          border: Border.all(color: _getRoleColor(u['role'])),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            _getRoleIcon(u['role']),
-                            color: _getRoleColor(u['role']),
-                            size: 22,
+                      // Top Row: Avatar + Name + Role Badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Avatar
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _getRoleColor(u['role']).withValues(alpha: 0.2),
+                              border: Border.all(color: _getRoleColor(u['role'])),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                _getRoleIcon(u['role']),
+                                color: _getRoleColor(u['role']),
+                                size: 18,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
+                          const SizedBox(width: 10),
 
-                      // User Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                          // Full Name & Service
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  u['fullName']?.toString() ?? u['username']?.toString() ?? 'مستخدم',
-                                  style: const TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        u['fullName']?.toString() ?? u['username']?.toString() ?? 'مستخدم',
+                                        style: const TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: _getRoleColor(u['role']).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: _getRoleColor(u['role']).withValues(alpha: 0.5)),
+                                      ),
+                                      child: Text(
+                                        roleStr,
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: _getRoleColor(u['role']),
+                                        ),
+                                      ),
+                                    ),
+                                    if (!isActive) ...[
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.DangerColor.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Text(
+                                          'معطل',
+                                          style: TextStyle(fontFamily: 'Tajawal', fontSize: 9, color: AppTheme.DangerColor),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: _getRoleColor(u['role']).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: _getRoleColor(u['role']).withValues(alpha: 0.5)),
-                                  ),
-                                  child: Text(
-                                    roleStr,
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: _getRoleColor(u['role']),
-                                    ),
-                                  ),
-                                ),
-                                if (!isActive) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.DangerColor.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'معطل',
-                                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.DangerColor),
-                                    ),
+                                if (u['empService'] != null && u['empService'].toString().isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    u['empService'].toString(),
+                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white54),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Row(
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Divider(color: Color(0xFF381544), height: 1),
+                      const SizedBox(height: 6),
+
+                      // Bottom Row: Username + Compact Action Buttons
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black26,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.login, size: 12, color: Colors.white38),
+                                const Icon(Icons.login, size: 12, color: Color(0xFFD4AF37)),
                                 const SizedBox(width: 4),
                                 Text(
                                   'اسم الدخول: ${u['username']}',
                                   style: const TextStyle(
                                     fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    color: Color(0xFFFCD34D),
                                   ),
                                 ),
-                                if (u['empService'] != null) ...[
-                                  const SizedBox(width: 12),
-                                  const Icon(Icons.business, size: 12, color: Colors.white38),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      u['empService'].toString(),
-                                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white54),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                          const Spacer(),
 
-                      // Actions
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Color(0xFF3B82F6), size: 20),
-                        tooltip: 'تعديل الحساب والصلاحية',
-                        onPressed: () => _showEditUserDialog(u),
+                          // Actions
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(),
+                            icon: const Icon(Icons.edit_outlined, color: Color(0xFF3B82F6), size: 18),
+                            tooltip: 'تعديل الحساب والصلاحية',
+                            onPressed: () => _showEditUserDialog(u),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(),
+                            icon: const Icon(Icons.key_outlined, color: Color(0xFFD4AF37), size: 18),
+                            tooltip: 'إعادة تعيين كلمة المرور',
+                            onPressed: () => _showResetPasswordDialog(u),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(),
+                            icon: Icon(
+                              isActive ? Icons.block_outlined : Icons.check_circle_outline,
+                              color: isActive ? Colors.orangeAccent : const Color(0xFF10B981),
+                              size: 18,
+                            ),
+                            tooltip: isActive ? 'تجميد / إيقاف الحساب' : 'تفعيل الحساب',
+                            onPressed: () async {
+                              final messenger = ScaffoldMessenger.of(context);
+                              try {
+                                final api = context.read<AuthService>().api;
+                                await api.updateSystemUser(
+                                  id: u['id'] as int,
+                                  fullName: u['fullName']?.toString() ?? u['username']?.toString() ?? '',
+                                  role: u['role']?.toString() ?? 'inspector',
+                                  isActive: !isActive,
+                                  employeeId: u['employeeId'] is int ? u['employeeId'] as int : null,
+                                );
+                                _loadData();
+                              } catch (e) {
+                                messenger.showSnackBar(
+                                  SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                                );
+                              }
+                            },
+                          ),
+                          if (u['username'] != 'tracker_admin') ...[
+                            const SizedBox(width: 4),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              icon: const Icon(Icons.delete_outline, color: AppTheme.DangerColor, size: 18),
+                              tooltip: 'حذف الحساب نهائياً',
+                              onPressed: () => _showDeleteUserDialog(u),
+                            ),
+                          ],
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.key, color: Color(0xFFD4AF37), size: 20),
-                        tooltip: 'إعادة تعيين كلمة المرور',
-                        onPressed: () => _showResetPasswordDialog(u),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          isActive ? Icons.block : Icons.check_circle_outline,
-                          color: isActive ? Colors.orangeAccent : const Color(0xFF10B981),
-                          size: 20,
-                        ),
-                        tooltip: isActive ? 'تجميد / إيقاف الحساب' : 'تفعيل الحساب',
-                        onPressed: () async {
-                          final messenger = ScaffoldMessenger.of(context);
-                          try {
-                            final api = context.read<AuthService>().api;
-                            await api.updateSystemUser(
-                              id: u['id'] as int,
-                              fullName: u['fullName']?.toString() ?? u['username']?.toString() ?? '',
-                              role: u['role']?.toString() ?? 'inspector',
-                              isActive: !isActive,
-                              employeeId: u['employeeId'] is int ? u['employeeId'] as int : null,
-                            );
-                            _loadData();
-                          } catch (e) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                            );
-                          }
-                        },
-                      ),
-                      if (u['username'] != 'tracker_admin')
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: AppTheme.DangerColor, size: 20),
-                          tooltip: 'حذف الحساب نهائياً',
-                          onPressed: () => _showDeleteUserDialog(u),
-                        ),
                     ],
                   ),
                 );
@@ -1216,6 +1327,7 @@ class _AdminScreenState extends State<AdminScreen>
       ),
     );
   }
+
 
   Widget _buildSystemHealthTab() {
     return SingleChildScrollView(
