@@ -22,6 +22,8 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   List<Map<String, dynamic>> _todayVisits = [];
   List<Map<String, dynamic>> _departmentInspectors = [];
   String _departmentName = '';
+  String _inspectorSearchQuery = '';
+  String _selectedBrigadeFilter = 'الكل';
 
   @override
   void initState() {
@@ -72,7 +74,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           'name': fullName.isNotEmpty ? fullName : 'مفتش #$id',
           'grade': emp['Grade'] ?? emp['FonctionExercee'] ?? 'مفتش رئيسي للرقابة',
           'service': emp['Service'] ?? _departmentName,
-          'brigade': emp['BrigadeName'] ?? 'فرقة الرقابة والتفتيش',
+          'brigade': emp['BrigadeName'] ?? 'فرقة الرقابة والتفتيش 01',
+          'isBrigadeLeader': emp['IsBrigadeLeader'] == true || emp['IsBrigadeLeader'] == 1,
+          'administrativeStatus': emp['AdministrativeStatus'] ?? 'active',
           'hasCheckedIn': liveInfo != null ? (liveInfo['hasCheckedIn'] == true) : false,
           'isCheckedOut': liveInfo != null ? (liveInfo['isCheckedOut'] == true) : false,
           'visitsCount': liveInfo != null ? ((liveInfo['visitsCount'] as num?)?.toInt() ?? 0) : 0,
@@ -95,6 +99,139 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showEditBrigadeDialog(Map<String, dynamic> inspector) {
+    final name = (inspector['name'] ?? 'مفتش').toString();
+    final int id = inspector['id'] as int;
+    String currentBrigade = inspector['brigade']?.toString() ?? 'فرقة التدخل 01 (حي تبيانت والمركز)';
+    bool isLeader = inspector['isBrigadeLeader'] == true;
+
+    final defaultBrigades = [
+      'فرقة التدخل 01 (حي تبيانت والمركز)',
+      'فرقة التدخل 02 (المعبودة وسوق الجملة)',
+      'فرقة التدخل 03 (الهضاب والقطاع الشرقي)',
+      'فرقة التدخل 04 (المنطقة الحضرية الجديدة)',
+      'فرقة التحقيقات والفوترة ومسارات التوزيع',
+      'فرقة سحب العينات والمطابقة المخبرية',
+      'فرقة المداومة والمناوبة المسائية',
+      'احتياط المصلحة (بدون تعيين ميداني)',
+    ];
+
+    if (!defaultBrigades.contains(currentBrigade) && currentBrigade.isNotEmpty) {
+      defaultBrigades.insert(0, currentBrigade);
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          backgroundColor: AppTheme.CardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.groups, color: AppTheme.AccentColor, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'تعديل تشكيل الفرقة وتعيين الثنائي',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      name,
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFD4AF37)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: Container(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'تعيين الفرقة الرقابية والقطاع الجغرافي:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: defaultBrigades.contains(currentBrigade) ? currentBrigade : defaultBrigades.first,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.shield, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: defaultBrigades.map((b) => DropdownMenuItem(
+                      value: b,
+                      child: Text(b, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => currentBrigade = val);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('تعيين كرئيس فرقة (Chef de brigade)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: const Text('يتولى قيادة الثنائي وتنسيق المحاضر الميدانية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary)),
+                    value: isLeader,
+                    activeThumbColor: AppTheme.AccentColor,
+                    onChanged: (val) => setModalState(() => isLeader = val),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final auth = context.read<AuthService>();
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await auth.api.updateEmployeeAdminStatus(id, {
+                    'brigadeName': currentBrigade,
+                    'isBrigadeLeader': isLeader,
+                    'assignedDepartment': _departmentName,
+                  });
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  _loadAllData();
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('✅ تم تحديث تشكيل الفرقة وتعيين $name بنجاح', style: const TextStyle(fontFamily: 'Tajawal')),
+                      backgroundColor: AppTheme.SuccessColor,
+                    ),
+                  );
+                } catch (e) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('⚠️ خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal')),
+                      backgroundColor: AppTheme.WarningColor,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.check, size: 16),
+              label: const Text('حفظ التشكيل', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showNewMissionDialog() {
@@ -915,82 +1052,254 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _departmentInspectors.length,
-      itemBuilder: (ctx, i) {
-        final emp = _departmentInspectors[i];
-        final bool isPresent = emp['hasCheckedIn'] == true;
-        final bool isOut = emp['isCheckedOut'] == true;
-        final String name = (emp['name'] ?? 'مفتش').toString();
-        final String grade = (emp['grade'] ?? 'مفتش رئيسي').toString();
-        final String brigade = (emp['brigade'] ?? 'فرقة الرقابة').toString();
-        final int visitsCount = (emp['visitsCount'] as num?)?.toInt() ?? 0;
+    // Extract unique brigade names for quick filter
+    final brigadesSet = <String>{'الكل'};
+    for (final emp in _departmentInspectors) {
+      final b = (emp['brigade'] ?? '').toString().trim();
+      if (b.isNotEmpty) brigadesSet.add(b);
+    }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppTheme.CardColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isPresent
-                  ? AppTheme.SuccessColor.withValues(alpha: 0.3)
-                  : AppTheme.BorderColor.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
+    // Filter by search & brigade
+    final filtered = _departmentInspectors.where((emp) {
+      final name = (emp['name'] ?? '').toString().toLowerCase();
+      final brigade = (emp['brigade'] ?? '').toString();
+      final grade = (emp['grade'] ?? '').toString().toLowerCase();
+      final matchesSearch = _inspectorSearchQuery.isEmpty ||
+          name.contains(_inspectorSearchQuery.toLowerCase()) ||
+          grade.contains(_inspectorSearchQuery.toLowerCase()) ||
+          brigade.toLowerCase().contains(_inspectorSearchQuery.toLowerCase());
+      final matchesBrigade = _selectedBrigadeFilter == 'الكل' || brigade == _selectedBrigadeFilter;
+      return matchesSearch && matchesBrigade;
+    }).toList();
+
+    return Column(
+      children: [
+        // Top Toolbar: Search + Brigade Filter
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          color: const Color(0xFF1E0B26),
+          child: Column(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: (isPresent ? AppTheme.SuccessColor : Colors.grey).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+              TextField(
+                textDirection: TextDirection.rtl,
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'بحث عن مفتش بالاسم، الرتبة أو الفرقة...',
+                  hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white38),
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.AccentColor, size: 20),
+                  suffixIcon: _inspectorSearchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16, color: Colors.white60),
+                          onPressed: () => setState(() => _inspectorSearchQuery = ''),
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: const Color(0xFF2D1035),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
-                child: Icon(
-                  Icons.person,
-                  color: isPresent ? AppTheme.SuccessColor : Colors.grey,
-                  size: 24,
-                ),
+                onChanged: (val) => setState(() => _inspectorSearchQuery = val),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 2),
-                    Text('$grade • $brigade', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary)),
-                    if (isPresent) ...[
-                      const SizedBox(height: 2),
-                      Text('الموقع: ${emp['location']} • $visitsCount معاينات', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981))),
-                    ],
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isOut
-                      ? const Color(0xFF6B7280).withValues(alpha: 0.2)
-                      : (isPresent ? AppTheme.SuccessColor.withValues(alpha: 0.2) : AppTheme.WarningColor.withValues(alpha: 0.2)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  isOut ? 'انصرف' : (isPresent ? 'في الميدان' : 'غير ملتحق'),
-                  style: TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: isOut ? Colors.grey : (isPresent ? AppTheme.SuccessColor : AppTheme.WarningColor),
-                  ),
+              const SizedBox(height: 8),
+              // Brigade Filter Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: brigadesSet.map((b) {
+                    final isSelected = _selectedBrigadeFilter == b;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: ChoiceChip(
+                        label: Text(
+                          b,
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppTheme.AccentColor,
+                        backgroundColor: const Color(0xFF2D1035),
+                        onSelected: (sel) {
+                          if (sel) setState(() => _selectedBrigadeFilter = b);
+                        },
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+
+        // Inspectors List
+        Expanded(
+          child: filtered.isEmpty
+              ? const Center(
+                  child: Text(
+                    'لا توجد نتائج مطابقة للبحث أو التصفية',
+                    style: TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (ctx, i) {
+                    final emp = filtered[i];
+                    final bool isPresent = emp['hasCheckedIn'] == true;
+                    final bool isOut = emp['isCheckedOut'] == true;
+                    final bool isLeader = emp['isBrigadeLeader'] == true;
+                    final String name = (emp['name'] ?? 'مفتش').toString();
+                    final String grade = (emp['grade'] ?? 'مفتش رئيسي').toString();
+                    final String brigade = (emp['brigade'] ?? 'فرقة الرقابة').toString();
+                    final int visitsCount = (emp['visitsCount'] as num?)?.toInt() ?? 0;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.CardColor,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isLeader
+                              ? const Color(0xFFD4AF37).withValues(alpha: 0.5)
+                              : (isPresent ? AppTheme.SuccessColor.withValues(alpha: 0.3) : AppTheme.BorderColor.withValues(alpha: 0.3)),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Stack(
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: (isPresent ? AppTheme.SuccessColor : Colors.grey).withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.person,
+                                      color: isPresent ? AppTheme.SuccessColor : Colors.grey,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  if (isLeader)
+                                    Positioned(
+                                      right: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFD4AF37),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.star, size: 10, color: Colors.black),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            name,
+                                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (isLeader) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: const Color(0xFFD4AF37), width: 0.5),
+                                            ),
+                                            child: const Text(
+                                              'رئيس فرقة',
+                                              style: TextStyle(fontFamily: 'Tajawal', fontSize: 9, color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$grade • $brigade',
+                                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (isPresent) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'الموقع: ${emp['location']} • $visitsCount معاينات',
+                                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981)),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: isOut
+                                          ? const Color(0xFF6B7280).withValues(alpha: 0.2)
+                                          : (isPresent ? AppTheme.SuccessColor.withValues(alpha: 0.2) : AppTheme.WarningColor.withValues(alpha: 0.2)),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      isOut ? 'انصرف' : (isPresent ? 'في الميدان' : 'غير ملتحق'),
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: isOut ? Colors.grey : (isPresent ? AppTheme.SuccessColor : AppTheme.WarningColor),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  InkWell(
+                                    onTap: () => _showEditBrigadeDialog(emp),
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.edit_note, size: 14, color: AppTheme.AccentColor),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            'تعديل التشكيل',
+                                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.AccentColor, fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
