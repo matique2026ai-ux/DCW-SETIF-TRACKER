@@ -559,31 +559,42 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
                   const SizedBox(height: 14),
 
-                  // Duration choice
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text('أمر مهمة يومي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                  // Duration choice (Daily / Weekly / Monthly)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text('أمر مهمة يومي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                           selected: programDuration == 'daily',
                           selectedColor: AppTheme.AccentColor,
+                          backgroundColor: const Color(0xFF1E0B26),
                           onSelected: (selected) {
                             if (selected) setModalState(() => programDuration = 'daily');
                           },
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Center(child: Text('برنامج رقابي أسبوعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text('برنامج أسبوعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                           selected: programDuration == 'weekly',
                           selectedColor: AppTheme.AccentColor,
+                          backgroundColor: const Color(0xFF1E0B26),
                           onSelected: (selected) {
                             if (selected) setModalState(() => programDuration = 'weekly');
                           },
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text('برنامج شهري مسطر', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                          selected: programDuration == 'monthly',
+                          selectedColor: AppTheme.AccentColor,
+                          backgroundColor: const Color(0xFF1E0B26),
+                          onSelected: (selected) {
+                            if (selected) setModalState(() => programDuration = 'monthly');
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -1069,7 +1080,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                     final prog = _programs[i];
                     final String title = (prog['Title'] ?? 'برنامج رقابي').toString();
                     final String area = (prog['TargetArea'] ?? 'ولاية سطيف').toString();
-                    final String type = prog['Type'] == 'daily' ? 'يومي' : 'أسبوعي';
+                    final String type = prog['Type'] == 'daily' ? 'يومي' : (prog['Type'] == 'weekly' ? 'أسبوعي' : 'شهري');
                     final String focus = (prog['FocusPoints'] ?? 'مراقبة الممارسات التجارية').toString();
 
                     // Parse assigned badge if present in title

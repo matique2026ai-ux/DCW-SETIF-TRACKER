@@ -67,11 +67,25 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
   Future<void> _loadActiveProgram() async {
     try {
-      final api = context.read<AuthService>().api;
-      final progs = await api.getPrograms();
+      final auth = context.read<AuthService>();
+      final user = auth.currentUser;
+      final api = auth.api;
+      final deptName = user?.serviceName ?? '';
+      final empName = user?.fullName ?? '';
+      final progs = await api.getPrograms(service: deptName.isNotEmpty ? deptName : null);
       if (progs.isNotEmpty && mounted) {
+        // Match by inspector name first, then fallback to latest department mission
+        Map<String, dynamic>? matchingProg;
+        for (final p in progs) {
+          final t = (p['Title'] ?? '').toString();
+          if (empName.isNotEmpty && t.contains(empName)) {
+            matchingProg = p;
+            break;
+          }
+        }
+        matchingProg ??= progs.first;
         setState(() {
-          _activeProgram = progs.first;
+          _activeProgram = matchingProg;
         });
       }
     } catch (_) {}
