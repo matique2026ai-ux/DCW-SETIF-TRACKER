@@ -246,7 +246,21 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     String programCategory = 'برنامج قطاعي وطني مسطر (وزاري / ولائي)';
     String targetActivity = 'تجار التجزئة والسوبرماركت';
     String programDuration = 'daily';
+    
+    // Assignment Mode: 'brigade' (default), 'all', 'inspector'
+    String assignmentMode = 'brigade';
+    String? selectedBrigadeName;
     int? selectedInspectorId;
+
+    // Build Brigade Map from department inspectors
+    final Map<String, List<Map<String, dynamic>>> brigadesMap = {};
+    for (final emp in _departmentInspectors) {
+      final b = (emp['brigade'] ?? 'فرقة التدخل 01 (حي تبيانت والمركز)').toString().trim();
+      if (b.isNotEmpty) brigadesMap.putIfAbsent(b, () => []).add(emp);
+    }
+    if (brigadesMap.isNotEmpty) {
+      selectedBrigadeName = brigadesMap.keys.first;
+    }
 
     if (_departmentName.contains('المنافسة')) {
       titleCtrl.text = 'مراقبة احترام الأسعار المقننة وهوامش الربح والفوترة';
@@ -284,7 +298,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
             ],
           ),
           content: Container(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 500),
             width: double.maxFinite,
             child: SingleChildScrollView(
               child: Column(
@@ -340,6 +354,134 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
                   const SizedBox(height: 12),
 
+                  // Assignment Scope Mode Choice Chips
+                  const Text(
+                    'نطاق وتوجيه المهمة الرقابية:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ChoiceChip(
+                          avatar: const Icon(Icons.groups, size: 16),
+                          label: const Text('تكليف فرقة كاملة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                          selected: assignmentMode == 'brigade',
+                          selectedColor: AppTheme.AccentColor,
+                          backgroundColor: const Color(0xFF1E0B26),
+                          onSelected: (sel) {
+                            if (sel) setModalState(() => assignmentMode = 'brigade');
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          avatar: const Icon(Icons.public, size: 16),
+                          label: const Text('تعميم شامل للمصلحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                          selected: assignmentMode == 'all',
+                          selectedColor: AppTheme.AccentColor,
+                          backgroundColor: const Color(0xFF1E0B26),
+                          onSelected: (sel) {
+                            if (sel) setModalState(() => assignmentMode = 'all');
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          avatar: const Icon(Icons.person, size: 16),
+                          label: const Text('تكليف مفتش فردي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                          selected: assignmentMode == 'inspector',
+                          selectedColor: AppTheme.AccentColor,
+                          backgroundColor: const Color(0xFF1E0B26),
+                          onSelected: (sel) {
+                            if (sel) setModalState(() => assignmentMode = 'inspector');
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Assignment Dynamic Selector
+                  if (assignmentMode == 'brigade') ...[
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedBrigadeName,
+                      isExpanded: true,
+                      dropdownColor: const Color(0xFF2D1035),
+                      decoration: InputDecoration(
+                        labelText: 'اختر الفرقة الرقابية المكلفة بالتنفيذ',
+                        prefixIcon: const Icon(Icons.shield, color: AppTheme.AccentColor, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: const Color(0xFF1E0B26),
+                      ),
+                      items: brigadesMap.entries.map((entry) {
+                        final bName = entry.key;
+                        final members = entry.value;
+                        final leader = members.firstWhere(
+                          (m) => m['isBrigadeLeader'] == true,
+                          orElse: () => members.first,
+                        );
+                        final leaderName = (leader['name'] ?? 'رئيس الفرقة').toString();
+                        return DropdownMenuItem(
+                          value: bName,
+                          child: Text(
+                            '$bName (${members.length} أعضاء • بقيادة: $leaderName)',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setModalState(() => selectedBrigadeName = val),
+                    ),
+                  ] else if (assignmentMode == 'all') ...[
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.campaign, color: Color(0xFFD4AF37), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'سيتم إرسال هذا الأمر إلى كافة الفرق الرقابية الـ (${brigadesMap.length} فرق) بالمصلحة دفعة واحدة.',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    DropdownButtonFormField<int?>(
+                      initialValue: selectedInspectorId,
+                      isExpanded: true,
+                      dropdownColor: const Color(0xFF2D1035),
+                      decoration: InputDecoration(
+                        labelText: 'اختر المفتش المكلف',
+                        prefixIcon: const Icon(Icons.badge, color: AppTheme.AccentColor, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: const Color(0xFF1E0B26),
+                      ),
+                      items: _departmentInspectors.map((insp) {
+                        final id = insp['id'] as int;
+                        final name = insp['name'] as String;
+                        final grade = insp['grade'] as String;
+                        return DropdownMenuItem(
+                          value: id,
+                          child: Text('$name ($grade)', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12), overflow: TextOverflow.ellipsis),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setModalState(() => selectedInspectorId = val),
+                    ),
+                  ],
+
+                  const SizedBox(height: 12),
+
                   // Title
                   TextField(
                     controller: titleCtrl,
@@ -352,42 +494,6 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                       filled: true,
                       fillColor: const Color(0xFF1E0B26),
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Assign Inspector / Brigade from Department Only
-                  const Text(
-                    'الفرقة الرقابية أو المفتش المكلف بالتنفيذ:',
-                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
-                  ),
-                  const SizedBox(height: 4),
-                  DropdownButtonFormField<int?>(
-                    initialValue: selectedInspectorId,
-                    isExpanded: true,
-                    dropdownColor: const Color(0xFF2D1035),
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.badge, color: AppTheme.AccentColor, size: 18),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: const Color(0xFF1E0B26),
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('تعميم على كافة فرق المفتشين بالمصلحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37))),
-                      ),
-                      ..._departmentInspectors.map((insp) {
-                        final id = insp['id'] as int;
-                        final name = insp['name'] as String;
-                        final grade = insp['grade'] as String;
-                        return DropdownMenuItem(
-                          value: id,
-                          child: Text('$name ($grade)', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12), overflow: TextOverflow.ellipsis),
-                        );
-                      }),
-                    ],
-                    onChanged: (val) => setModalState(() => selectedInspectorId = val),
                   ),
 
                   const SizedBox(height: 12),
@@ -497,9 +603,14 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 try {
                   final api = auth.api;
                   String assignmentTag = '[تعميم على كافة الفرق]';
-                  String successMessage = '✅ تم اعتماد وتعميم أمر المهمة الرقابية على كافة فرق المفتشين بالمصلحة بنجاح';
+                  String successMessage = '✅ تم اعتماد وتعميم أمر المهمة الرقابية على كافة فرق المفتشين بنجاح';
 
-                  if (selectedInspectorId != null) {
+                  if (assignmentMode == 'brigade') {
+                    final bName = selectedBrigadeName ?? 'فرقة الرقابة';
+                    final members = brigadesMap[bName] ?? [];
+                    assignmentTag = '[المكلف: $bName (${members.length} أعضاء)]';
+                    successMessage = '✅ تم إصدار أمر المهمة وتكليف $bName بكافة أعضائها بنجاح';
+                  } else if (assignmentMode == 'inspector' && selectedInspectorId != null) {
                     final assignedEmp = _departmentInspectors.firstWhere(
                       (e) => e['id'] == selectedInspectorId,
                       orElse: () => {'name': 'المفتش #$selectedInspectorId'},
