@@ -108,6 +108,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: targetType,
+                  isExpanded: true,
                   dropdownColor: AppTheme.CardColor,
                   decoration: InputDecoration(
                     labelText: 'الأنشطة المستهدفة',

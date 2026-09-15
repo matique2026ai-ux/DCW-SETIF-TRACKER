@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/screens/splash_screen.dart';
+import 'package:drh_setif_tracker/screens/common/verification_screen.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
@@ -65,6 +66,19 @@ class DRHTrackerApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: const [Locale('ar', ''), Locale('fr', '')],
+            onGenerateRoute: (settings) {
+              final uri = Uri.parse(settings.name ?? '/');
+              if (uri.path == '/verify' || uri.queryParameters.containsKey('emp') || uri.queryParameters.containsKey('id')) {
+                return MaterialPageRoute(
+                  builder: (_) => VerificationScreen(params: uri.queryParameters),
+                  settings: settings,
+                );
+              }
+              return MaterialPageRoute(
+                builder: (_) => const SplashScreen(),
+                settings: settings,
+              );
+            },
             home: const SplashScreen(),
           );
         },

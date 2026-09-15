@@ -482,13 +482,16 @@ class _LoginScreenState extends State<LoginScreen>
         child: Row(
           children: [
             const Icon(Icons.chevron_left, size: 16, color: Colors.white38),
-            const Spacer(),
-            Text(
-              '$username / $password',
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 11,
-                color: Colors.white54,
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '$username / $password',
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: Colors.white54,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 8),
@@ -498,6 +501,7 @@ class _LoginScreenState extends State<LoginScreen>
                 fontFamily: 'Tajawal',
                 fontSize: 11,
                 color: Color(0xFFD4AF37),
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],

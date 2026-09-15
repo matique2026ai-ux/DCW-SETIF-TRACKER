@@ -152,8 +152,9 @@ class _AdminScreenState extends State<AdminScreen>
             ],
           ),
           content: SingleChildScrollView(
-            child: SizedBox(
-              width: 400,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
+              width: double.maxFinite,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -195,6 +196,7 @@ class _AdminScreenState extends State<AdminScreen>
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: selectedRole,
+                    isExpanded: true,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
                     decoration: const InputDecoration(
@@ -216,6 +218,7 @@ class _AdminScreenState extends State<AdminScreen>
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     initialValue: selectedEmpId,
+                    isExpanded: true,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
                     decoration: const InputDecoration(
@@ -327,8 +330,9 @@ class _AdminScreenState extends State<AdminScreen>
             ],
           ),
           content: SingleChildScrollView(
-            child: SizedBox(
-              width: 400,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
+              width: double.maxFinite,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -346,6 +350,7 @@ class _AdminScreenState extends State<AdminScreen>
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: selectedRole,
+                    isExpanded: true,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
                     decoration: const InputDecoration(
@@ -367,6 +372,7 @@ class _AdminScreenState extends State<AdminScreen>
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     initialValue: selectedEmpId,
+                    isExpanded: true,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
                     decoration: const InputDecoration(

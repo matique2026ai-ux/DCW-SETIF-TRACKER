@@ -597,6 +597,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
                 initialValue: selectedReason,
+                isExpanded: true,
                 dropdownColor: AppTheme.CardColor,
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -989,8 +990,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 ),
               ],
             ),
-            content: SizedBox(
-              width: 500,
+            content: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
+              width: double.maxFinite,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1031,6 +1033,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: shopType,
+                      isExpanded: true,
                       dropdownColor: AppTheme.CardColor,
                       decoration: InputDecoration(
                         labelText: 'طبيعة النشاط التجاري',
@@ -1082,6 +1085,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         initialValue: violationType,
+                        isExpanded: true,
                         dropdownColor: AppTheme.CardColor,
                         decoration: InputDecoration(
                           labelText: 'طبيعة المخالفة المرصودة',
@@ -1105,6 +1109,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         initialValue: legalAction,
+                        isExpanded: true,
                         dropdownColor: AppTheme.CardColor,
                         decoration: InputDecoration(
                           labelText: 'الإجراء القانوني المتخذ',
