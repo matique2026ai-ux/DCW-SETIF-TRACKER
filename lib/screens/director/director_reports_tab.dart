@@ -17,6 +17,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   List<Map<String, dynamic>> _employees = [];
   List<Map<String, dynamic>> _attendance = [];
   List<Map<String, dynamic>> _deductions = [];
+  List<Map<String, dynamic>> _programs = [];
   String _searchQuery = '';
   bool _isLoading = true;
 
@@ -32,11 +33,13 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       final emp = await api.getEmployees();
       final att = await api.getAttendance();
       final ded = await api.getDeductions();
+      final progs = await api.getPrograms();
       if (mounted) {
         setState(() {
           _employees = emp;
           _attendance = att;
           _deductions = ded;
+          _programs = progs;
           _isLoading = false;
         });
       }
@@ -44,6 +47,423 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  void _showProgramsDialog() {
+    final checkedInIds = _attendance.map((a) => a['EmployeeId']).toSet();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF240D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Color(0xFF4A2050)),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.assignment, color: Color(0xFF38BDF8), size: 22),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'البرامج الرقابية وأوامر المهمة السارية',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'متابعة برامج مصالح الرقابة الاقتصادية وقمع الغش',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 10,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Container(
+          constraints: const BoxConstraints(maxWidth: 520),
+          width: double.maxFinite,
+          child: _programs.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(
+                    child: Text(
+                      'لا توجد برامج رقابية مسجلة حالياً',
+                      style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60),
+                    ),
+                  ),
+                )
+              : SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _programs.map((p) {
+                      final title = p['Title']?.toString() ?? 'برنامج رقابي';
+                      final service = p['ServiceName']?.toString() ?? 'مصلحة الرقابة';
+                      final targetArea = p['TargetArea']?.toString() ?? 'ولاية سطيف';
+                      final focus = p['FocusPoints']?.toString() ?? '';
+                      final isConcurrence = service.contains('المنافسة');
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E0B26),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isConcurrence
+                                ? const Color(0xFF3B82F6).withValues(alpha: 0.4)
+                                : const Color(0xFF10B981).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (isConcurrence ? const Color(0xFF3B82F6) : const Color(0xFF10B981))
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    service,
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: isConcurrence ? const Color(0xFF60A5FA) : const Color(0xFF34D399),
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 14),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'أمر مهمة ساري',
+                                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, size: 13, color: Color(0xFFD4AF37)),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    'القطاع الإقليمي: $targetArea',
+                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFCD34D)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (focus.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.center_focus_strong, size: 13, color: Colors.white54),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      'أهداف المداهمة والرقابة: $focus',
+                                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            // Inspectors working on this department/program
+                            Builder(
+                              builder: (_) {
+                                final deptInspectors = _employees.where((e) {
+                                  final s = (e['Service'] ?? '').toString();
+                                  return s.contains(service) || service.contains(s);
+                                }).toList();
+
+                                if (deptInspectors.isEmpty) return const SizedBox.shrink();
+
+                                return Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black26,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.groups, size: 13, color: Color(0xFF38BDF8)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'الفرق المفتشية المسندة للمهمة (${deptInspectors.length} مفتشاً):',
+                                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8)),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        children: deptInspectors.take(8).map((emp) {
+                                          final isAttended = checkedInIds.contains(emp['Id']);
+                                          final name = '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim();
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isAttended ? const Color(0xFF10B981).withValues(alpha: 0.2) : Colors.white10,
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: isAttended ? const Color(0xFF10B981).withValues(alpha: 0.5) : Colors.white24),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  isAttended ? Icons.check_circle : Icons.circle_outlined,
+                                                  size: 10,
+                                                  color: isAttended ? const Color(0xFF10B981) : Colors.white38,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  name.isNotEmpty ? name : 'مفتش #${emp['Id']}',
+                                                  style: TextStyle(
+                                                    fontFamily: 'Tajawal',
+                                                    fontSize: 10,
+                                                    color: isAttended ? Colors.white : Colors.white60,
+                                                    fontWeight: isAttended ? FontWeight.bold : FontWeight.normal,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+        ),
+
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showNewProgramDialog();
+            },
+            icon: const Icon(Icons.add_task, size: 16),
+            label: const Text(
+              '+ تسطير برنامج ولائي جديد',
+              style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: const Color(0xFF1E0B26),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNewProgramDialog() {
+    final titleCtrl = TextEditingController(text: 'برنامج ولائي لمراقبة الممارسات التجارية وقمع الغش');
+    final areaCtrl = TextEditingController(text: 'بلديات سطيف، العلمة، وعين ولمان');
+    final focusCtrl = TextEditingController(text: 'مراقبة الأسعار المقننة، الفوترة، ومطابقة المواد الاستهلاكية الحساسة');
+    String selectedService = 'مصلحة حماية المستهلك وقمع الغش';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF240D2D),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: Color(0xFFD4AF37)),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.add_task, color: Color(0xFFD4AF37), size: 22),
+              SizedBox(width: 10),
+              Text(
+                'تسطير برنامج رقابي ولائي جديد',
+                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('المصلحة المكلفة بالتنفيذ:', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70)),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedService,
+                    dropdownColor: const Color(0xFF2D1035),
+                    isExpanded: true,
+                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'مصلحة حماية المستهلك وقمع الغش',
+                        child: Text('مصلحة حماية المستهلك وقمع الغش'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
+                        child: Text('مصلحة المنافسة والتحقيقات الاقتصادية'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => selectedService = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: titleCtrl,
+                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'عنوان البرنامج الرقابي / أمر المهمة *',
+                      labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: areaCtrl,
+                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'القطاع الجغرافي المستهدف *',
+                      labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: focusCtrl,
+                    maxLines: 2,
+                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'محاور التفتيش والأهداف الرئيسية',
+                      labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final title = titleCtrl.text.trim();
+                final area = areaCtrl.text.trim();
+                final focus = focusCtrl.text.trim();
+                if (title.isEmpty) return;
+
+                Navigator.pop(ctx);
+                setState(() => _isLoading = true);
+
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  final api = context.read<AuthService>().api;
+                  final user = context.read<AuthService>().currentUser;
+                  await api.createProgram(
+                    title: title,
+                    targetArea: area,
+                    focusPoints: focus,
+                    serviceName: selectedService,
+                    createdBy: user?.id ?? 1,
+                    type: 'provincial_mission',
+                  );
+                  await _load();
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ تم تسطير وإسناد البرنامج الرقابي الولائي بنجاح', style: TextStyle(fontFamily: 'Tajawal')),
+                        backgroundColor: Color(0xFF10B981),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() => _isLoading = false);
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.check, size: 16),
+              label: const Text('تأكيد وإصدار البرنامج', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: const Color(0xFF1E0B26),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +522,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
           ),
           const SizedBox(height: 16),
 
-          // Action Buttons: PDF Export & Review Justifications
+          // Action Buttons: PDF Export, Programs Review, Justifications Review
           Row(
             children: [
               Expanded(
@@ -115,13 +535,13 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                       directorName: 'السيد المدير الولائي',
                     );
                   },
-                  icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 18),
+                  icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 16),
                   label: const Text(
                     'تصدير محضر PDF',
                     style: TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.black,
                     ),
                   ),
@@ -132,17 +552,38 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _showProgramsDialog,
+                  icon: const Icon(Icons.assignment, color: Colors.white, size: 16),
+                  label: const Text(
+                    'البرامج الرقابية',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => JustificationsReviewScreen.show(context),
-                  icon: const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFF38BDF8), size: 18),
+                  icon: const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFF38BDF8), size: 16),
                   label: const Text(
                     'مبررات الغياب',
                     style: TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Color(0xFF38BDF8),
                     ),
                   ),
