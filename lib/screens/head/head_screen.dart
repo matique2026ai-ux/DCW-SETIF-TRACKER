@@ -3,13 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
-import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
-
-
 
 class HeadScreen extends StatefulWidget {
   const HeadScreen({super.key});
@@ -23,7 +20,8 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   bool _isLoading = true;
   List<Map<String, dynamic>> _programs = [];
   List<Map<String, dynamic>> _todayVisits = [];
-  List<Map<String, dynamic>> _inspectors = [];
+  List<Map<String, dynamic>> _departmentInspectors = [];
+  String _departmentName = '';
 
   @override
   void initState() {
@@ -41,16 +39,56 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   Future<void> _loadAllData() async {
     setState(() => _isLoading = true);
     try {
-      final api = context.read<AuthService>().api;
-      final progs = await api.getPrograms();
+      final auth = context.read<AuthService>();
+      final user = auth.currentUser;
+      final api = auth.api;
+
+      // Determine Department Name from user role or service
+      if (user?.serviceName != null && user!.serviceName!.isNotEmpty) {
+        _departmentName = user.serviceName!;
+      } else if (user?.username == 'chef_concurrence') {
+        _departmentName = 'مصلحة المنافسة والتحقيقات الاقتصادية';
+      } else {
+        _departmentName = 'مصلحة حماية المستهلك وقمع الغش';
+      }
+
+      // Fetch programs, visits and employees
+      final progs = await api.getPrograms(service: _departmentName);
       final visits = await api.getTodayVisits();
+      final allEmployees = await api.getEmployees(department: _departmentName);
       final mapData = await api.getMapData();
+
+      // Build Map for fast attendance & visit lookup
+      final mapLookup = {for (var m in mapData) m['id']: m};
+
+      final List<Map<String, dynamic>> deptList = [];
+      for (final emp in allEmployees) {
+        final id = emp['Id'] as int;
+        final liveInfo = mapLookup[id];
+        final fullName = '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim();
+        
+        deptList.add({
+          'id': id,
+          'name': fullName.isNotEmpty ? fullName : 'مفتش #$id',
+          'grade': emp['Grade'] ?? emp['FonctionExercee'] ?? 'مفتش رئيسي للرقابة',
+          'service': emp['Service'] ?? _departmentName,
+          'brigade': emp['BrigadeName'] ?? 'فرقة الرقابة والتفتيش',
+          'hasCheckedIn': liveInfo != null ? (liveInfo['hasCheckedIn'] == true) : false,
+          'isCheckedOut': liveInfo != null ? (liveInfo['isCheckedOut'] == true) : false,
+          'visitsCount': liveInfo != null ? ((liveInfo['visitsCount'] as num?)?.toInt() ?? 0) : 0,
+          'location': liveInfo?['location'] ?? 'المقر الرئيسي للمديرية',
+          'checkInTime': liveInfo?['checkInTime'],
+        });
+      }
 
       if (mounted) {
         setState(() {
           _programs = progs;
-          _todayVisits = visits;
-          _inspectors = mapData;
+          _todayVisits = visits.where((v) {
+            final s = v['Service']?.toString() ?? '';
+            return s.isEmpty || s.contains(_departmentName) || _departmentName.contains(s);
+          }).toList();
+          _departmentInspectors = deptList;
           _isLoading = false;
         });
       }
@@ -61,10 +99,22 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
   void _showNewMissionDialog() {
     final titleCtrl = TextEditingController();
-    final areaCtrl = TextEditingController(text: 'سطيف والعلمة');
-    final focusCtrl = TextEditingController(text: 'إشهار الأسعار والفوترة وتتبع مسار المنتجات');
-    String targetType = 'تجار التجزئة والسوبرماركت';
-    String programType = 'daily';
+    final areaCtrl = TextEditingController(text: 'بلديات سطيف والعلمة وعين ولمان');
+    final focusCtrl = TextEditingController();
+    
+    // Official Algerian Program Categories
+    String programCategory = 'برنامج قطاعي وطني مسطر (وزاري / ولائي)';
+    String targetActivity = 'تجار التجزئة والسوبرماركت';
+    String programDuration = 'daily';
+    int? selectedInspectorId;
+
+    if (_departmentName.contains('المنافسة')) {
+      titleCtrl.text = 'مراقبة احترام الأسعار المقننة وهوامش الربح والفوترة';
+      focusCtrl.text = 'التأكد من إشهار الأسعار، فواتير التوزيع لمادتي الزيت والحليب، ومكافحة المضاربة';
+    } else {
+      titleCtrl.text = 'مراقبة شروط النظافة الصحية ومطابقة المواد الغذائية الحساسة';
+      focusCtrl.text = 'مراقبة سلسلة التبريد، شروط حفظ اللحوم والمشتقات اللبنية، وسحب عينات مخبرية';
+    }
 
     showDialog(
       context: context,
@@ -72,100 +122,231 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
         builder: (context, setModalState) => AlertDialog(
           backgroundColor: AppTheme.CardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.assignment_add, color: AppTheme.AccentColor, size: 24),
-              SizedBox(width: 10),
-              Text(
-                'إصدار أمر مهمة رقابية لفرق المفتشين',
-                style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold),
+              const Icon(Icons.assignment_add, color: AppTheme.AccentColor, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'إصدار أمر مهمة رقابية لفرق المفتشين',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _departmentName,
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: titleCtrl,
-                  textDirection: TextDirection.rtl,
-                  decoration: InputDecoration(
-                    labelText: 'موضوع المهمة / البرنامج الرقابي',
-                    hintText: 'مثال: مراقبة أسعار المواد واسعة الاستهلاك',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          content: Container(
+            constraints: const BoxConstraints(maxWidth: 480),
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Program Category Dropdown
+                  const Text(
+                    'نوع البرنامج الرقابي القانوني:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: areaCtrl,
-                  textDirection: TextDirection.rtl,
-                  decoration: InputDecoration(
-                    labelText: 'القطاع الجغرافي المستهدف',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: targetType,
-                  isExpanded: true,
-                  dropdownColor: AppTheme.CardColor,
-                  decoration: InputDecoration(
-                    labelText: 'الأنشطة المستهدفة',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'تجار التجزئة والسوبرماركت', child: Text('تجار التجزئة والسوبرماركت', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'أسواق الجملة للخضر والفواكه', child: Text('أسواق الجملة للخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'المخابز ومحلات الحلويات', child: Text('المخابز ومحلات الحلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'المذابح وتجار اللحوم البيضاء والحمراء', child: Text('المذابح وتجار اللحوم', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                    DropdownMenuItem(value: 'وحدات الإنتاج والتحويل الصناعي', child: Text('وحدات الإنتاج والتحويل', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) setModalState(() => targetType = val);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: focusCtrl,
-                  textDirection: TextDirection.rtl,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: 'النقاط البؤرية والتعليمات الرقابية',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('أمر مهمة يومي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
-                        selected: programType == 'daily',
-                        onSelected: (selected) {
-                          if (selected) setModalState(() => programType = 'daily');
-                        },
-                      ),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    initialValue: programCategory,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.category, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('برنامج أسبوعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
-                        selected: programType == 'weekly',
-                        onSelected: (selected) {
-                          if (selected) setModalState(() => programType = 'weekly');
-                        },
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'برنامج قطاعي وطني مسطر (وزاري / ولائي)',
+                        child: Text('برنامج قطاعي وطني مسطر (وزاري / ولائي)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
                       ),
+                      DropdownMenuItem(
+                        value: 'برنامج التدخل الميداني الدوري (مراقبة اعتيادية)',
+                        child: Text('برنامج التدخل الميداني الدوري (مراقبة اعتيادية)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'تحقيقات اقتصادية وتتبع مسالك التوزيع والفوترة',
+                        child: Text('تحقيقات اقتصادية وتتبع مسالك التوزيع', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'برنامج سحب العينات والتحاليل المخبرية (CACQE)',
+                        child: Text('برنامج سحب العينات والتحاليل المخبرية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'تدخل استعجالي وشكاوى المستهلكين والإخطارات',
+                        child: Text('تدخل استعجالي وشكاوى المستهلكين', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'لجنة ولائية مشتركة (بيطرة / أمن / صحة)',
+                        child: Text('لجنة ولائية مشتركة (بيطرة / أمن / صحة)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => programCategory = val);
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Title
+                  TextField(
+                    controller: titleCtrl,
+                    textDirection: TextDirection.rtl,
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'موضوع المهمة وأمر التكليف *',
+                      prefixIcon: const Icon(Icons.title, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Assign Inspector / Brigade from Department Only
+                  const Text(
+                    'الفرقة الرقابية أو المفتش المكلف بالتنفيذ:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<int?>(
+                    initialValue: selectedInspectorId,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.badge, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('تعميم على كافة فرق المفتشين بالمصلحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37))),
+                      ),
+                      ..._departmentInspectors.map((insp) {
+                        final id = insp['id'] as int;
+                        final name = insp['name'] as String;
+                        final grade = insp['grade'] as String;
+                        return DropdownMenuItem(
+                          value: id,
+                          child: Text('$name ($grade)', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12), overflow: TextOverflow.ellipsis),
+                        );
+                      }),
+                    ],
+                    onChanged: (val) => setModalState(() => selectedInspectorId = val),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Target Area
+                  TextField(
+                    controller: areaCtrl,
+                    textDirection: TextDirection.rtl,
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'الإقليم والبلديات المستهدفة *',
+                      hintText: 'مثال: بلدية سطيف، العلمة، عين ولمان، بوقاعة',
+                      prefixIcon: const Icon(Icons.location_on, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Target Activity
+                  DropdownButtonFormField<String>(
+                    initialValue: targetActivity,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    decoration: InputDecoration(
+                      labelText: 'طبيعة الأنشطة المستهدفة بالمعاينة',
+                      prefixIcon: const Icon(Icons.storefront, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'تجار التجزئة والسوبرماركت', child: Text('تجار التجزئة والمحلات التجارية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'أسواق الجملة للخضر والفواكه والمواد الغذائية', child: Text('أسواق الجملة ومستودعات التخزين', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'المخابز ومحلات صناعة الحلويات', child: Text('المخابز ومحلات الحلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'المذابح وتجار اللحوم البيضاء والحمراء والقصابات', child: Text('المذابح وتجار اللحوم والقصابات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'وحدات الإنتاج والتحويل الصناعي للمواد الاستهلاكية', child: Text('وحدات الإنتاج والتحويل الصناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                      DropdownMenuItem(value: 'المستوردين والموزعين المعتمدين والمستودعات', child: Text('المستوردين والموزعين والمستودعات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => targetActivity = val);
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Focus Instructions
+                  TextField(
+                    controller: focusCtrl,
+                    textDirection: TextDirection.rtl,
+                    maxLines: 2,
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'النقاط البؤرية والتعليمات الرقابية الميدانية',
+                      prefixIcon: const Icon(Icons.rule, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Duration choice
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('أمر مهمة يومي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          selected: programDuration == 'daily',
+                          selectedColor: AppTheme.AccentColor,
+                          onSelected: (selected) {
+                            if (selected) setModalState(() => programDuration = 'daily');
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('برنامج رقابي أسبوعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                          selected: programDuration == 'weekly',
+                          selectedColor: AppTheme.AccentColor,
+                          onSelected: (selected) {
+                            if (selected) setModalState(() => programDuration = 'weekly');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
+              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
             ),
             ElevatedButton.icon(
               onPressed: () async {
@@ -175,13 +356,14 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 final messenger = ScaffoldMessenger.of(context);
                 try {
                   final api = auth.api;
+                  final fullTitle = '[$programCategory] ${titleCtrl.text.trim()}';
                   await api.createProgram(
-                    title: titleCtrl.text.trim(),
+                    title: fullTitle,
                     targetArea: areaCtrl.text.trim(),
-                    targetType: targetType,
+                    targetType: targetActivity,
                     focusPoints: focusCtrl.text.trim(),
-                    type: programType,
-                    serviceName: user?.serviceName,
+                    type: programDuration,
+                    serviceName: _departmentName,
                     createdBy: user?.id,
                   );
 
@@ -191,7 +373,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   messenger.showSnackBar(
                     const SnackBar(
                       content: Text(
-                        '✅ تم إصدار أمر المهمة وتعميمه على فرق المفتشين بنجاح',
+                        '✅ تم اعتماد وتعميم أمر المهمة الرقابية على مفتشي المصلحة بنجاح',
                         style: TextStyle(fontFamily: 'Tajawal'),
                       ),
                       backgroundColor: AppTheme.SuccessColor,
@@ -207,7 +389,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 }
               },
               icon: const Icon(Icons.send, size: 16),
-              label: const Text('تعميم وتأشير الأمر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              label: const Text('إصدار واعتماد الأمر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
             ),
           ],
@@ -409,7 +591,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                 try {
                                   await api.approveVisit(
                                     visitId: visitId,
-                                    approvedBy: user?.fullName ?? user?.serviceName ?? 'رئيس المصلحة المختصة',
+                                    approvedBy: user?.fullName ?? _departmentName,
                                   );
                                   if (ctx.mounted) Navigator.pop(ctx);
                                   if (mounted) _loadAllData();
@@ -451,59 +633,51 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
     final user = context.watch<AuthService>().currentUser;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF2D1035),
-          automaticallyImplyLeading: false,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
+          backgroundColor: AppTheme.CardColor,
+          elevation: 0,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [Color(0xFFD4AF37), Color(0xFF92400E)]),
+              Text(
+                _departmentName,
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                child: const Center(child: Icon(Icons.admin_panel_settings, size: 18, color: Colors.white)),
               ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user?.fullName ?? loc.roleHead,
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    user?.serviceName ?? 'رئاسة المصلحة الرقابية',
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white70),
-                  ),
-                ],
+              Text(
+                'المسؤول: ${user?.fullName ?? user?.username ?? ''}',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 11,
+                  color: Color(0xFFD4AF37),
+                ),
               ),
             ],
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37)),
-              tooltip: 'رمز الحضور الرسمي للمصلحة (QR)',
+              icon: const Icon(Icons.qr_code, color: AppTheme.AccentColor),
+              tooltip: 'رمز الحضور الرسمي للمصلحة',
               onPressed: () {
                 QRCodeScreen.show(
                   context,
                   record: {
                     'type': 'DCW_SETIF_OFFICIAL_CHECKPOINT',
-                    'employeeName': user?.serviceName ?? 'مصلحة الرقابة — سطيف',
+                    'employeeName': _departmentName,
                     'date': DateTime.now().toIso8601String().split('T')[0],
                     'latitude': AppConstants.hqLatitude,
                     'longitude': AppConstants.hqLongitude,
                   },
-                  title: 'رمز الحضور الرسمي — ${user?.serviceName ?? 'مصلحة الرقابة'}',
+                  title: 'رمز الحضور الرسمي — $_departmentName',
                 );
               },
             ),
@@ -531,7 +705,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
             tabs: const [
               Tab(icon: Icon(Icons.assignment), text: 'أوامر المهمة والبرامج'),
               Tab(icon: Icon(Icons.fact_check), text: 'تأشير المعاينات'),
-              Tab(icon: Icon(Icons.people_alt), text: 'متابعة الأعوان'),
+              Tab(icon: Icon(Icons.people_alt), text: 'مفتشو المصلحة'),
             ],
           ),
         ),
@@ -566,7 +740,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           children: [
             Icon(Icons.assignment_outlined, size: 60, color: AppTheme.TextSecondary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
-            const Text('لا توجد أوامر مهمة مسجلة حالياً', style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, color: AppTheme.TextSecondary)),
+            Text('لا توجد أوامر مهمة مسجلة لـ $_departmentName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, color: AppTheme.TextSecondary)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _showNewMissionDialog,
@@ -635,7 +809,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 children: [
                   const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.AccentColor),
                   const SizedBox(width: 4),
-                  Text('القطاع المستهدف: $area', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70)),
+                  Expanded(
+                    child: Text('القطاع المستهدف: $area', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70), overflow: TextOverflow.ellipsis),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -652,8 +828,15 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
   Widget _buildVisitsValidationTab() {
     if (_todayVisits.isEmpty) {
-      return const Center(
-        child: Text('لم يتم رفع أي زيارات ميدانية بعد لليوم', style: TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary)),
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.fact_check_outlined, size: 50, color: Colors.white24),
+            const SizedBox(height: 12),
+            Text('لم يتم رفع أي زيارات ميدانية بعد لـ $_departmentName اليوم', style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary)),
+          ],
+        ),
       );
     }
 
@@ -719,21 +902,29 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildInspectorsPresenceTab() {
-    if (_inspectors.isEmpty) {
-      return const Center(
-        child: Text('لا توجد بيانات أعوان مسجلة', style: TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary)),
+    if (_departmentInspectors.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.people_outline, size: 50, color: Colors.white24),
+            const SizedBox(height: 12),
+            Text('لا يوجد مفتشون مسجلون تابعون لـ $_departmentName', style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary)),
+          ],
+        ),
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _inspectors.length,
+      itemCount: _departmentInspectors.length,
       itemBuilder: (ctx, i) {
-        final emp = _inspectors[i];
+        final emp = _departmentInspectors[i];
         final bool isPresent = emp['hasCheckedIn'] == true;
         final bool isOut = emp['isCheckedOut'] == true;
         final String name = (emp['name'] ?? 'مفتش').toString();
         final String grade = (emp['grade'] ?? 'مفتش رئيسي').toString();
+        final String brigade = (emp['brigade'] ?? 'فرقة الرقابة').toString();
         final int visitsCount = (emp['visitsCount'] as num?)?.toInt() ?? 0;
 
         return Container(
@@ -770,7 +961,11 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   children: [
                     Text(name, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 2),
-                    Text('$grade • $visitsCount معاينات منجزة', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary)),
+                    Text('$grade • $brigade', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary)),
+                    if (isPresent) ...[
+                      const SizedBox(height: 2),
+                      Text('الموقع: ${emp['location']} • $visitsCount معاينات', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981))),
+                    ],
                   ],
                 ),
               ),
