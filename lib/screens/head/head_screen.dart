@@ -29,6 +29,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadAllData();
   }
 
@@ -493,7 +496,20 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 final messenger = ScaffoldMessenger.of(context);
                 try {
                   final api = auth.api;
-                  final fullTitle = '[$programCategory] ${titleCtrl.text.trim()}';
+                  String assignmentTag = '[تعميم على كافة الفرق]';
+                  String successMessage = '✅ تم اعتماد وتعميم أمر المهمة الرقابية على كافة فرق المفتشين بالمصلحة بنجاح';
+
+                  if (selectedInspectorId != null) {
+                    final assignedEmp = _departmentInspectors.firstWhere(
+                      (e) => e['id'] == selectedInspectorId,
+                      orElse: () => {'name': 'المفتش #$selectedInspectorId'},
+                    );
+                    final String assignedName = (assignedEmp['name'] ?? 'المفتش').toString();
+                    assignmentTag = '[المكلف: $assignedName]';
+                    successMessage = '✅ تم إصدار أمر المهمة وتكليف المفتش: $assignedName بنجاح';
+                  }
+
+                  final fullTitle = '[$programCategory] $assignmentTag ${titleCtrl.text.trim()}';
                   await api.createProgram(
                     title: fullTitle,
                     targetArea: areaCtrl.text.trim(),
@@ -508,10 +524,10 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   _loadAllData();
 
                   messenger.showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text(
-                        '✅ تم اعتماد وتعميم أمر المهمة الرقابية على مفتشي المصلحة بنجاح',
-                        style: TextStyle(fontFamily: 'Tajawal'),
+                        successMessage,
+                        style: const TextStyle(fontFamily: 'Tajawal'),
                       ),
                       backgroundColor: AppTheme.SuccessColor,
                     ),
@@ -802,6 +818,11 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           ),
           actions: [
             IconButton(
+              icon: const Icon(Icons.add_task, color: AppTheme.AccentColor),
+              tooltip: 'إصدار أمر مهمة جديد',
+              onPressed: _showNewMissionDialog,
+            ),
+            IconButton(
               icon: const Icon(Icons.qr_code, color: AppTheme.AccentColor),
               tooltip: 'رمز الحضور الرسمي للمصلحة',
               onPressed: () {
@@ -870,96 +891,178 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildMissionsTab() {
-    if (_programs.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.assignment_outlined, size: 60, color: AppTheme.TextSecondary.withValues(alpha: 0.4)),
-            const SizedBox(height: 16),
-            Text('لا توجد أوامر مهمة مسجلة لـ $_departmentName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, color: AppTheme.TextSecondary)),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _showNewMissionDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('إصدار أول أمر مهمة', style: TextStyle(fontFamily: 'Tajawal')),
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _programs.length,
-      itemBuilder: (ctx, i) {
-        final prog = _programs[i];
-        final String title = (prog['Title'] ?? 'برنامج رقابي').toString();
-        final String area = (prog['TargetArea'] ?? 'ولاية سطيف').toString();
-        final String type = prog['Type'] == 'daily' ? 'يومي' : 'أسبوعي';
-        final String focus = (prog['FocusPoints'] ?? 'مراقبة الممارسات التجارية').toString();
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.CardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      children: [
+        // Top Permanent Header Toolbar (Never disappears on any phone!)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: const Color(0xFF1E0B26),
+          child: Row(
             children: [
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: prog['Type'] == 'daily' ? const Color(0xFF0284C7).withValues(alpha: 0.2) : const Color(0xFFD97706).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'أمر مهمة $type',
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 11,
-                        color: prog['Type'] == 'daily' ? const Color(0xFF38BDF8) : const Color(0xFFFCD34D),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  const Text(
+                    'أوامر المهمة والبرامج الميدانية',
+                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                  const Spacer(),
                   Text(
-                    prog['WeekDate']?.toString() ?? 'اليوم',
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+                    'إجمالي الأوامر المسجلة: ${_programs.length}',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.AccentColor),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text('القطاع المستهدف: $area', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70), overflow: TextOverflow.ellipsis),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'التعليمات: $focus',
-                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _showNewMissionDialog,
+                icon: const Icon(Icons.add_task, size: 16),
+                label: const Text(
+                  'أمر مهمة جديد',
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.AccentColor,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
               ),
             ],
           ),
-        );
-      },
+        ),
+
+        // List of Missions
+        Expanded(
+          child: _programs.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.assignment_outlined, size: 60, color: AppTheme.TextSecondary.withValues(alpha: 0.4)),
+                      const SizedBox(height: 16),
+                      Text('لا توجد أوامر مهمة مسجلة لـ $_departmentName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, color: AppTheme.TextSecondary)),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _showNewMissionDialog,
+                        icon: const Icon(Icons.add),
+                        label: const Text('إصدار أول أمر مهمة', style: TextStyle(fontFamily: 'Tajawal')),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _programs.length,
+                  itemBuilder: (ctx, i) {
+                    final prog = _programs[i];
+                    final String title = (prog['Title'] ?? 'برنامج رقابي').toString();
+                    final String area = (prog['TargetArea'] ?? 'ولاية سطيف').toString();
+                    final String type = prog['Type'] == 'daily' ? 'يومي' : 'أسبوعي';
+                    final String focus = (prog['FocusPoints'] ?? 'مراقبة الممارسات التجارية').toString();
+
+                    // Parse assigned badge if present in title
+                    String? assignedBadge;
+                    if (title.contains('[المكلف:')) {
+                      final start = title.indexOf('[المكلف:');
+                      final end = title.indexOf(']', start);
+                      if (end != -1) {
+                        assignedBadge = title.substring(start + 1, end).replaceAll('المكلف:', '').trim();
+                      }
+                    } else if (title.contains('[تعميم على كافة الفرق]')) {
+                      assignedBadge = 'تعميم شامل على المصلحة';
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.CardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: prog['Type'] == 'daily' ? const Color(0xFF0284C7).withValues(alpha: 0.2) : const Color(0xFFD97706).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'أمر مهمة $type',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 11,
+                                    color: prog['Type'] == 'daily' ? const Color(0xFF38BDF8) : const Color(0xFFFCD34D),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              if (assignedBadge != null) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFFD4AF37), width: 0.5),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.person_pin, size: 12, color: Color(0xFFD4AF37)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        assignedBadge,
+                                        style: const TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 10,
+                                          color: Color(0xFFD4AF37),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              const Spacer(),
+                              Text(
+                                prog['WeekDate']?.toString() ?? 'اليوم',
+                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            title,
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.AccentColor),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text('القطاع المستهدف: $area', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70), overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'التعليمات: $focus',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
