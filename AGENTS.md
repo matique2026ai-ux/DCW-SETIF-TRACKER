@@ -5,7 +5,8 @@
 > **حالة المنظومة**: جاهزة للإنتاج 100% (Production Ready)  
 > **مستودع التطبيق (Flutter)**: [DCW-SETIF-TRACKER](https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER)  
 > **مستودع الخادم (Node.js/Express)**: [DCW-SETIF-BACKEND](https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND)  
-> **السيرفر السحابي الحي**: `https://drh-setif-api.onrender.com/api`  
+> **رابط المنصة الحية (Render Web App)**: [dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)  
+> **السيرفر السحابي الحي (Render Backend API)**: `https://drh-setif-api.onrender.com/api`  
 > **حزمة الأندرويد الرسمية**: [DCW-SETIF-TRACKER.apk](./DCW-SETIF-TRACKER.apk) (~65 MB)
 
 ---
