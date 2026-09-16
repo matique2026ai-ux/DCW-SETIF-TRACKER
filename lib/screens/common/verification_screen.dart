@@ -11,12 +11,24 @@ class VerificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final empName = (params['emp'] ?? params['employee'] ?? params['employeeName'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
+    final isInspectorateBadge = params['type'] == 'OFFICIAL_INSPECTORATE_BADGE' || params['inspectorateId'] != null;
+    final isVisit = params['type'] == 'visit';
+
+    final empName = (params['emp'] ?? params['employee'] ?? params['employeeName'] ?? (isInspectorateBadge ? (params['name'] ?? 'مقر إقليمي') : 'عضو فرقة الرقابة والتفتيش')).toString();
     final date = (params['date'] ?? DateTime.now().toIso8601String().split('T')[0]).toString();
     final time = (params['time'] ?? DateTime.now().toString().substring(11, 16)).toString();
-    final location = (params['loc'] ?? params['location'] ?? 'المقر الرسمي لمديرية التجارة سطيف').toString();
-    final type = params['type'] == 'visit' ? 'معاينة ميدانية رسمية' : 'إثبات حضور جغرافي معتمد';
-    final id = (params['id'] ?? 'OFFICIAL-PASS').toString();
+    final location = (params['loc'] ?? params['location'] ?? (isInspectorateBadge ? empName : 'المقر الرسمي لمديرية التجارة سطيف')).toString();
+    
+    String type;
+    if (isInspectorateBadge) {
+      type = 'مقر رقابي إقليمي معتمد (بصمة GPS)';
+    } else if (isVisit) {
+      type = 'معاينة ميدانية رسمية';
+    } else {
+      type = 'إثبات حضور جغرافي معتمد';
+    }
+
+    final id = (params['id'] ?? (isInspectorateBadge ? (params['inspectorateId'] ?? 'HQ') : 'PASS')).toString();
     final statusStr = (params['status'] ?? 'معتمد وموثق سحابياً').toString();
 
     return Scaffold(
@@ -25,9 +37,9 @@ class VerificationScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF1E0B26),
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'التحقق من الإثبات الرقمي الرسمي',
-          style: TextStyle(
+        title: Text(
+          isInspectorateBadge ? 'التحقق من اعتماد المقر الإقليمي' : 'التحقق من الإثبات الرقمي الرسمي',
+          style: const TextStyle(
             fontFamily: 'Tajawal',
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -125,9 +137,9 @@ class VerificationScreen extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                const Text(
-                  'إثبات رقمي رسمي معتمد وموثق',
-                  style: TextStyle(
+                Text(
+                  isInspectorateBadge ? 'مقر رقابي إقليمي معتمد وموثق' : 'إثبات رقمي رسمي معتمد وموثق',
+                  style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -163,17 +175,29 @@ class VerificationScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildRow('الموظف / المفتش', empName, Icons.person_outline),
-                        const Divider(color: Color(0xFF2D1035), height: 18),
-                        _buildRow('طبيعة الإجراء', type, Icons.assignment_turned_in_outlined),
-                        const Divider(color: Color(0xFF2D1035), height: 18),
-                        _buildRow('التاريخ والتوقيت', '$date • $time', Icons.access_time),
-                        const Divider(color: Color(0xFF2D1035), height: 18),
-                        _buildRow('المقر / الموقع الجغرافي', location, Icons.location_on_outlined),
-                        const Divider(color: Color(0xFF2D1035), height: 18),
-                        _buildRow('الرقم المرجعي', 'DCW-SETIF-#$id', Icons.tag),
-                        const Divider(color: Color(0xFF2D1035), height: 18),
-                        _buildRow('حالة الاعتماد', 'صالح ومسجل سحابياً', Icons.check_circle_outline, valueColor: const Color(0xFF10B981)),
+                        if (isInspectorateBadge) ...[
+                          _buildRow('المقر / الملحقة الإقليمية', location, Icons.apartment),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('طبيعة الاعتماد', type, Icons.verified_user_outlined),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('تاريخ التسجيل بالمنظومة', date, Icons.calendar_today_outlined),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('الرمز المرجعي للمقر', 'DCW-SETIF-HQ-#$id', Icons.tag),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('حالة الاعتماد', 'صالح ومعتمد سحابياً', Icons.check_circle_outline, valueColor: const Color(0xFF10B981)),
+                        ] else ...[
+                          _buildRow('الموظف / المفتش', empName, Icons.person_outline),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('طبيعة الإجراء', type, Icons.assignment_turned_in_outlined),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('التاريخ والتوقيت', '$date • $time', Icons.access_time),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('المقر / الموقع الجغرافي', location, Icons.location_on_outlined),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('الرقم المرجعي', 'DCW-SETIF-#$id', Icons.tag),
+                          const Divider(color: Color(0xFF2D1035), height: 18),
+                          _buildRow('حالة الاعتماد', 'صالح ومسجل سحابياً', Icons.check_circle_outline, valueColor: const Color(0xFF10B981)),
+                        ],
                       ],
                     ),
                   ),
