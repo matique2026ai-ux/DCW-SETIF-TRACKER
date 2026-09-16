@@ -24,53 +24,29 @@ class AppFooter extends StatelessWidget {
         top: false,
         child: Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF1E0B26).withValues(alpha: 0.85),
-                  const Color(0xFF13061A).withValues(alpha: 0.90),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFF13061A).withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
                 width: 0.5,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
-                  blurRadius: 6,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 1),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 3D Gold Engineering Medallion Seal Avatar (Micro-Refined)
+                // Subtle Micro Seal Medallion
                 Container(
-                  width: 15,
-                  height: 15,
+                  width: 12,
+                  height: 12,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.8),
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
                       width: 0.5,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-                        blurRadius: 4,
-                      ),
-                    ],
                   ),
                   child: ClipOval(
                     child: Image.asset(
@@ -78,31 +54,24 @@ class AppFooter extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const Icon(
                         Icons.workspace_premium_rounded,
-                        size: 10,
+                        size: 8,
                         color: Color(0xFFD4AF37),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
-                // Crisp, elegant, micro-refined golden text
+                const SizedBox(width: 5),
+                // Legible yet subtle and discrete signature text
                 Text(
                   isArabic
                       ? 'جميع حقوق التصميم والبرمجة محفوظة © المهندس عكرور توفيق'
                       : 'Copyright © 2026 ING Akrour ToufiK',
                   style: TextStyle(
                     fontFamily: isArabic ? 'Tajawal' : null,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: isArabic ? 0.2 : 0.4,
-                    color: const Color(0xFFFFDF7A),
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(alpha: 0.9),
-                        offset: const Offset(0.5, 0.5),
-                        blurRadius: 1.5,
-                      ),
-                    ],
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.1,
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.70),
                   ),
                 ),
               ],
