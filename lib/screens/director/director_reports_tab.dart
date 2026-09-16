@@ -20,6 +20,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   List<Map<String, dynamic>> _deductions = [];
   List<Map<String, dynamic>> _programs = [];
   String _searchQuery = '';
+  String _selectedFilter = 'absent'; // 'all', 'present', 'absent'
   bool _isLoading = true;
 
   @override
@@ -453,12 +454,9 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   }
                 }
               },
-              icon: const Icon(Icons.check, size: 16),
-              label: const Text('تأكيد وإصدار البرنامج', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
-                foregroundColor: const Color(0xFF1E0B26),
-              ),
+              icon: const Icon(Icons.check, color: Colors.black),
+              label: const Text('إسناد وتسطير البرنامج', style: TextStyle(fontFamily: 'Tajawal', color: Colors.black, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37)),
             ),
           ],
         ),
@@ -466,31 +464,59 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppTheme.AccentColor),
+        child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
       );
     }
+    final loc = AppLocalizations.of(context);
+    final checkedInMap = <dynamic, Map<String, dynamic>>{};
+    for (final a in _attendance) {
+      final empId = a['EmployeeId'] ?? a['employeeid'] ?? a['Id'];
+      if (empId != null) {
+        checkedInMap[empId] = a;
+      }
+    }
 
-    final checkedInIds = _attendance.map((a) => a['EmployeeId']).toSet();
     final present = _employees
-        .where((e) => checkedInIds.contains(e['Id']))
+        .where((e) => checkedInMap.containsKey(e['Id']))
         .toList();
     final absent = _employees
-        .where((e) => !checkedInIds.contains(e['Id']))
+        .where((e) => !checkedInMap.containsKey(e['Id']))
         .toList();
 
+    List<Map<String, dynamic>> activeList;
+    String filterTitle;
+    String filterSubtitle;
+    Color filterColor;
+
+    if (_selectedFilter == 'present') {
+      activeList = present;
+      filterTitle = 'حاضرون اليوم (${present.length})';
+      filterSubtitle = 'مسجلون رسمياً بالبصمة الجغرافية والـ GPS';
+      filterColor = AppTheme.SuccessColor;
+    } else if (_selectedFilter == 'all') {
+      activeList = _employees;
+      filterTitle = 'كافة موظفي الولاية (${_employees.length})';
+      filterSubtitle = 'الوضعية الشاملة لكافة المصالح والمفتشيات';
+      filterColor = const Color(0xFFD4AF37);
+    } else {
+      activeList = absent;
+      filterTitle = 'غائبين اليوم (${absent.length})';
+      filterSubtitle = 'لم يسجلوا الحضور اليوم (يتطلب متابعة)';
+      filterColor = AppTheme.DangerColor;
+    }
+
     final q = _searchQuery.trim().toLowerCase();
-    final filteredAbsent = absent.where((e) {
+    final filteredList = activeList.where((e) {
       if (q.isEmpty) return true;
       final nameAr = '${e['NomAr'] ?? ''} ${e['PrenomAr'] ?? ''}'.toLowerCase();
       final nameFr = '${e['Nom'] ?? ''} ${e['Prenom'] ?? ''}'.toLowerCase();
       final service = (e['Service'] ?? '').toString().toLowerCase();
-      return nameAr.contains(q) || nameFr.contains(q) || service.contains(q);
+      final matricule = (e['NumeroMatricule'] ?? '').toString().toLowerCase();
+      return nameAr.contains(q) || nameFr.contains(q) || service.contains(q) || matricule.contains(q);
     }).toList();
 
     return SingleChildScrollView(
@@ -498,6 +524,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top Interactive Stat Cards
           Row(
             children: [
               _stat(
@@ -505,20 +532,23 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                 _employees.length,
                 AppTheme.AccentColor,
                 Icons.people,
+                'all',
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _stat(
                 loc.presentToday,
                 present.length,
                 AppTheme.SuccessColor,
                 Icons.check_circle,
+                'present',
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _stat(
                 loc.absentToday,
                 absent.length,
                 AppTheme.DangerColor,
                 Icons.cancel,
+                'absent',
               ),
             ],
           ),
@@ -599,35 +629,56 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${loc.absentToday} (${absent.length})',
-                style: const TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'لم يسجلوا الحضور اليوم',
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
 
-          // Live Search Bar for Absent Employees
+          // Dynamic Section Title
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: filterColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: filterColor.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: filterColor),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      filterTitle,
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: filterColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  filterSubtitle,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Live Search Bar
           TextField(
             textDirection: TextDirection.rtl,
             onChanged: (val) => setState(() => _searchQuery = val),
             decoration: InputDecoration(
-              hintText: 'ابحث بالاسم، اللقب أو المصلحة بين الموظفين...',
+              hintText: 'ابحث بالاسم، اللقب، المصلحة أو رقم التسجيل...',
               hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
               prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
               filled: true,
@@ -645,7 +696,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
           ),
           const SizedBox(height: 14),
 
-          filteredAbsent.isEmpty
+          filteredList.isEmpty
               ? Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
@@ -659,14 +710,14 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                     child: Column(
                       children: [
                         Icon(
-                          absent.isEmpty ? Icons.check_circle : Icons.search_off,
+                          activeList.isEmpty ? Icons.check_circle : Icons.search_off,
                           size: 48,
-                          color: absent.isEmpty ? AppTheme.SuccessColor : AppTheme.TextSecondary,
+                          color: activeList.isEmpty ? AppTheme.SuccessColor : AppTheme.TextSecondary,
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          absent.isEmpty
-                              ? loc.noAbsence
+                          activeList.isEmpty
+                              ? (_selectedFilter == 'absent' ? 'لا يوجد أي غياب اليوم ✅' : 'القائمة فارغة')
                               : 'لم يتم العثور على أي موظف يطابق البحث',
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
@@ -679,13 +730,26 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   ),
                 )
               : Column(
-                  children: filteredAbsent.asMap().entries.map((entry) {
+                  children: filteredList.asMap().entries.map((entry) {
                     final e = entry.value;
+                    final isPresent = checkedInMap.containsKey(e['Id']);
+                    final attRecord = checkedInMap[e['Id']];
+                    final checkInTime = attRecord?['CheckInTime'] != null
+                        ? _formatTime(attRecord!['CheckInTime'])
+                        : '';
+
                     final name = e['NomAr'] != null
-                        ? '${e['NomAr']} ${e['PrenomAr']}'
-                        : '${e['Nom']} ${e['Prenom']}';
+                        ? '${e['NomAr']} ${e['PrenomAr'] ?? ''}'.trim()
+                        : '${e['Nom']} ${e['Prenom'] ?? ''}'.trim();
+
                     return GestureDetector(
-                      onTap: () => _showAbsentEmployeeOptions(e),
+                      onTap: () {
+                        if (isPresent) {
+                          _showPresentEmployeeDetails(e, attRecord);
+                        } else {
+                          _showAbsentEmployeeOptions(e);
+                        }
+                      },
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(14),
@@ -693,7 +757,9 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           color: AppTheme.CardColor,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppTheme.BorderColor.withValues(alpha: 0.3),
+                            color: isPresent
+                                ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                                : AppTheme.BorderColor.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -702,14 +768,13 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               width: 42,
                               height: 42,
                               decoration: BoxDecoration(
-                                color: AppTheme.DangerColor.withValues(
-                                  alpha: 0.15,
-                                ),
+                                color: (isPresent ? AppTheme.SuccessColor : AppTheme.DangerColor)
+                                    .withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.person_off,
-                                color: AppTheme.DangerColor,
+                              child: Icon(
+                                isPresent ? Icons.check_circle : Icons.person_off,
+                                color: isPresent ? AppTheme.SuccessColor : AppTheme.DangerColor,
                                 size: 20,
                               ),
                             ),
@@ -718,17 +783,58 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isPresent)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                          ),
+                                          child: Text(
+                                            '🟢 حاضر: $checkInTime',
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF10B981),
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Text(
+                                            '🔴 غير مسجل',
+                                            style: TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 10,
+                                              color: Color(0xFFF87171),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 3),
                                   Text(
-                                    '${e['Service'] ?? ''}',
+                                    '${e['Service'] ?? ''} • ${e['Grade'] ?? ''}',
                                     style: const TextStyle(
                                       fontFamily: 'Tajawal',
                                       fontSize: 11,
@@ -738,6 +844,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                 ],
                               ),
                             ),
+                            const SizedBox(width: 8),
                             const Icon(
                               Icons.arrow_back_ios_new,
                               color: AppTheme.TextSecondary,
@@ -1062,38 +1169,226 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
     );
   }
 
-  Widget _stat(String label, int value, Color color, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
+  String _formatTime(dynamic val) {
+    if (val == null) return '--:--';
+    try {
+      final dt = DateTime.parse(val.toString()).toLocal();
+      return DateFormat('HH:mm').format(dt);
+    } catch (_) {
+      return val.toString();
+    }
+  }
+
+  void _showPresentEmployeeDetails(Map<String, dynamic> emp, Map<String, dynamic>? att) {
+    final name = emp['NomAr'] != null
+        ? '${emp['NomAr']} ${emp['PrenomAr'] ?? ''}'.trim()
+        : '${emp['Nom']} ${emp['Prenom'] ?? ''}'.trim();
+    final service = (emp['Service'] ?? 'مصلحة حماية المستهلك وقمع الغش').toString();
+    final matricule = (emp['NumeroMatricule'] ?? 'N/A').toString();
+    final checkInTime = att?['CheckInTime'] != null ? _formatTime(att!['CheckInTime']) : '--:--';
+    final locationName = att?['LocationName'] ?? 'المقر الرئيسي (حي المعبودة)';
+    final status = att?['Status'] ?? 'present';
+    final lat = att?['Latitude'] ?? att?['lat'];
+    final lng = att?['Longitude'] ?? att?['lng'];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.70,
+        decoration: const BoxDecoration(
           color: AppTheme.CardColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 6),
-            Text(
-              '$value',
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: color,
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 10,
-                color: AppTheme.TextSecondary,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_user, color: AppTheme.SuccessColor),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'بيانات الحضور والبصمة الجغرافية',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.BackgroundColor.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppTheme.SuccessColor.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: AppTheme.SuccessColor.withValues(alpha: 0.2),
+                          child: const Icon(Icons.person, color: AppTheme.SuccessColor, size: 28),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$service | رقم التسجيل: $matricule',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 11,
+                                  color: AppTheme.TextSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'تفاصيل البصمة والتحقق الميداني',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _proofTile(
+                    icon: Icons.access_time_filled,
+                    title: 'توقيت تسجيل الحضور',
+                    status: 'تم الحضور في تمام الساعة: $checkInTime ✔️',
+                  ),
+                  const SizedBox(height: 8),
+                  _proofTile(
+                    icon: Icons.location_on,
+                    title: 'المقر / نقطة الانطلاق الميدانية',
+                    status: '$locationName ${lat != null ? "($lat, $lng)" : ""}',
+                  ),
+                  const SizedBox(height: 8),
+                  _proofTile(
+                    icon: Icons.check_circle_outline,
+                    title: 'حالة الحضور القانونية',
+                    status: status == 'late' ? 'تأخر صباحي مسجل' : 'حضور منضبط ومثبت رسمياً ✅',
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _stat(String label, int value, Color color, IconData icon, String filterKey) {
+    final isSelected = _selectedFilter == filterKey;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedFilter = filterKey;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withValues(alpha: 0.18) : AppTheme.CardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? color : color.withValues(alpha: 0.3),
+              width: isSelected ? 2.0 : 1.0,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : [],
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: color, size: 20),
+                  if (isSelected) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$value',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : AppTheme.TextSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

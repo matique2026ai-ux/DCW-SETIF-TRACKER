@@ -79,7 +79,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
         // Match by inspector name first, then fallback to latest department mission
         Map<String, dynamic>? matchingProg;
         for (final p in progs) {
-          final t = (p['Title'] ?? '').toString();
+          final t = (p['Title'] ?? p['title'] ?? '').toString();
           if (empName.isNotEmpty && t.contains(empName)) {
             matchingProg = p;
             break;
