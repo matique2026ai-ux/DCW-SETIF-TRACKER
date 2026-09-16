@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:drh_setif_tracker/services/pdf_report_service.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 
@@ -30,8 +31,9 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   Future<void> _load() async {
     try {
       final api = context.read<AuthService>().api;
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final emp = await api.getEmployees();
-      final att = await api.getAttendance();
+      final att = await api.getAttendance(date: todayStr);
       final ded = await api.getDeductions();
       final progs = await api.getPrograms();
       if (mounted) {
