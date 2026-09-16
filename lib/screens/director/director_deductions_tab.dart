@@ -209,23 +209,23 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.tune, color: Color(0xFFD4AF37), size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'فترة التسامح الصباحية المعتمدة (Seuil de Tolérance)',
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.tune, color: Color(0xFFD4AF37), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'فترة التسامح الصباحية (Tolérance)',
                         style: TextStyle(
                           fontFamily: 'Tajawal',
                           fontWeight: FontWeight.bold,
@@ -233,50 +233,50 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                           color: Color(0xFFD4AF37),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'التوقيت الحالي: $_morningGraceTime ص — التأخرات الصباحية تُحسب بعده مباشرة.',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 11,
-                          color: Colors.white70,
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFD4AF37)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _morningGraceTime,
+                          dropdownColor: const Color(0xFF1E1026),
+                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                            fontSize: 13,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
+                            DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
+                            DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
+                            DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
+                            DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null && val != _morningGraceTime) {
+                              _updateGraceTime(val);
+                            }
+                          },
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFD4AF37)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _morningGraceTime,
-                      dropdownColor: const Color(0xFF1E1026),
-                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
-                      style: const TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD4AF37),
-                        fontSize: 13,
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
-                        DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
-                        DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
-                        DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
-                        DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null && val != _morningGraceTime) {
-                          _updateGraceTime(val);
-                        }
-                      },
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'التوقيت الحالي: $_morningGraceTime ص — التأخرات الصباحية تُحسب بعده مباشرة.',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    color: Colors.white70,
                   ),
                 ),
               ],
@@ -421,11 +421,14 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   Widget _buildInquiryCard(Map<String, dynamic> inq, {required bool isActionable}) {
-    final name = inq['NomAr'] != null
-        ? '${inq['NomAr']} ${inq['PrenomAr'] ?? ''}'
-        : '${inq['Nom'] ?? ''} ${inq['Prenom'] ?? ''}';
-    final status = inq['Status'] ?? 'sent';
-    final service = inq['Service'] ?? 'مصلحة حماية المستهلك وقمع الغش';
+    final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
+    final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
+    final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
+        ? '$nomAr $prenomAr'.trim()
+        : (inq['EmployeeName'] ?? inq['employee_name'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
+    final status = (inq['Status'] ?? inq['status'] ?? 'sent').toString();
+    final service = (inq['Service'] ?? inq['service'] ?? 'مديرية التجارة لولاية سطيف').toString();
+    final subject = (inq['Subject'] ?? inq['subject'] ?? inq['Details'] ?? inq['details'] ?? 'استفسار إداري حول الانضباط ومواقيت العمل').toString();
 
     Color statusColor = AppTheme.WarningColor;
     String statusText = 'بانتظار رد الموظف';
@@ -440,7 +443,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       statusText = '⚠️ تم توجيه تنبيه إداري';
     } else if (status == 'deduction_ordered') {
       statusColor = AppTheme.DangerColor;
-      statusText = '❌ قرار خصم (${inq['DeductionDays'] ?? 1} يوم) محال للمستخدمين';
+      statusText = '❌ قرار خصم (${inq['DeductionDays'] ?? inq['deductiondays'] ?? 1} يوم) محال للمستخدمين';
     } else if (status == 'executed') {
       statusColor = Colors.green;
       statusText = '✔️ تم الخصم في الراتب';
@@ -491,22 +494,25 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.white,
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
                       const Icon(Icons.arrow_back_ios_new, size: 12, color: AppTheme.TextSecondary),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$service — ${inq['Subject']}',
+                    '$service — $subject',
                     style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -538,14 +544,17 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   void _showInquiryDossier(Map<String, dynamic> inq) {
-    final name = (inq['NomAr'] != null
-        ? '${inq['NomAr']} ${inq['PrenomAr'] ?? ''}'
-        : '${inq['Nom'] ?? ''} ${inq['Prenom'] ?? ''}').toString();
-    final service = (inq['Service'] ?? 'مصلحة حماية المستهلك وقمع الغش').toString();
-    final status = (inq['Status'] ?? 'sent').toString();
-    final dateStr = inq['IncidentDate'] != null ? inq['IncidentDate'].toString().substring(0, 10) : 'اليوم';
-    final reply = inq['EmployeeReply'];
-    final int lateMins = (inq['LateMinutes'] as num?)?.toInt() ?? 0;
+    final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
+    final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
+    final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
+        ? '$nomAr $prenomAr'.trim()
+        : (inq['EmployeeName'] ?? inq['employee_name'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
+    final service = (inq['Service'] ?? inq['service'] ?? 'مديرية التجارة سطيف').toString();
+    final status = (inq['Status'] ?? inq['status'] ?? 'sent').toString();
+    final rawDate = (inq['IncidentDate'] ?? inq['incidentdate'] ?? inq['Date'] ?? inq['date'] ?? inq['CreatedAt'] ?? '').toString();
+    final dateStr = rawDate.length >= 10 ? rawDate.substring(0, 10) : (rawDate.isNotEmpty ? rawDate : 'اليوم');
+    final reply = inq['EmployeeReply'] ?? inq['employeereply'] ?? inq['Reply'] ?? inq['reply'];
+    final int lateMins = ((inq['LateMinutes'] ?? inq['lateminutes'] ?? 0) as num).toInt();
     final bool hasLateMins = lateMins > 0;
     final bool hasReply = reply != null && reply.toString().trim().isNotEmpty;
 

@@ -20,19 +20,20 @@ class InquiryLetterDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = inquiry['NomAr'] != null
-        ? '${inquiry['NomAr']} ${inquiry['PrenomAr'] ?? ''}'
-        : '${inquiry['Nom'] ?? ''} ${inquiry['Prenom'] ?? ''}';
-    final service = inquiry['Service'] ?? 'مديرية التجارة لولاية سطيف';
-    final grade = inquiry['Grade'] ?? 'مفتش رئيسي';
-    final dateStr = inquiry['IncidentDate'] != null
-        ? inquiry['IncidentDate'].toString().substring(0, 10)
-        : 'اليوم';
-    final subject = inquiry['Subject'] ?? 'استفسار كتابي حول الانضباط ومواقيت العمل';
-    final details = inquiry['Details'] ??
-        'بناءً على السجلات الرسمية للحضور والانصراف عبر المنصة الرقمية، سُجل بحقكم غياب/تأخر عن موعد العمل الميداني دون إشعار مسبق أو رخصة قانونية.';
-    final int lateMins = (inquiry['LateMinutes'] as num?)?.toInt() ?? 0;
-    final reply = inquiry['EmployeeReply'];
+    final nomAr = inquiry['NomAr'] ?? inquiry['nomar'] ?? inquiry['Nom'] ?? inquiry['nom'] ?? inquiry['name'] ?? inquiry['employeeName'] ?? '';
+    final prenomAr = inquiry['PrenomAr'] ?? inquiry['prenomar'] ?? inquiry['Prenom'] ?? inquiry['prenom'] ?? '';
+    final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
+        ? '$nomAr $prenomAr'.trim()
+        : (inquiry['EmployeeName'] ?? inquiry['employee_name'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
+    final service = (inquiry['Service'] ?? inquiry['service'] ?? 'مديرية التجارة لولاية سطيف').toString();
+    final grade = (inquiry['Grade'] ?? inquiry['grade'] ?? 'مفتش رئيسي').toString();
+    final rawDate = (inquiry['IncidentDate'] ?? inquiry['incidentdate'] ?? inquiry['Date'] ?? inquiry['date'] ?? inquiry['CreatedAt'] ?? '').toString();
+    final dateStr = rawDate.length >= 10 ? rawDate.substring(0, 10) : (rawDate.isNotEmpty ? rawDate : 'اليوم');
+    final subject = (inquiry['Subject'] ?? inquiry['subject'] ?? 'استفسار كتابي حول الانضباط ومواقيت العمل').toString();
+    final details = (inquiry['Details'] ?? inquiry['details'] ??
+        'بناءً على السجلات الرسمية للحضور والانصراف عبر المنصة الرقمية، سُجل بحقكم غياب/تأخر عن موعد العمل الميداني دون إشعار مسبق أو رخصة قانونية.').toString();
+    final int lateMins = ((inquiry['LateMinutes'] ?? inquiry['lateminutes'] ?? 0) as num).toInt();
+    final reply = inquiry['EmployeeReply'] ?? inquiry['employeereply'] ?? inquiry['Reply'] ?? inquiry['reply'];
 
     return AlertDialog(
       backgroundColor: const Color(0xFF16121E),

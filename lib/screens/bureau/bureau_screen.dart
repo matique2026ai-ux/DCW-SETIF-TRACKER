@@ -911,23 +911,23 @@ class _BureauScreenState extends State<BureauScreen>
                 color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
               ),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.access_time_filled, color: Color(0xFFD4AF37), size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'فترة التسامح الصباحية (Seuil de Tolérance)',
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.access_time_filled, color: Color(0xFFD4AF37), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'فترة التسامح الصباحية (Tolérance)',
                         style: TextStyle(
                           fontFamily: 'Tajawal',
                           fontWeight: FontWeight.bold,
@@ -935,50 +935,50 @@ class _BureauScreenState extends State<BureauScreen>
                           color: Color(0xFFD4AF37),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'الحضور بين 08:00 و $_morningGraceTime نظامي ومقبول، والتأخر يُحسب بعده.',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 11,
-                          color: Colors.white70,
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFD4AF37)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _morningGraceTime,
+                          dropdownColor: const Color(0xFF1E1026),
+                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                            fontSize: 13,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
+                            DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
+                            DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
+                            DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
+                            DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null && val != _morningGraceTime) {
+                              _updateGraceTime(val);
+                            }
+                          },
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFD4AF37)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _morningGraceTime,
-                      dropdownColor: const Color(0xFF1E1026),
-                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
-                      style: const TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD4AF37),
-                        fontSize: 13,
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
-                        DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
-                        DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
-                        DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
-                        DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null && val != _morningGraceTime) {
-                          _updateGraceTime(val);
-                        }
-                      },
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'الحضور بين 08:00 و $_morningGraceTime نظامي ومقبول، والتأخر يُحسب بعده.',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    color: Colors.white70,
                   ),
                 ),
               ],
@@ -1261,10 +1261,17 @@ class _BureauScreenState extends State<BureauScreen>
             )
           else
             ..._inquiries.map((inq) {
-              final name = inq['NomAr'] != null
-                  ? '${inq['NomAr']} ${inq['PrenomAr'] ?? ''}'
-                  : '${inq['Nom'] ?? ''} ${inq['Prenom'] ?? ''}';
-              final status = inq['Status'] ?? 'sent';
+              final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
+              final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
+              final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
+                  ? '$nomAr $prenomAr'.trim()
+                  : (inq['EmployeeName'] ?? inq['employee_name'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
+              final status = (inq['Status'] ?? inq['status'] ?? 'sent').toString();
+              final subject = (inq['Subject'] ?? inq['subject'] ?? inq['Details'] ?? inq['details'] ?? 'استفسار إداري حول الانضباط ومواقيت العمل').toString();
+              final reply = inq['EmployeeReply'] ?? inq['employeereply'] ?? inq['Reply'] ?? inq['reply'];
+              final rawDate = (inq['IncidentDate'] ?? inq['incidentdate'] ?? inq['Date'] ?? inq['date'] ?? inq['CreatedAt'] ?? '').toString();
+              final cleanDate = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
+
               Color stCol = AppTheme.WarningColor;
               String stTxt = 'مرسل بانتظار رد الموظف';
               if (status == 'answered') {
@@ -1278,7 +1285,7 @@ class _BureauScreenState extends State<BureauScreen>
                 stTxt = '⚠️ تنبيه إداري';
               } else if (status == 'deduction_ordered') {
                 stCol = AppTheme.DangerColor;
-                stTxt = '❌ قرار خصم (${inq['DeductionDays'] ?? 1} يوم)';
+                stTxt = '❌ قرار خصم (${inq['DeductionDays'] ?? inq['deductiondays'] ?? 1} يوم)';
               } else if (status == 'executed') {
                 stCol = Colors.green;
                 stTxt = '✔️ تم التنفيذ في الراتب';
@@ -1293,6 +1300,7 @@ class _BureauScreenState extends State<BureauScreen>
                   border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.3)),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
@@ -1320,14 +1328,22 @@ class _BureauScreenState extends State<BureauScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${inq['Subject']}',
+                            subject,
                             style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
                           ),
-                          if (inq['EmployeeReply'] != null)
+                          if (cleanDate.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                'تاريخ الواقعة: $cleanDate',
+                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white38),
+                              ),
+                            ),
+                          if (reply != null && reply.toString().trim().isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                'رد الموظف: ${inq['EmployeeReply']}',
+                                'رد الموظف: $reply',
                                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.cyanAccent),
                               ),
                             ),
@@ -1338,7 +1354,7 @@ class _BureauScreenState extends State<BureauScreen>
                     IconButton(
                       icon: const Icon(Icons.print, color: Color(0xFFD4AF37), size: 20),
                       onPressed: () => InquiryLetterDialog.show(context, inq),
-                      tooltip: 'معاينة وطباعة الاستمارة',
+                      tooltip: 'معاينة وطباعة الاستمارة الرسمية',
                     ),
                   ],
                 ),
