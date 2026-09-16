@@ -23,10 +23,8 @@ class AdminScreen extends StatefulWidget {
   State<AdminScreen> createState() => _AdminScreenState();
 }
 
-class _AdminScreenState extends State<AdminScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  int _tabIndex = 0;
+class _AdminScreenState extends State<AdminScreen> {
+  int _currentIndex = 0;
   bool _isLoading = true;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _employees = [];
@@ -37,19 +35,7 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging && mounted) {
-        setState(() => _tabIndex = _tabController.index);
-      }
-    });
     _loadData();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -999,47 +985,87 @@ class _AdminScreenState extends State<AdminScreen>
               ),
             ),
           ],
-          bottom: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            indicatorColor: const Color(0xFFD4AF37),
-            labelColor: const Color(0xFFD4AF37),
-            unselectedLabelColor: Colors.white60,
-            onTap: (index) {
-              setState(() => _tabIndex = index);
-            },
-            tabs: const [
-              Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
-              Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
-              Tab(icon: Icon(Icons.dns, size: 18), text: 'حالة النظام والسيرفر'),
-              Tab(icon: Icon(Icons.preview, size: 18), text: 'معاينة شاشات الأدوار'),
-            ],
-          ),
         ),
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
-              )
-            : _buildActiveTab(),
-        bottomNavigationBar: const AppFooter(),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _buildUsersTab(),
+            _buildInspectoratesTab(),
+            _buildSystemHealthTab(),
+            _buildRolePreviewTab(),
+          ],
+        ),
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF260D2E),
+                border: Border(
+                  top: BorderSide(
+                    color: AppTheme.BorderColor.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _navItem(0, Icons.manage_accounts_outlined, Icons.manage_accounts, 'المستخدمين'),
+                      _navItem(1, Icons.location_on_outlined, Icons.location_on, 'المقرات والـ GPS'),
+                      _navItem(2, Icons.dns_outlined, Icons.dns, 'حالة السيرفر'),
+                      _navItem(3, Icons.preview_outlined, Icons.preview, 'معاينة الأدوار'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const AppFooter(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildActiveTab() {
-    switch (_tabIndex) {
-      case 0:
-        return _buildUsersTab();
-      case 1:
-        return _buildInspectoratesTab();
-      case 2:
-        return _buildSystemHealthTab();
-      case 3:
-        return _buildRolePreviewTab();
-      default:
-        return _buildUsersTab();
-    }
+  Widget _navItem(int index, IconData unselectedIcon, IconData selectedIcon, String label) {
+    final isSelected = _currentIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _currentIndex = index),
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFD4AF37).withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4), width: 1)
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? selectedIcon : unselectedIcon,
+              size: 20,
+              color: isSelected ? const Color(0xFFD4AF37) : Colors.white60,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? const Color(0xFFD4AF37) : Colors.white60,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildUsersTab() {
@@ -1735,9 +1761,18 @@ class _AdminScreenState extends State<AdminScreen>
         children: [
           Icon(icon, color: iconColor, size: 18),
           const SizedBox(width: 10),
-          Text(label, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70)),
-          const Spacer(),
-          Text(value, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
         ],
       ),
     );
