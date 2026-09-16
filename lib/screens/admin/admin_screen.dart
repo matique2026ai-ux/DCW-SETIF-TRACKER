@@ -37,6 +37,11 @@ class _AdminScreenState extends State<AdminScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && mounted) {
+        setState(() {});
+      }
+    });
     _loadData();
   }
 
@@ -993,6 +998,7 @@ class _AdminScreenState extends State<AdminScreen>
             indicatorColor: const Color(0xFFD4AF37),
             labelColor: const Color(0xFFD4AF37),
             unselectedLabelColor: Colors.white60,
+            onTap: (index) => setState(() {}),
             tabs: const [
               Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
               Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
@@ -1005,8 +1011,8 @@ class _AdminScreenState extends State<AdminScreen>
             ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
               )
-            : TabBarView(
-                controller: _tabController,
+            : IndexedStack(
+                index: _tabController.index.clamp(0, 3),
                 children: [
                   _buildUsersTab(),
                   _buildInspectoratesTab(),
@@ -1673,35 +1679,34 @@ class _AdminScreenState extends State<AdminScreen>
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF240D2D),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const Spacer(),
-                Text(
-                  value,
-                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 20, fontWeight: FontWeight.bold, color: color),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+    return Container(
+      constraints: const BoxConstraints(minWidth: 160),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF240D2D),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                value,
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 20, fontWeight: FontWeight.bold, color: color),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
