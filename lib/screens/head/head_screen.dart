@@ -54,6 +54,8 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
         _departmentName = user.serviceName!;
       } else if (user?.username == 'chef_concurrence') {
         _departmentName = 'مصلحة المنافسة والتحقيقات الاقتصادية';
+      } else if (user?.username == 'chef_administration') {
+        _departmentName = 'مصلحة الإدارة والوسائل';
       } else {
         _departmentName = 'مصلحة حماية المستهلك وقمع الغش';
       }

@@ -409,59 +409,9 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                           ),
                         ),
-                        const SizedBox(height: 20),
-
-
-                        // Demo users
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2D1035).withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF4A2050).withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                loc.isArabic
-                                    ? 'حسابات تجريبية'
-                                    : 'Comptes de test',
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 12,
-                                  color: Color(0xFFD4AF37),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _demoUser(
-                                'tracker_admin',
-                                'admin123',
-                                loc.isArabic ? 'مسؤول النظام' : 'Admin Système',
-                              ),
-                              _demoUser(
-                                'directeur',
-                                'directeur123',
-                                loc.roleDirector,
-                              ),
-                              _demoUser(
-                                'chef_concurrence',
-                                'chef123',
-                                loc.roleHead,
-                              ),
-                              _demoUser(
-                                'bureau_user',
-                                'bureau123',
-                                loc.roleBureau,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 28),
                         const AppFooter(),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
@@ -469,46 +419,6 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _demoUser(String username, String password, String role) {
-    return InkWell(
-      onTap: () {
-        _usernameCtrl.text = username;
-        _passwordCtrl.text = password;
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        child: Row(
-          children: [
-            const Icon(Icons.chevron_left, size: 16, color: Colors.white38),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                '$username / $password',
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  color: Colors.white54,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              role,
-              style: const TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 11,
-                color: Color(0xFFD4AF37),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
         ),
       ),
     );

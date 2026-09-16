@@ -50,22 +50,35 @@ class _AdminScreenState extends State<AdminScreen>
     setState(() => _isLoading = true);
     try {
       final api = context.read<AuthService>().api;
-      final results = await Future.wait([
-        api.getSystemUsers(),
-        api.getEmployees(all: true),
-        api.getSettings(),
-        InspectorateService.instance.loadInspectorates(api: api),
-      ]);
+      List<Map<String, dynamic>> usersList = [];
+      List<Map<String, dynamic>> employeesList = [];
+      Map<String, dynamic> settingsMap = {};
+
+      try {
+        usersList = await api.getSystemUsers();
+      } catch (_) {}
+
+      try {
+        employeesList = await api.getEmployees(all: true);
+      } catch (_) {}
+
+      try {
+        settingsMap = await api.getSettings();
+      } catch (_) {}
+
+      try {
+        await InspectorateService.instance.loadInspectorates(api: api);
+      } catch (_) {}
+
       if (mounted) {
-        final settings = results[2] as Map<String, dynamic>;
         setState(() {
-          _users = results[0] as List<Map<String, dynamic>>;
-          _employees = results[1] as List<Map<String, dynamic>>;
-          _morningGraceTime = (settings['morning_grace_time'] ?? '08:45').toString();
+          _users = usersList;
+          _employees = employeesList;
+          _morningGraceTime = (settingsMap['morning_grace_time'] ?? '08:45').toString();
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
       }

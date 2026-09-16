@@ -251,7 +251,7 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
+      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     }
     throw Exception(_parseError(response, 'خطأ في جلب الموظفين'));
   }
