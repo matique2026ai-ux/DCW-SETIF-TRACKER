@@ -151,6 +151,8 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     }
   }
 
+  String _selectedInspectorateId = 'الكل';
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -391,141 +393,143 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           ],
         ),
 
-        // Stats card on top
+        // 1. Executive Floating Stats Capsule (Centered on Top)
         Positioned(
           top: 12,
           left: 12,
           right: 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppTheme.CardColor.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppTheme.BorderColor.withValues(alpha: 0.3),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2E1038), Color(0xFF1E0B26)],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
+                  width: 1.2,
+                ),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 4)),
+                ],
               ),
-              boxShadow: const [
-                BoxShadow(color: Colors.black38, blurRadius: 12),
-              ],
-            ),
-            child: _isLoading
-                ? const Center(
-                    child: SizedBox(
+              child: _isLoading
+                  ? const SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: AppTheme.AccentColor,
                       ),
-                    ),
-                  )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _legend(
-                          loc.inField,
-                          present.length,
-                          AppTheme.SuccessColor,
-                        ),
-                        const SizedBox(width: 14),
-                        _legend('معاينات ميدانية', visitMarkers.length, const Color(0xFF38BDF8)),
-                        const SizedBox(width: 14),
-                        _legend(loc.absent, absent.length, AppTheme.DangerColor),
-                        const SizedBox(width: 16),
-                        GestureDetector(
-                          onTap: _loadData,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppTheme.AccentColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.refresh,
-                              size: 16,
-                              color: AppTheme.AccentColor,
+                    )
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _legend(
+                            loc.inField,
+                            present.length,
+                            AppTheme.SuccessColor,
+                          ),
+                          const SizedBox(width: 16),
+                          _legend('معاينات اليوم', visitMarkers.length, const Color(0xFF38BDF8)),
+                          const SizedBox(width: 16),
+                          _legend(loc.absent, absent.length, AppTheme.DangerColor),
+                          const SizedBox(width: 16),
+                          GestureDetector(
+                            onTap: _loadData,
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: AppTheme.AccentColor.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.refresh,
+                                size: 16,
+                                color: AppTheme.AccentColor,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ),
-
-        // Top Controls: Map Style Switcher + Search Agent Button
-        Positioned(
-          top: 68,
-          right: 12,
-          left: 12,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Search Agent Button
-                GestureDetector(
-                  onTap: _showSearchInspectorSheet,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.CardColor.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                        ],
                       ),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black38, blurRadius: 8),
-                      ],
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.search, size: 16, color: Color(0xFFD4AF37)),
-                        SizedBox(width: 6),
-                        Text(
-                          'بحث عن عون...',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Map Layer Switcher (100% Free - Satellite vs Streets)
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.CardColor.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppTheme.BorderColor.withValues(alpha: 0.4),
-                    ),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black38, blurRadius: 8),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _styleChip('satellite', 'أقمار صناعية'),
-                      _styleChip('osm', 'خريطة الشوارع'),
-                    ],
-                  ),
-                ),
-              ],
             ),
           ),
         ),
 
-        // Regional Inspectorates Quick Jump Filter Chips
+        // 2. Top Controls: Search Agent + Map Layer Switcher
+        Positioned(
+          top: 66,
+          right: 12,
+          left: 12,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Search Agent Button (Right in RTL)
+              GestureDetector(
+                onTap: _showSearchInspectorSheet,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E0B26).withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.7),
+                      width: 1.2,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black45, blurRadius: 6),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_search, size: 16, color: Color(0xFFD4AF37)),
+                      SizedBox(width: 6),
+                      Text(
+                        'بحث عن عون...',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Map Layer Switcher (Left in RTL)
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E0B26).withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppTheme.BorderColor.withValues(alpha: 0.5),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black45, blurRadius: 6),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _styleChip('satellite', 'أقمار صناعية'),
+                    _styleChip('osm', 'خريطة الشوارع'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 3. Regional Inspectorates Filter Chips
         Positioned(
           top: 114,
           right: 12,
@@ -536,9 +540,20 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
               children: [
                 _inspectorateFilterChip('الكل', '📌 كل الولاية', _setifCenter, 11),
                 ...AppConstants.allInspectorates.map((insp) {
+                  String cleanName = insp.nameAr;
+                  if (insp.isMainDirectorate) {
+                    cleanName = '🏢 المقر الرئيسي (المعبودة)';
+                  } else if (cleanName.contains('مطار')) {
+                    cleanName = '✈️ مطار 8 ماي (عين أرنات)';
+                  } else if (cleanName.contains('المفتشية الإقليمية للتجارة — ')) {
+                    cleanName = '🏛️ مفتشية ${cleanName.replaceAll('المفتشية الإقليمية للتجارة — ', '')}';
+                  } else if (cleanName.contains('الملحقة التجارية — ')) {
+                    cleanName = '🏪 ملحقة ${cleanName.replaceAll('الملحقة التجارية — ', '')}';
+                  }
+
                   return _inspectorateFilterChip(
                     insp.id,
-                    insp.isMainDirectorate ? '🏢 المقر الرئيسي' : '🏛️ ${insp.nameAr.replaceAll('المفتشية الإقليمية للتجارة — ', '').replaceAll('الملحقة التجارية — ', 'ملحقة ')}',
+                    cleanName,
                     LatLng(insp.latitude, insp.longitude),
                     15.5,
                     inspectorate: insp,
@@ -857,7 +872,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 46,
               child: ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
@@ -880,8 +895,157 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
               ),
             ),
+            if (!isPresent) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showOrderInquiryForEmployee(emp);
+                  },
+                  icon: const Icon(Icons.gavel, color: Colors.orangeAccent, size: 18),
+                  label: const Text(
+                    'أمر مكتب المستخدمين بتوجيه استفسار كتابي',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.orangeAccent,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.orangeAccent, width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  void _showOrderInquiryForEmployee(Map<String, dynamic> emp) {
+    final name = (emp['name'] ?? 'عون رقابة').toString();
+    final empId = emp['id'] ?? emp['Id'] ?? emp['employeeId'];
+    final subjectCtrl = TextEditingController(text: 'استفسار وأمر بالانضباط حول الغياب / التأخر');
+    final detailsCtrl = TextEditingController(text: 'بناءً على المعطيات الرقابية في الخريطة المركزية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف ($name) مع إلزامه بالرد خلال مهلة 48 ساعة القانونية.');
+
+    showDialog(
+      context: context,
+      builder: (dlgCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E0B26),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.send_and_archive, color: Color(0xFFD4AF37)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'أمر بتوجيه استفسار — $name',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFFD4AF37),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'المدير الولائي يكلف مكتب المستخدمين بإصدار استفسار كتابي رسمي للموظف عبر المنظومة:',
+              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: subjectCtrl,
+              textDirection: TextDirection.rtl,
+              decoration: InputDecoration(
+                labelText: 'الموضوع',
+                labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37)),
+                filled: true,
+                fillColor: Colors.black26,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: detailsCtrl,
+              maxLines: 3,
+              textDirection: TextDirection.rtl,
+              decoration: InputDecoration(
+                labelText: 'تعليمات وتفاصيل الاستفسار',
+                labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+                filled: true,
+                fillColor: Colors.black26,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dlgCtx),
+            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (subjectCtrl.text.trim().isEmpty) return;
+              try {
+                final auth = context.read<AuthService>();
+                final userId = auth.currentUser?.id ?? 1;
+                await auth.api.createInquiry({
+                  'employeeId': empId,
+                  'type': 'unjustified_absence',
+                  'subject': subjectCtrl.text.trim(),
+                  'details': detailsCtrl.text.trim(),
+                  'sentBy': userId,
+                });
+                if (dlgCtx.mounted) Navigator.pop(dlgCtx);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: AppTheme.SuccessColor,
+                    content: Text(
+                      '✅ تم تكليف مكتب المستخدمين بإصدار الاستفسار لـ $name بنجاح',
+                      style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.all(16),
+                    backgroundColor: AppTheme.DangerColor,
+                    content: Text('خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('إصدار الأمر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -1197,36 +1361,43 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   Widget _inspectorateFilterChip(String id, String label, LatLng center, double zoom, {InspectorateHQ? inspectorate}) {
+    final bool isSelected = _selectedInspectorateId == id;
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       child: GestureDetector(
         onTap: () {
+          setState(() => _selectedInspectorateId = id);
           _mapController.move(center, zoom);
           if (inspectorate != null) {
             _showInspectorateHQModal(inspectorate);
           }
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppTheme.CardColor.withValues(alpha: 0.95),
+            color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF1E0B26).withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: inspectorate != null && inspectorate.isMainDirectorate
+              color: isSelected
                   ? const Color(0xFFD4AF37)
-                  : AppTheme.BorderColor.withValues(alpha: 0.4),
+                  : AppTheme.BorderColor.withValues(alpha: 0.5),
+              width: isSelected ? 1.5 : 1.0,
             ),
-            boxShadow: const [
-              BoxShadow(color: Colors.black26, blurRadius: 4),
+            boxShadow: [
+              BoxShadow(
+                color: isSelected ? const Color(0xFFD4AF37).withValues(alpha: 0.3) : Colors.black26,
+                blurRadius: isSelected ? 8 : 4,
+              ),
             ],
           ),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Tajawal',
               fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              color: isSelected ? Colors.black : Colors.white,
             ),
           ),
         ),
