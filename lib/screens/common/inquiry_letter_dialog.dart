@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/services/pdf_report_service.dart';
 
 class InquiryLetterDialog extends StatelessWidget {
   final Map<String, dynamic> inquiry;
@@ -102,7 +103,7 @@ class InquiryLetterDialog extends StatelessWidget {
                     children: [
                       // Header Republic of Algeria
                       const Text(
-                        'الجمهورية الجزائرية الديمقراطية الشعبية\nوزارة التجارة الداخلية وضبط السوق الوطنية\nمديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف\nمكتب المستخدمين والشؤون القانونية',
+                        'الجمهورية الجزائرية الديمقراطية الشعبية\nوزارة التجارة الداخلية وضبط السوق الوطنية\nمديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف\nمصلحة الإدارة والوسائل — مكتب المستخدمين والتكوين',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Tajawal',
@@ -375,26 +376,36 @@ class InquiryLetterDialog extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('🖨️ جاري تجهيز وإرسال وثيقة الاستفسار للطباعة الرسمية...'),
-                            backgroundColor: AppTheme.AccentColor,
-                          ),
-                        );
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await PdfReportService.generateAndPrintInquiryLetter(inquiry);
+                          if (context.mounted && onPrint != null) {
+                            onPrint!();
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('خطأ في إرسال أمر الطباعة: $e'),
+                                backgroundColor: AppTheme.DangerColor,
+                              ),
+                            );
+                          }
+                        }
                       },
-                      icon: const Icon(Icons.print, color: Color(0xFFD4AF37)),
+                      icon: const Icon(Icons.print, color: Colors.black, size: 18),
                       label: const Text(
-                        'طباعة الاستمارة الرسمية',
+                        'طباعة الاستمارة الرسمية (PDF)',
                         style: TextStyle(
                           fontFamily: 'Tajawal',
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFD4AF37),
+                          color: Colors.black,
+                          fontSize: 13,
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFD4AF37)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),

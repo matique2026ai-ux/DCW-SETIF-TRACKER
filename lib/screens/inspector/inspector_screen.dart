@@ -29,6 +29,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
   bool _isLoading = false;
   bool _isSyncing = false;
   int _pendingSyncCount = 0;
+  int _pendingInquiryCount = 0;
   String? _checkInTime;
   String? _checkOutTime;
   String? _checkInPhoto;
@@ -106,8 +107,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
       final visits = await api.getTodayVisits(empId);
       final offlineVisits = await OfflineSyncService.getCachedVisits();
 
+      final inqs = await api.getInquiries(employeeId: empId);
+      final pendingInq = inqs.where((i) => (i['Status'] ?? i['status']) == 'sent').length;
+
       if (mounted) {
         setState(() {
+          _pendingInquiryCount = pendingInq;
           if (att != null && att['Id'] != null) {
             final isOut = att['IsCheckedOut'] == true || att['IsCheckedOut'] == 1 || att['CheckOutTime'] != null;
             _isCheckedOut = isOut;
@@ -1429,6 +1434,38 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 tooltip: 'جميع البيانات متزامنة',
                 onPressed: () => _syncPendingItems(silent: false),
               ),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.mark_email_unread, color: Color(0xFFD4AF37)),
+                  tooltip: 'الاستفسارات الإدارية',
+                  onPressed: () => InspectorInquiriesSheet.show(context, user?.employeeId ?? user?.id ?? 1),
+                ),
+                if (_pendingInquiryCount > 0)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        '$_pendingInquiryCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             IconButton(
               icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
               tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
@@ -1458,6 +1495,77 @@ class _InspectorScreenState extends State<InspectorScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Pending Inquiries Alert Banner
+              if (_pendingInquiryCount > 0)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5B1124), Color(0xFF2E091B)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFD4AF37), width: 1.3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                        blurRadius: 14,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.mail, color: Color(0xFFD4AF37), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'لديك $_pendingInquiryCount استفسار إداري كتابي بانتظار ردك',
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'مهلة 48 ساعة لتقديم تبريراتكم للمدير الولائي',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                color: Color(0xFFFDE68A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () => InspectorInquiriesSheet.show(context, user?.employeeId ?? user?.id ?? 1),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('الرد الآن', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11)),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Offline banner
               if (_pendingSyncCount > 0)
                 Container(

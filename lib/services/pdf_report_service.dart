@@ -323,6 +323,243 @@ class PdfReportService {
     );
   }
 
+  /// Generate and print official individual Inquiry Letter (استمارة استفسار إداري كتابي)
+  static Future<void> generateAndPrintInquiryLetter(Map<String, dynamic> inquiry) async {
+    final pdf = pw.Document();
+
+    final nomAr = inquiry['NomAr'] ?? inquiry['nomar'] ?? inquiry['Nom'] ?? inquiry['nom'] ?? inquiry['name'] ?? inquiry['employeeName'] ?? '';
+    final prenomAr = inquiry['PrenomAr'] ?? inquiry['prenomar'] ?? inquiry['Prenom'] ?? inquiry['prenom'] ?? '';
+    final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
+        ? '$nomAr $prenomAr'.trim()
+        : (inquiry['EmployeeName'] ?? inquiry['employee_name'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
+    final service = (inquiry['Service'] ?? inquiry['service'] ?? 'مديرية التجارة لولاية سطيف').toString();
+    final grade = (inquiry['Grade'] ?? inquiry['grade'] ?? 'مفتش رئيسي').toString();
+    final rawDate = (inquiry['IncidentDate'] ?? inquiry['incidentdate'] ?? inquiry['Date'] ?? inquiry['date'] ?? inquiry['CreatedAt'] ?? '').toString();
+    final dateStr = rawDate.length >= 10 ? rawDate.substring(0, 10) : (rawDate.isNotEmpty ? rawDate : DateFormat('yyyy/MM/dd').format(DateTime.now()));
+    final subject = (inquiry['Subject'] ?? inquiry['subject'] ?? 'استفسار كتابي حول الانضباط ومواقيت العمل').toString();
+    final details = (inquiry['Details'] ?? inquiry['details'] ??
+        'بناءً على السجلات الرسمية للحضور والانصراف عبر المنصة الرقمية، سُجل بحقكم غياب/تأخر عن موعد العمل الميداني دون إشعار مسبق أو رخصة قانونية.').toString();
+    final int lateMins = ((inquiry['LateMinutes'] ?? inquiry['lateminutes'] ?? 0) as num).toInt();
+    final reply = inquiry['EmployeeReply'] ?? inquiry['employeereply'] ?? inquiry['Reply'] ?? inquiry['reply'];
+    final decision = inquiry['DirectorDecision'] ?? inquiry['directordecision'];
+    final directorNotes = inquiry['DirectorNotes'] ?? inquiry['directornotes'];
+    final inqId = (inquiry['Id'] ?? inquiry['id'] ?? '—').toString();
+
+    // Load fonts for Arabic support
+    pw.Font? arabicFont;
+    try {
+      final fontData = await rootBundle.load('assets/fonts/Cairo.ttf');
+      arabicFont = pw.Font.ttf(fontData);
+    } catch (_) {
+      try {
+        final fontData = await rootBundle.load('assets/fonts/Tajawal-Regular.ttf');
+        arabicFont = pw.Font.ttf(fontData);
+      } catch (_) {}
+    }
+
+    final theme = pw.ThemeData.withFont(
+      base: arabicFont,
+      bold: arabicFont,
+    );
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        theme: theme,
+        textDirection: pw.TextDirection.rtl,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              // Official Republic Header
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Text(
+                      'الجمهورية الجزائرية الديمقراطية الشعبية',
+                      style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      'وزارة التجارة الداخلية وضبط السوق الوطنية',
+                      style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      'مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف',
+                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey900),
+                    ),
+                    pw.SizedBox(height: 1),
+                    pw.Text(
+                      'مصلحة الإدارة والوسائل — مكتب المستخدمين والتكوين',
+                      style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey800),
+                    ),
+                    pw.SizedBox(height: 6),
+                    pw.Container(height: 1.2, width: 280, color: PdfColors.black),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 12),
+
+                // Document Reference & Date
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('الرقم: 2026/استفسار/$inqId', style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('سطيف في: $dateStr', style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+                pw.SizedBox(height: 14),
+
+                // Document Title Banner
+                pw.Container(
+                  alignment: pw.Alignment.center,
+                  padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey200,
+                    border: pw.Border.all(color: PdfColors.black, width: 1),
+                  ),
+                  child: pw.Text(
+                    'استمـارة استفسـار إداري كتـابي رسمـي',
+                    style: const pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+                  ),
+                ),
+                pw.SizedBox(height: 14),
+
+                // Addressed to
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(8),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey400, width: 0.8),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Row(
+                        children: [
+                          pw.Text('إلى السيد(ة): ', style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                          pw.Text(name, style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                        ],
+                      ),
+                      pw.SizedBox(height: 3),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text('الرتبة: $grade', style: const pw.TextStyle(fontSize: 9.5)),
+                          pw.Text('المصلحة/الهيكل: $service', style: const pw.TextStyle(fontSize: 9.5)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 10),
+
+                // Subject & Legal Reference
+                pw.Text('الموضوع: $subject', style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 2),
+                pw.Text('المرجع: الأمر رقم 06-03 المؤرخ في 15 يوليو 2006 المتضمن القانون الأساسي العام للوظيفة العمومية.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
+                pw.SizedBox(height: 10),
+
+                // Incident Details
+                pw.Text(
+                  '$details\n${lateMins > 0 ? "وقد قُدِّر التأخر الفعلي المسجل عن توقيت العمل بـ: $lateMins دقيقة.\n" : ""}',
+                  style: const pw.TextStyle(fontSize: 10, lineSpacing: 3),
+                ),
+                pw.SizedBox(height: 4),
+
+                pw.Text(
+                  'وعليه، يُطلب منكم موافاة الإدارة ومكتب المستخدمين بتبريراتكم وأسباب ذلك كتابياً في أجل أقصاه 48 ساعة من تاريخ استلامكم هذا الاستفسار، حتى يتسنى للمدير الولائي اتخاذ الإجراءات الإدارية والقانونية المناسبة.',
+                  style: const pw.TextStyle(fontSize: 10, lineSpacing: 3),
+                ),
+                pw.SizedBox(height: 12),
+
+                // Reply if exists
+                if (reply != null && reply.toString().trim().isNotEmpty) ...[
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(6),
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border.all(color: PdfColors.grey400, width: 0.8),
+                    ),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('رد وتبرير الموظف (المسجل رسمياً):', style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.SizedBox(height: 2),
+                        pw.Text('$reply', style: const pw.TextStyle(fontSize: 9.5)),
+                      ],
+                    ),
+                  ),
+                  pw.SizedBox(height: 10),
+                ],
+
+                // Director Decision if exists
+                if (decision != null) ...[
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(6),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey100,
+                      border: pw.Border.all(color: PdfColors.black, width: 0.8),
+                    ),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('قرار السيد المدير الولائي للتجارة:', style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.SizedBox(height: 2),
+                        pw.Text(
+                          decision == 'justified'
+                              ? 'قبول التبرير وحفظ الملف دون أي أثر مالي.'
+                              : decision == 'warning'
+                                  ? 'توجيه تنبيه/إنذار إداري رسمي يسجل في الملف المهني.'
+                                  : 'تثبيت الخصم المالي من الراتب بمقدار: ${inquiry['DeductionDays'] ?? 1} يوم.',
+                          style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold),
+                        ),
+                        if (directorNotes != null && directorNotes.toString().isNotEmpty)
+                          pw.Text('الملاحظات: $directorNotes', style: const pw.TextStyle(fontSize: 8.5)),
+                      ],
+                    ),
+                  ),
+                  pw.SizedBox(height: 10),
+                ],
+
+                pw.Spacer(),
+
+                // Signatures
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+                      children: [
+                        pw.Text('تأشيرة رئيس مكتب المستخدمين', style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.SizedBox(height: 35),
+                        pw.Text('عـ/ المدير والآمر بالصرف', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+                      children: [
+                        pw.Text('المدير الولائي للتجارة', style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                        pw.SizedBox(height: 35),
+                        pw.Text('ولاية سطيف', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
+                      ],
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 8),
+              ],
+            );
+          },
+        ),
+      );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Demande_Explication_${name.replaceAll(' ', '_')}_$dateStr.pdf',
+    );
+  }
+
   static pw.Widget _buildPdfStatBox(String label, String value, PdfColor color) {
     return pw.Expanded(
       child: pw.Container(
