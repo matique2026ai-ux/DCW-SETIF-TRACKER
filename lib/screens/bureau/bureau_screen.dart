@@ -7,6 +7,7 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 
 class BureauScreen extends StatefulWidget {
   const BureauScreen({super.key});
@@ -365,6 +366,11 @@ class _BureauScreenState extends State<BureauScreen>
           ),
           actions: [
             IconButton(
+              icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
+              tooltip: 'تغيير كلمة المرور',
+              onPressed: () => ChangePasswordDialog.show(context),
+            ),
+            IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white70),
               tooltip: 'تحديث البيانات',
               onPressed: _loadAll,
@@ -376,6 +382,7 @@ class _BureauScreenState extends State<BureauScreen>
             ),
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.white70),
+              tooltip: 'تسجيل الخروج',
               onPressed: () {
                 context.read<AuthService>().logout();
                 Navigator.pushReplacement(

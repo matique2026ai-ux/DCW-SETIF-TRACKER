@@ -6,6 +6,7 @@ import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 
 class HeadScreen extends StatefulWidget {
@@ -943,6 +944,11 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
               icon: const Icon(Icons.add_task, color: AppTheme.AccentColor),
               tooltip: 'إصدار أمر مهمة جديد',
               onPressed: _showNewMissionDialog,
+            ),
+            IconButton(
+              icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
+              tooltip: 'تغيير كلمة المرور',
+              onPressed: () => ChangePasswordDialog.show(context),
             ),
             IconButton(
               icon: const Icon(Icons.qr_code, color: AppTheme.AccentColor),
