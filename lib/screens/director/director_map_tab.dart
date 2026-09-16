@@ -90,10 +90,16 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         _mapController.move(_setifCenter, 13.5);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('📍 تم التوجيه إلى مركز ولاية سطيف (صلاحية GPS غير مفعلة في المتصفح)', style: TextStyle(fontFamily: 'Tajawal')),
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              content: const Text(
+                '📍 تم التوجيه إلى مركز ولاية سطيف (صلاحية GPS غير مفعلة في المتصفح)',
+                style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
+              ),
               backgroundColor: AppTheme.WarningColor,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -111,7 +117,13 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         _mapController.move(livePoint, 16.0);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🎯 تم تحديد موقعك المباشر بنجاح (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})', style: const TextStyle(fontFamily: 'Tajawal')),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            content: Text(
+              '🎯 تم تحديد موقعك المباشر بنجاح (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})',
+              style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
+            ),
             backgroundColor: AppTheme.SuccessColor,
             duration: const Duration(seconds: 3),
           ),
@@ -121,10 +133,16 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       _mapController.move(_setifCenter, 13.5);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('📍 تم التوجيه إلى مركز ولاية سطيف والمقر الرئيسي', style: TextStyle(fontFamily: 'Tajawal')),
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            content: const Text(
+              '📍 تم التوجيه إلى مركز ولاية سطيف والمقر الرئيسي',
+              style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
+            ),
             backgroundColor: AppTheme.AccentColor,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -1124,13 +1142,31 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                                     _mapController.move(LatLng(lat, lng), 16);
                                     _showInspectorModal(emp);
                                   } else {
+                                    _showInspectorModal(emp);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(
-                                          '⚠️ العون ($name) لم يسجل حضوره اليوم بعد لتحديد موقعه المباشر',
-                                          style: const TextStyle(fontFamily: 'Tajawal'),
+                                        behavior: SnackBarBehavior.floating,
+                                        margin: const EdgeInsets.all(16),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        backgroundColor: const Color(0xFF2D1035),
+                                        content: Row(
+                                          children: [
+                                            const Icon(Icons.info_outline, color: Color(0xFFD4AF37), size: 20),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                'العون ($name) لم يسجل حضوره اليوم بعد (لا تتوفر إحداثيات GPS مباشرة)',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Tajawal',
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        backgroundColor: AppTheme.CardColor,
+                                        duration: const Duration(seconds: 4),
                                       ),
                                     );
                                   }
