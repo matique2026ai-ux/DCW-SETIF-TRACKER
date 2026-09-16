@@ -71,10 +71,22 @@ class DRHTrackerApp extends StatelessWidget {
             ],
             supportedLocales: const [Locale('ar', ''), Locale('fr', '')],
             onGenerateRoute: (settings) {
-              final uri = Uri.parse(settings.name ?? '/');
-              if (uri.path == '/verify' || uri.queryParameters.containsKey('emp') || uri.queryParameters.containsKey('id')) {
+              final routeUri = Uri.parse(settings.name ?? '/');
+              final baseUri = Uri.base;
+              final isVerifyRoute = routeUri.path.contains('verify') || 
+                                    baseUri.path.contains('verify') || 
+                                    routeUri.queryParameters.containsKey('id') || 
+                                    routeUri.queryParameters.containsKey('emp') ||
+                                    baseUri.queryParameters.containsKey('id') ||
+                                    baseUri.queryParameters.containsKey('emp');
+
+              if (isVerifyRoute) {
+                final mergedParams = <String, dynamic>{
+                  ...baseUri.queryParameters,
+                  ...routeUri.queryParameters,
+                };
                 return MaterialPageRoute(
-                  builder: (_) => VerificationScreen(params: uri.queryParameters),
+                  builder: (_) => VerificationScreen(params: mergedParams),
                   settings: settings,
                 );
               }
