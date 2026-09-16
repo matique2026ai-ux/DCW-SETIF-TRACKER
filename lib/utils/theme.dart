@@ -16,13 +16,15 @@ class AppTheme {
   static const WarningColor = Color(0xFFF59E0B);
   static const DangerColor = Color(0xFFEF4444);
 
-  static ThemeData get darkTheme {
+  static ThemeData getTheme({bool isArabic = true}) {
+    final font = isArabic ? 'Tajawal' : 'Plus Jakarta Sans';
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: PrimaryColor,
       scaffoldBackgroundColor: BackgroundColor,
-      fontFamily: 'Tajawal',
+      fontFamily: font,
       colorScheme: const ColorScheme.dark(
         primary: PrimaryColor,
         secondary: AccentColor,
@@ -32,13 +34,13 @@ class AppTheme {
         onSecondary: Colors.black,
         onSurface: Colors.white,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF2D1035),
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF2D1035),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          fontFamily: 'Tajawal',
+          fontFamily: font,
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -60,8 +62,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Tajawal',
+          textStyle: TextStyle(
+            fontFamily: font,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -81,9 +83,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AccentColor, width: 2),
         ),
-        labelStyle: const TextStyle(fontFamily: 'Tajawal', color: TextSecondary),
+        labelStyle: TextStyle(fontFamily: font, color: TextSecondary),
         hintStyle: TextStyle(
-          fontFamily: 'Tajawal',
+          fontFamily: font,
           color: TextSecondary.withValues(alpha: 0.6),
         ),
       ),
@@ -106,5 +108,6 @@ class AppTheme {
     );
   }
 
+  static ThemeData get darkTheme => getTheme(isArabic: true);
   static ThemeData get lightTheme => darkTheme;
 }

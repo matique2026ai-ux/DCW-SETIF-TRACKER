@@ -137,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen>
     final loc = AppLocalizations.of(context);
     final langProvider = context.watch<LanguageProvider>();
     final isAr = loc.isArabic;
-    final fontFam = isAr ? 'Tajawal' : 'Roboto';
+    final fontFam = isAr ? 'Tajawal' : 'Plus Jakarta Sans';
 
 
     return Scaffold(

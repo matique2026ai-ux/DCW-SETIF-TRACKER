@@ -8,6 +8,8 @@ import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
+import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 
 class BureauScreen extends StatefulWidget {
   const BureauScreen({super.key});
@@ -349,29 +351,11 @@ class _BureauScreenState extends State<BureauScreen>
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD4AF37), width: 1.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/gold_coin_floating.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/images/gold_emblem.jpg',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
+              const GoldenEmblemCoin(
+                size: 36,
+                showOuterGlow: false,
+                enableFloating: false,
+                animateGleam: false,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -649,8 +633,14 @@ class _BureauScreenState extends State<BureauScreen>
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  itemCount: filtered.length,
+                  itemCount: filtered.length + 1,
                   itemBuilder: (ctx, i) {
+                    if (i == filtered.length) {
+                      return const Padding(
+                        padding: EdgeInsets.only(top: 16, bottom: 8),
+                        child: AppFooter(),
+                      );
+                    }
                     final emp = filtered[i];
                     return _buildEmployeeCard(emp);
                   },
@@ -1458,6 +1448,9 @@ class _BureauScreenState extends State<BureauScreen>
                 ),
               );
             }),
+          const SizedBox(height: 16),
+          const AppFooter(),
+          const SizedBox(height: 16),
         ],
       ),
     );

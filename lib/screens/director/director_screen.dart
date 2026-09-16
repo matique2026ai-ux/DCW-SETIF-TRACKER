@@ -9,6 +9,7 @@ import 'package:drh_setif_tracker/screens/director/director_map_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_reports_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_deductions_tab.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 
 
@@ -62,32 +63,11 @@ class _DirectorScreenState extends State<DirectorScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Official Golden 3D Medallion Avatar
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFD4AF37),
-                        width: 1.0,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/gold_coin_floating.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/images/gold_emblem.jpg',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
+                  const GoldenEmblemCoin(
+                    size: 36,
+                    showOuterGlow: false,
+                    enableFloating: false,
+                    animateGleam: false,
                   ),
                   const SizedBox(width: 12),
                   Expanded(

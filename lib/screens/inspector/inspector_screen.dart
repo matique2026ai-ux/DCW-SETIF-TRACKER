@@ -15,6 +15,7 @@ import 'package:drh_setif_tracker/screens/common/justification_submission_modal.
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_inquiries_sheet.dart';
+import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 
 
 class InspectorScreen extends StatefulWidget {
@@ -1390,29 +1391,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD4AF37), width: 1.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/gold_coin_floating.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/images/gold_emblem.jpg',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
+              const GoldenEmblemCoin(
+                size: 36,
+                showOuterGlow: false,
+                enableFloating: false,
+                animateGleam: false,
               ),
               const SizedBox(width: 12),
               Expanded(

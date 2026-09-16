@@ -61,7 +61,7 @@ class DRHTrackerApp extends StatelessWidget {
           return MaterialApp(
             title: 'مديرية التجارة سطيف — منصة الرقابة والتفتيش',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
+            theme: AppTheme.getTheme(isArabic: langProvider.isArabic),
             locale: langProvider.locale,
             localizationsDelegates: const [
               AppLocalizationsDelegate(),

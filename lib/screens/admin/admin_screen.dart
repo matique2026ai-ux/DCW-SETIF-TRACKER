@@ -11,9 +11,10 @@ import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/services/inspectorate_service.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -858,29 +859,11 @@ class _AdminScreenState extends State<AdminScreen>
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD4AF37), width: 1.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/gold_coin_floating.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/images/gold_emblem.jpg',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
+              const GoldenEmblemCoin(
+                size: 36,
+                showOuterGlow: false,
+                enableFloating: false,
+                animateGleam: false,
               ),
               const SizedBox(width: 10),
               Flexible(
