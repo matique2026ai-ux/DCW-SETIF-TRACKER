@@ -8,6 +8,7 @@ import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 
 class BureauScreen extends StatefulWidget {
   const BureauScreen({super.key});
@@ -435,6 +436,7 @@ class _BureauScreenState extends State<BureauScreen>
                   const JustificationsReviewScreen(),
                 ],
               ),
+        bottomNavigationBar: const AppFooter(),
       ),
     );
   }

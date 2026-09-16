@@ -9,6 +9,7 @@ import 'package:drh_setif_tracker/screens/director/director_map_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_reports_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_deductions_tab.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 
 
 class DirectorScreen extends StatefulWidget {
@@ -103,38 +104,44 @@ class _DirectorScreenState extends State<DirectorScreen> {
             DirectorDeductionsTab(),
           ],
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D1035),
-            border: Border(
-              top: BorderSide(
-                color: AppTheme.BorderColor.withValues(alpha: 0.3),
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D1035),
+                border: Border(
+                  top: BorderSide(
+                    color: AppTheme.BorderColor.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _navItem(0, Icons.map_outlined, Icons.map, loc.navMap),
+                      _navItem(
+                        1,
+                        Icons.assessment_outlined,
+                        Icons.assessment,
+                        loc.navReports,
+                      ),
+                      _navItem(
+                        2,
+                        Icons.money_off_outlined,
+                        Icons.money_off,
+                        loc.navDeductions,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _navItem(0, Icons.map_outlined, Icons.map, loc.navMap),
-                  _navItem(
-                    1,
-                    Icons.assessment_outlined,
-                    Icons.assessment,
-                    loc.navReports,
-                  ),
-                  _navItem(
-                    2,
-                    Icons.money_off_outlined,
-                    Icons.money_off,
-                    loc.navDeductions,
-                  ),
-                ],
-              ),
-            ),
-          ),
+            const AppFooter(),
+          ],
         ),
       ),
     );

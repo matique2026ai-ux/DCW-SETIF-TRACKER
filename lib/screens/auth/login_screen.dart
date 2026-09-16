@@ -10,6 +10,7 @@ import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/admin/admin_screen.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -467,6 +468,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
       ),
+      bottomNavigationBar: const AppFooter(),
     );
   }
 

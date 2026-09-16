@@ -10,7 +10,7 @@ import 'package:drh_setif_tracker/screens/head/head_screen.dart';
 import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
-
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/services/inspectorate_service.dart';
@@ -926,6 +926,7 @@ class _AdminScreenState extends State<AdminScreen>
                   _buildRolePreviewTab(),
                 ],
               ),
+        bottomNavigationBar: const AppFooter(),
       ),
     );
   }

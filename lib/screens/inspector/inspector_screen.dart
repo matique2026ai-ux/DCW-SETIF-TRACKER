@@ -13,6 +13,7 @@ import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justification_submission_modal.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_inquiries_sheet.dart';
 
 
@@ -2321,6 +2322,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
             ],
           ),
         ),
+        bottomNavigationBar: const AppFooter(),
       ),
     );
   }

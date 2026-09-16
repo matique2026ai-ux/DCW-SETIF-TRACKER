@@ -7,6 +7,7 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 
 class HeadScreen extends StatefulWidget {
@@ -1014,6 +1015,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   _buildInspectorsPresenceTab(),
                 ],
               ),
+        bottomNavigationBar: const AppFooter(),
       ),
     );
   }
