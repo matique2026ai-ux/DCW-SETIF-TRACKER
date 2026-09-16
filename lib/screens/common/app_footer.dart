@@ -9,7 +9,7 @@ class AppFooter extends StatelessWidget {
   const AppFooter({
     super.key,
     this.showDivider = false,
-    this.padding = const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+    this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
   });
 
   @override
@@ -24,29 +24,29 @@ class AppFooter extends StatelessWidget {
         top: false,
         child: Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF1E0B26).withValues(alpha: 0.90),
-                  const Color(0xFF13061A).withValues(alpha: 0.95),
+                  const Color(0xFF1E0B26).withValues(alpha: 0.85),
+                  const Color(0xFF13061A).withValues(alpha: 0.90),
                 ],
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
-                width: 0.8,
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                width: 0.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
-                  blurRadius: 10,
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                  blurRadius: 6,
                   spreadRadius: 0,
-                  offset: const Offset(0, 2),
+                  offset: const Offset(0, 1),
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  blurRadius: 6,
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
               ],
@@ -55,20 +55,20 @@ class AppFooter extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 3D Gold Engineering Medallion Seal Avatar
+                // 3D Gold Engineering Medallion Seal Avatar (Micro-Refined)
                 Container(
-                  width: 20,
-                  height: 20,
+                  width: 15,
+                  height: 15,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFD4AF37),
-                      width: 0.8,
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.8),
+                      width: 0.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                        blurRadius: 6,
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                        blurRadius: 4,
                       ),
                     ],
                   ),
@@ -78,29 +78,29 @@ class AppFooter extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const Icon(
                         Icons.workspace_premium_rounded,
-                        size: 14,
+                        size: 10,
                         color: Color(0xFFD4AF37),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Crisp, high-contrast, perfectly readable golden text
+                const SizedBox(width: 6),
+                // Crisp, elegant, micro-refined golden text
                 Text(
                   isArabic
                       ? 'جميع حقوق التصميم والبرمجة محفوظة © المهندس عكرور توفيق'
                       : 'Copyright © 2026 ING Akrour ToufiK',
                   style: TextStyle(
                     fontFamily: isArabic ? 'Tajawal' : null,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: isArabic ? 0.2 : 0.4,
                     color: const Color(0xFFFFDF7A),
                     shadows: [
                       Shadow(
                         color: Colors.black.withValues(alpha: 0.9),
-                        offset: const Offset(1, 1),
-                        blurRadius: 2,
+                        offset: const Offset(0.5, 0.5),
+                        blurRadius: 1.5,
                       ),
                     ],
                   ),
