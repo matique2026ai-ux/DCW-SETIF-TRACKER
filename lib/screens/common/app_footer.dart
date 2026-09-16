@@ -5,21 +5,16 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 class AppFooter extends StatelessWidget {
   final bool showDivider;
   final EdgeInsetsGeometry padding;
-  final double height;
 
   const AppFooter({
     super.key,
     this.showDivider = false,
-    this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-    this.height = 30.0,
+    this.padding = const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
   });
 
   @override
   Widget build(BuildContext context) {
     final isArabic = context.watch<LanguageProvider>().isArabic;
-    final assetPath = isArabic
-        ? 'assets/images/gold_signature_ar.jpg'
-        : 'assets/images/gold_signature_fr.jpg';
 
     return Container(
       width: double.infinity,
@@ -29,26 +24,88 @@ class AppFooter extends StatelessWidget {
         top: false,
         child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 360),
-            height: height,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF1E0B26).withValues(alpha: 0.90),
+                  const Color(0xFF13061A).withValues(alpha: 0.95),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                width: 0.8,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
-                  blurRadius: 8,
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
+                  blurRadius: 10,
                   spreadRadius: 0,
+                  offset: const Offset(0, 2),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  blurRadius: 6,
                   offset: const Offset(0, 1),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                assetPath,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 3D Gold Engineering Medallion Seal Avatar
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/engineering_seal.jpg',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 14,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Crisp, high-contrast, perfectly readable golden text
+                Text(
+                  isArabic
+                      ? 'جميع حقوق التصميم والبرمجة محفوظة © المهندس عكرور توفيق'
+                      : 'Copyright © 2026 ING Akrour ToufiK',
+                  style: TextStyle(
+                    fontFamily: isArabic ? 'Tajawal' : null,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: isArabic ? 0.2 : 0.4,
+                    color: const Color(0xFFFFDF7A),
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.9),
+                        offset: const Offset(1, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
