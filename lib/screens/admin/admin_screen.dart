@@ -26,6 +26,7 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _tabIndex = 0;
   bool _isLoading = true;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _employees = [];
@@ -39,7 +40,7 @@ class _AdminScreenState extends State<AdminScreen>
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging && mounted) {
-        setState(() {});
+        setState(() => _tabIndex = _tabController.index);
       }
     });
     _loadData();
@@ -52,6 +53,7 @@ class _AdminScreenState extends State<AdminScreen>
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final api = context.read<AuthService>().api;
@@ -998,7 +1000,9 @@ class _AdminScreenState extends State<AdminScreen>
             indicatorColor: const Color(0xFFD4AF37),
             labelColor: const Color(0xFFD4AF37),
             unselectedLabelColor: Colors.white60,
-            onTap: (index) => setState(() {}),
+            onTap: (index) {
+              setState(() => _tabIndex = index);
+            },
             tabs: const [
               Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
               Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
@@ -1011,18 +1015,25 @@ class _AdminScreenState extends State<AdminScreen>
             ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
               )
-            : IndexedStack(
-                index: _tabController.index.clamp(0, 3),
-                children: [
-                  _buildUsersTab(),
-                  _buildInspectoratesTab(),
-                  _buildSystemHealthTab(),
-                  _buildRolePreviewTab(),
-                ],
-              ),
+            : _buildActiveTab(),
         bottomNavigationBar: const AppFooter(),
       ),
     );
+  }
+
+  Widget _buildActiveTab() {
+    switch (_tabIndex) {
+      case 0:
+        return _buildUsersTab();
+      case 1:
+        return _buildInspectoratesTab();
+      case 2:
+        return _buildSystemHealthTab();
+      case 3:
+        return _buildRolePreviewTab();
+      default:
+        return _buildUsersTab();
+    }
   }
 
   Widget _buildUsersTab() {
