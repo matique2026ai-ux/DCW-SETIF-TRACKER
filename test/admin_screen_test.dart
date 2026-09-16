@@ -36,22 +36,22 @@ void main() {
     // Check AppBar
     expect(find.text('الإدارة التقنية للمنظومة'), findsOneWidget);
 
-    // Check Bottom Nav Tabs
-    expect(find.text('المستخدمين'), findsOneWidget);
-    expect(find.text('المقرات والـ GPS'), findsOneWidget);
-    expect(find.text('حالة السيرفر'), findsOneWidget);
-    expect(find.text('معاينة الأدوار'), findsOneWidget);
+    // Check Top Tabs
+    expect(find.text('المستخدمين والحسابات'), findsOneWidget);
+    expect(find.text('المقرات والبصمة الجغرافية'), findsOneWidget);
+    expect(find.text('حالة النظام والسيرفر'), findsOneWidget);
+    expect(find.text('معاينة شاشات الأدوار'), findsOneWidget);
 
     // Tap Tab 1 (Inspectorates)
-    await tester.tap(find.text('المقرات والـ GPS'));
+    await tester.tap(find.text('المقرات والبصمة الجغرافية'));
     await tester.pump(const Duration(milliseconds: 300));
 
     // Tap Tab 2 (System Health)
-    await tester.tap(find.text('حالة السيرفر'));
+    await tester.tap(find.text('حالة النظام والسيرفر'));
     await tester.pump(const Duration(milliseconds: 300));
 
     // Tap Tab 3 (Role Preview)
-    await tester.tap(find.text('معاينة الأدوار'));
+    await tester.tap(find.text('معاينة شاشات الأدوار'));
     await tester.pump(const Duration(milliseconds: 300));
   });
 }

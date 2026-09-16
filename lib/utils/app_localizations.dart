@@ -5,7 +5,8 @@ class AppLocalizations {
   AppLocalizations(this.locale);
 
   static AppLocalizations of(BuildContext context) {
-    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    return Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+        AppLocalizations(const Locale('ar'));
   }
 
   bool get isArabic => locale.languageCode == 'ar';
@@ -134,11 +135,11 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) => ['ar', 'fr'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => true;
 
   @override
   Future<AppLocalizations> load(Locale locale) async =>
-      AppLocalizations(locale);
+      AppLocalizations(locale.languageCode == 'fr' ? const Locale('fr') : const Locale('ar'));
 
   @override
   bool shouldReload(covariant LocalizationsDelegate<AppLocalizations> old) =>

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
-import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/director/director_screen.dart';
@@ -23,9 +22,10 @@ class AdminScreen extends StatefulWidget {
   State<AdminScreen> createState() => _AdminScreenState();
 }
 
-class _AdminScreenState extends State<AdminScreen> {
-  int _currentIndex = 0;
-  bool _isLoading = true;
+class _AdminScreenState extends State<AdminScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _isLoading = false;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _employees = [];
   String _morningGraceTime = '08:45';
@@ -35,7 +35,14 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -985,9 +992,26 @@ class _AdminScreenState extends State<AdminScreen> {
               ),
             ),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            indicatorColor: const Color(0xFFD4AF37),
+            indicatorWeight: 3,
+            labelColor: const Color(0xFFD4AF37),
+            unselectedLabelColor: Colors.white60,
+            labelStyle: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
+            unselectedLabelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+            tabs: const [
+              Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
+              Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
+              Tab(icon: Icon(Icons.dns, size: 18), text: 'حالة النظام والسيرفر'),
+              Tab(icon: Icon(Icons.preview, size: 18), text: 'معاينة شاشات الأدوار'),
+            ],
+          ),
         ),
-        body: IndexedStack(
-          index: _currentIndex,
+        body: TabBarView(
+          controller: _tabController,
           children: [
             _buildUsersTab(),
             _buildInspectoratesTab(),
@@ -995,80 +1019,14 @@ class _AdminScreenState extends State<AdminScreen> {
             _buildRolePreviewTab(),
           ],
         ),
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF260D2E),
-                border: Border(
-                  top: BorderSide(
-                    color: AppTheme.BorderColor.withValues(alpha: 0.3),
-                  ),
-                ),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _navItem(0, Icons.manage_accounts_outlined, Icons.manage_accounts, 'المستخدمين'),
-                      _navItem(1, Icons.location_on_outlined, Icons.location_on, 'المقرات والـ GPS'),
-                      _navItem(2, Icons.dns_outlined, Icons.dns, 'حالة السيرفر'),
-                      _navItem(3, Icons.preview_outlined, Icons.preview, 'معاينة الأدوار'),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const AppFooter(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(int index, IconData unselectedIcon, IconData selectedIcon, String label) {
-    final isSelected = _currentIndex == index;
-    return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFD4AF37).withValues(alpha: 0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: isSelected
-              ? Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4), width: 1)
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? selectedIcon : unselectedIcon,
-              size: 20,
-              color: isSelected ? const Color(0xFFD4AF37) : Colors.white60,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? const Color(0xFFD4AF37) : Colors.white60,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
   Widget _buildUsersTab() {
+    if (_isLoading && _users.isEmpty) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
+    }
     final activeCount = _users.where((u) => u['isActive'] == true).length;
     final inspectorsCount = _users.where((u) => u['role'] == 'inspector').length;
 
@@ -1489,6 +1447,9 @@ class _AdminScreenState extends State<AdminScreen> {
                 );
               },
             ),
+            const SizedBox(height: 24),
+            const AppFooter(),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -1660,6 +1621,9 @@ class _AdminScreenState extends State<AdminScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          const AppFooter(),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -1716,6 +1680,9 @@ class _AdminScreenState extends State<AdminScreen> {
             color: const Color(0xFFE11D48),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InspectorScreen())),
           ),
+          const SizedBox(height: 24),
+          const AppFooter(),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -1985,6 +1952,9 @@ class _AdminScreenState extends State<AdminScreen> {
                 return _buildInspectorateCard(insp);
               },
             ),
+            const SizedBox(height: 24),
+            const AppFooter(),
+            const SizedBox(height: 16),
           ],
         ),
       ),

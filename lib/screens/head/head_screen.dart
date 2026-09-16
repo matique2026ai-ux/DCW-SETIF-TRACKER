@@ -7,7 +7,6 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
-import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 
 class HeadScreen extends StatefulWidget {
   const HeadScreen({super.key});
@@ -970,56 +969,63 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        _departmentName,
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                            width: 0.5,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _departmentName,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        child: const Text(
-                          'رئيس مصلحة',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: const Text(
+                            'رئيس مصلحة',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFD4AF37),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 10.5,
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.w500,
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 1),
+                    Text(
+                      'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 10.5,
+                        color: Color(0xFFD4AF37),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1107,7 +1113,6 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   _buildInspectorsPresenceTab(),
                 ],
               ),
-        bottomNavigationBar: const AppFooter(),
       ),
     );
   }
