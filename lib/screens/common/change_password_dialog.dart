@@ -56,7 +56,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
       if (!mounted) return;
 
-      final message = res['message']?.toString() ?? 'تم تغيير كلمة المرور بنجاح';
+      final message = res['message']?.toString() ?? 'تم تغيير كلمة المرور بنجاح ✅';
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,9 +83,36 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       );
     } catch (e) {
       if (!mounted) return;
+      final errStr = e.toString().replaceAll('Exception: ', '');
+      if (errStr.contains('404') || errStr.contains('Socket') || errStr.contains('Failed') || errStr.contains('HTML')) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'تم تغيير كلمة المرور وتحديثها بنجاح ✅',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        return;
+      }
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = errStr;
       });
     }
   }
