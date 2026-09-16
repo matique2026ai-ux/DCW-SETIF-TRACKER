@@ -8,8 +8,11 @@ import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 
-void main() {
+import 'package:drh_setif_tracker/services/inspectorate_service.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await InspectorateService.instance.initialize();
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Material(
       color: const Color(0xFF1A0A1F),
@@ -51,6 +54,7 @@ class DRHTrackerApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider.value(value: InspectorateService.instance),
       ],
       child: Consumer<LanguageProvider>(
         builder: (context, langProvider, _) {

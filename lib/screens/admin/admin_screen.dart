@@ -11,6 +11,11 @@ import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 
+import 'package:geolocator/geolocator.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
+import 'package:drh_setif_tracker/services/inspectorate_service.dart';
+import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
 
@@ -31,7 +36,7 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -49,6 +54,7 @@ class _AdminScreenState extends State<AdminScreen>
         api.getSystemUsers(),
         api.getEmployees(all: true),
         api.getSettings(),
+        InspectorateService.instance.loadInspectorates(api: api),
       ]);
       if (mounted) {
         final settings = results[2] as Map<String, dynamic>;
@@ -901,6 +907,7 @@ class _AdminScreenState extends State<AdminScreen>
             unselectedLabelColor: Colors.white60,
             tabs: const [
               Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
+              Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
               Tab(icon: Icon(Icons.dns, size: 18), text: 'حالة النظام والسيرفر'),
               Tab(icon: Icon(Icons.preview, size: 18), text: 'معاينة شاشات الأدوار'),
             ],
@@ -914,6 +921,7 @@ class _AdminScreenState extends State<AdminScreen>
                 controller: _tabController,
                 children: [
                   _buildUsersTab(),
+                  _buildInspectoratesTab(),
                   _buildSystemHealthTab(),
                   _buildRolePreviewTab(),
                 ],
@@ -1669,6 +1677,656 @@ class _AdminScreenState extends State<AdminScreen>
       default:
         return 'مفتش ميداني';
     }
+  }
+
+  Widget _buildInspectoratesTab() {
+    final list = InspectorateService.instance.inspectorates;
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        final api = context.read<AuthService>().api;
+        await InspectorateService.instance.loadInspectorates(api: api);
+        setState(() {});
+      },
+      color: const Color(0xFFD4AF37),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(14),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Information & Control Banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2E103A), Color(0xFF1E0B26)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.35)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.satellite_alt, color: Color(0xFFD4AF37), size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'إدارة وضبط البصمات الجغرافية للمقرات والملحقات',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'تحديد إحداثيات GPS بدقة السنتيمتر وتعيين نطاق التسامح (نصف القطر) لكل ملحقة',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF10B981)),
+                        ),
+                        child: Text(
+                          '${list.length} مقرات معتمدة',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            color: Color(0xFF10B981),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(color: Color(0xFF3D1645)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => _showEditInspectorateDialog(null),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          foregroundColor: const Color(0xFF1A0A1F),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.add_location_alt, size: 16),
+                        label: const Text(
+                          'إضافة مقر / ملحقة رقابية جديدة',
+                          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _showResetInspectoratesDialog,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFF87171),
+                          side: const BorderSide(color: Color(0xFFF87171)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.restore, size: 16),
+                        label: const Text(
+                          'استعادة الإحداثيات الافتراضية الأصلية',
+                          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // List of Inspectorates Cards
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: list.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final insp = list[index];
+                return _buildInspectorateCard(insp);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInspectorateCard(InspectorateHQ insp) {
+    IconData iconData = Icons.account_balance;
+    Color iconColor = const Color(0xFFD4AF37);
+    String typeLabel = 'مفتشية إقليمية';
+
+    if (insp.isMainDirectorate || insp.id == 'hq_setif') {
+      iconData = Icons.domain;
+      iconColor = const Color(0xFFD4AF37);
+      typeLabel = 'المقر الرئيسي للمديرية الولائية';
+    } else if (insp.id.contains('airport')) {
+      iconData = Icons.local_airport;
+      iconColor = const Color(0xFF38BDF8);
+      typeLabel = 'مفتشية حدودية لمراقبة الجودة';
+    } else if (insp.id.startsWith('annex_')) {
+      iconData = Icons.storefront;
+      iconColor = const Color(0xFF34D399);
+      typeLabel = 'ملحقة تجارية إقليمية';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E0B26),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: insp.isMainDirectorate ? const Color(0xFFD4AF37).withValues(alpha: 0.5) : const Color(0xFF3D1645),
+          width: insp.isMainDirectorate ? 1.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(iconData, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      insp.nameAr,
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (insp.nameFr.isNotEmpty)
+                      Text(
+                        insp.nameFr,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  typeLabel,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    color: iconColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Coordinates and Radius details
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF14071A),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF2D1035)),
+            ),
+            child: Wrap(
+              spacing: 14,
+              runSpacing: 6,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.explore, size: 14, color: Color(0xFFD4AF37)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'خط العرض (Lat): ${insp.latitude.toStringAsFixed(6)}°',
+                      style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.navigation, size: 14, color: Color(0xFFD4AF37)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'خط الطول (Lng): ${insp.longitude.toStringAsFixed(6)}°',
+                      style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.radar, size: 14, color: Color(0xFF10B981)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'نطاق البصمة: ${insp.radiusMeters.round()} متر',
+                      style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () => QRCodeScreen.showOfficialBadge(context, insp),
+                icon: const Icon(Icons.qr_code, size: 15, color: Color(0xFFD4AF37)),
+                label: const Text(
+                  'شهادة QR المقر',
+                  style: TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37), fontSize: 11),
+                ),
+              ),
+              const SizedBox(width: 4),
+              ElevatedButton.icon(
+                onPressed: () => _showEditInspectorateDialog(insp),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E103A),
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFFD4AF37)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.edit_location_alt, size: 14, color: Color(0xFFD4AF37)),
+                label: const Text(
+                  'تعديل الإحداثيات والبصمة',
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (!insp.isMainDirectorate) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFF87171)),
+                  tooltip: 'حذف الملحقة',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _showDeleteInspectorateDialog(insp),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditInspectorateDialog(InspectorateHQ? insp) {
+    final isNew = insp == null;
+    final nameArCtrl = TextEditingController(text: insp?.nameAr ?? '');
+    final nameFrCtrl = TextEditingController(text: insp?.nameFr ?? '');
+    final latCtrl = TextEditingController(text: insp != null ? insp.latitude.toString() : '36.190057');
+    final lngCtrl = TextEditingController(text: insp != null ? insp.longitude.toString() : '5.399013');
+    final radiusCtrl = TextEditingController(text: insp != null ? insp.radiusMeters.round().toString() : '600');
+    bool isFetchingGps = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF240D2D),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFD4AF37)),
+          ),
+          title: Row(
+            children: [
+              Icon(isNew ? Icons.add_location : Icons.edit_location_alt, color: const Color(0xFFD4AF37)),
+              const SizedBox(width: 10),
+              Text(
+                isNew ? 'إضافة ملحقة / مقر رقابي جديد' : 'تعديل إحداثيات: ${insp.nameAr}',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Button to capture real-time GPS location on site
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF38BDF8),
+                        side: const BorderSide(color: Color(0xFF38BDF8)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: isFetchingGps
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF38BDF8)))
+                          : const Icon(Icons.my_location, size: 18),
+                      label: Text(
+                        isFetchingGps ? 'جاري التقاط إحداثيات GPS...' : '📍 التقاط إحداثيات موقعي الحالي (GPS)',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      onPressed: isFetchingGps
+                          ? null
+                          : () async {
+                              final messenger = ScaffoldMessenger.of(context);
+                              setDialogState(() => isFetchingGps = true);
+                              try {
+                                LocationPermission perm = await Geolocator.checkPermission();
+                                if (perm == LocationPermission.denied) {
+                                  perm = await Geolocator.requestPermission();
+                                }
+                                final pos = await Geolocator.getCurrentPosition(
+                                  desiredAccuracy: LocationAccuracy.high,
+                                );
+                                setDialogState(() {
+                                  latCtrl.text = pos.latitude.toStringAsFixed(7);
+                                  lngCtrl.text = pos.longitude.toStringAsFixed(7);
+                                  isFetchingGps = false;
+                                });
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('تم جلب موقعك الدقيق: (${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)})'),
+                                    backgroundColor: const Color(0xFF10B981),
+                                  ),
+                                );
+                              } catch (e) {
+                                setDialogState(() => isFetchingGps = false);
+                                messenger.showSnackBar(
+                                  SnackBar(content: Text('تعذر جلب GPS: $e'), backgroundColor: AppTheme.DangerColor),
+                                );
+                              }
+                            },
+                    ),
+                  ),
+                  TextField(
+                    controller: nameArCtrl,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                    decoration: const InputDecoration(
+                      labelText: 'الاسم الرسمي بالعربية (مثال: الملحقة التجارية — عين الكبيرة)',
+                      labelStyle: TextStyle(color: Colors.white70, fontSize: 12),
+                      prefixIcon: Icon(Icons.business, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Color(0xFF1E0B26),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: nameFrCtrl,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                    decoration: const InputDecoration(
+                      labelText: 'الاسم بالفرنسية (Nom en Français)',
+                      labelStyle: TextStyle(color: Colors.white70, fontSize: 12),
+                      prefixIcon: Icon(Icons.translate, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Color(0xFF1E0B26),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: latCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                          decoration: const InputDecoration(
+                            labelText: 'خط العرض (Latitude)',
+                            labelStyle: TextStyle(color: Colors.white70, fontSize: 12),
+                            prefixIcon: Icon(Icons.explore, color: Color(0xFFD4AF37)),
+                            filled: true,
+                            fillColor: Color(0xFF1E0B26),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: lngCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                          decoration: const InputDecoration(
+                            labelText: 'خط الطول (Longitude)',
+                            labelStyle: TextStyle(color: Colors.white70, fontSize: 12),
+                            prefixIcon: Icon(Icons.navigation, color: Color(0xFFD4AF37)),
+                            filled: true,
+                            fillColor: Color(0xFF1E0B26),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: radiusCtrl,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                    decoration: const InputDecoration(
+                      labelText: 'نطاق الحضور الجغرافي بالأمتار (Radius: 150، 250، 500، 1000)',
+                      labelStyle: TextStyle(color: Colors.white70, fontSize: 12),
+                      prefixIcon: Icon(Icons.radar, color: Color(0xFF10B981)),
+                      filled: true,
+                      fillColor: Color(0xFF1E0B26),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: const Color(0xFF1A0A1F),
+              ),
+              onPressed: () async {
+                if (nameArCtrl.text.trim().isEmpty) return;
+                final messenger = ScaffoldMessenger.of(context);
+                final lat = double.tryParse(latCtrl.text.trim()) ?? 36.190057;
+                final lng = double.tryParse(lngCtrl.text.trim()) ?? 5.399013;
+                final rad = double.tryParse(radiusCtrl.text.trim()) ?? 600.0;
+
+                final updated = InspectorateHQ(
+                  id: insp?.id ?? 'insp_${DateTime.now().millisecondsSinceEpoch}',
+                  nameAr: nameArCtrl.text.trim(),
+                  nameFr: nameFrCtrl.text.trim(),
+                  latitude: lat,
+                  longitude: lng,
+                  radiusMeters: rad,
+                  isMainDirectorate: insp?.isMainDirectorate ?? false,
+                );
+
+                Navigator.pop(ctx);
+                final api = context.read<AuthService>().api;
+                await InspectorateService.instance.updateInspectorate(updated, api: api);
+                setState(() {});
+
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('تم حفظ وتحديث الإحداثيات والبصمة الجغرافية بنجاح 📍'),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
+              },
+              child: Text(isNew ? 'إضافة المقر' : 'حفظ التعديلات', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteInspectorateDialog(InspectorateHQ insp) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF240D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.DangerColor),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppTheme.DangerColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'حذف الملحقة: ${insp.nameAr}',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'هل أنت متأكد من حذف ${insp.nameAr} من قائمة المقرات المعتمدة للبصمة الجغرافية؟',
+          style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.DangerColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final api = context.read<AuthService>().api;
+              await InspectorateService.instance.deleteInspectorate(insp.id, api: api);
+              setState(() {});
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم حذف الملحقة بنجاح'), backgroundColor: Color(0xFF10B981)),
+                );
+              }
+            },
+            child: const Text('نعم، تأكيد الحذف', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetInspectoratesDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF240D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFD4AF37)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.restore, color: Color(0xFFD4AF37)),
+            SizedBox(width: 10),
+            Text(
+              'استعادة الإحداثيات الأصلية',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'هل تريد إعادة ضبط جميع إحداثيات ونطاقات المقرات والملحقات الثمانية إلى القيم الافتراضية الأصلية؟',
+          style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: const Color(0xFF1A0A1F),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final api = context.read<AuthService>().api;
+              await InspectorateService.instance.resetToDefaults(api: api);
+              setState(() {});
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تمت استعادة الإحداثيات الافتراضية بنجاح'), backgroundColor: Color(0xFF10B981)),
+                );
+              }
+            },
+            child: const Text('نعم، استعادة الافتراضي', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _getRoleColor(dynamic role) {

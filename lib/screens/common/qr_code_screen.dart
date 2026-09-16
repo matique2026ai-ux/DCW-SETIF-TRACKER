@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
 
 class QRCodeScreen extends StatelessWidget {
   final String data;
@@ -16,6 +17,31 @@ class QRCodeScreen extends StatelessWidget {
     this.subtitle = '',
     this.record,
   });
+
+  static void showOfficialBadge(BuildContext context, InspectorateHQ insp) {
+    final now = DateTime.now().toIso8601String().split('T')[0];
+    final badgeData = {
+      'type': 'OFFICIAL_INSPECTORATE_BADGE',
+      'inspectorateId': insp.id,
+      'name': insp.nameAr,
+      'nameFr': insp.nameFr,
+      'latitude': insp.latitude,
+      'longitude': insp.longitude,
+      'radiusMeters': insp.radiusMeters,
+      'date': now,
+      'status': 'VERIFIED_OFFICIAL_HQ',
+    };
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => QRCodeScreen(
+          data: jsonEncode(badgeData),
+          title: 'شهادة الاعتماد الرقمي للمقر',
+          subtitle: insp.nameAr,
+          record: badgeData,
+        ),
+      ),
+    );
+  }
 
   Map<String, dynamic> _parseData() {
     if (record != null) return Map<String, dynamic>.from(record!);
@@ -241,7 +267,7 @@ class QRCodeScreen extends StatelessWidget {
                         child: Column(
                           children: [
                             if (isInspectorateBadge) ...[
-                              _buildInfoRow('المقر / الملحقة الإقليمية', info['name']?.toString() ?? locName, Icons.apartment),
+                              _buildInfoRow('المقر / الملحقة الإقليمية', (info['name'] ?? locName).toString(), Icons.apartment),
                               const Divider(color: Color(0xFF2D1035), height: 16),
                               _buildInfoRow('نوع الاعتماد', typeStr, Icons.verified_user_outlined),
                               if (info['latitude'] != null && info['longitude'] != null) ...[
@@ -249,7 +275,7 @@ class QRCodeScreen extends StatelessWidget {
                                 _buildInfoRow('الإحداثيات الجغرافية (GPS)', '${(info['latitude'] as num).toDouble().toStringAsFixed(4)}, ${(info['longitude'] as num).toDouble().toStringAsFixed(4)}', Icons.my_location),
                               ],
                               const Divider(color: Color(0xFF2D1035), height: 16),
-                              _buildInfoRow('تاريخ الاعتماد في المنظومة', dateStr, Icons.calendar_today_outlined),
+                              _buildInfoRow('تاريخ الاعتماد في المنظومة', dateStr.toString(), Icons.calendar_today_outlined),
                               const Divider(color: Color(0xFF2D1035), height: 16),
                               _buildInfoRow('الرمز المرجعي للمقر', 'DCW-SETIF-HQ-$passId', Icons.tag),
                             ] else ...[

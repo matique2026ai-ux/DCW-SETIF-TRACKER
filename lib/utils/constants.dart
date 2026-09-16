@@ -18,6 +18,48 @@ class InspectorateHQ {
     this.radiusMeters = 600.0,
     this.isMainDirectorate = false,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'nameAr': nameAr,
+    'nameFr': nameFr,
+    'latitude': latitude,
+    'longitude': longitude,
+    'radiusMeters': radiusMeters,
+    'isMainDirectorate': isMainDirectorate,
+  };
+
+  factory InspectorateHQ.fromJson(Map<String, dynamic> json) {
+    return InspectorateHQ(
+      id: json['id']?.toString() ?? 'insp_${DateTime.now().millisecondsSinceEpoch}',
+      nameAr: json['nameAr']?.toString() ?? '',
+      nameFr: json['nameFr']?.toString() ?? '',
+      latitude: (json['latitude'] is num) ? (json['latitude'] as num).toDouble() : double.tryParse(json['latitude']?.toString() ?? '0') ?? 0.0,
+      longitude: (json['longitude'] is num) ? (json['longitude'] as num).toDouble() : double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0,
+      radiusMeters: (json['radiusMeters'] is num) ? (json['radiusMeters'] as num).toDouble() : double.tryParse(json['radiusMeters']?.toString() ?? '600') ?? 600.0,
+      isMainDirectorate: json['isMainDirectorate'] == true,
+    );
+  }
+
+  InspectorateHQ copyWith({
+    String? id,
+    String? nameAr,
+    String? nameFr,
+    double? latitude,
+    double? longitude,
+    double? radiusMeters,
+    bool? isMainDirectorate,
+  }) {
+    return InspectorateHQ(
+      id: id ?? this.id,
+      nameAr: nameAr ?? this.nameAr,
+      nameFr: nameFr ?? this.nameFr,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      radiusMeters: radiusMeters ?? this.radiusMeters,
+      isMainDirectorate: isMainDirectorate ?? this.isMainDirectorate,
+    );
+  }
 }
 
 class AppConstants {
@@ -29,9 +71,8 @@ class AppConstants {
   static const double hqLongitude = 5.3990134;
   static const double hqRadiusMeters = 250.0;
 
-  // Regional Inspectorates, Airport Border Inspectorate & Commercial Annexes of Setif Province
-  // (المفتشيات الإقليمية، المفتشية الحدودية بالمطار، والملحقات التجارية الثلاث: عين آزال، عين الكبيرة، عين أرنات)
-  static const List<InspectorateHQ> allInspectorates = [
+  // Regional Inspectorates, Airport Border Inspectorate & Commercial Annexes of Setif Province (Default baseline)
+  static const List<InspectorateHQ> defaultInspectorates = [
     InspectorateHQ(
       id: 'hq_setif',
       nameAr: 'المقر الرئيسي للمديرية الولائية (سطيف - المعبودة)',
@@ -99,6 +140,14 @@ class AppConstants {
     ),
   ];
 
+  static List<InspectorateHQ> _dynamicInspectorates = List.from(defaultInspectorates);
+
+  static List<InspectorateHQ> get allInspectorates => List.unmodifiable(_dynamicInspectorates);
+
+  static void setDynamicInspectorates(List<InspectorateHQ> list) {
+    _dynamicInspectorates = List.from(list);
+  }
+
   // Work hours
   static const int workStartHour = 8;
   static const int workEndHour = 16;
@@ -139,6 +188,9 @@ class AppConstants {
 
   // Find nearest inspectorate / HQ
   static InspectorateHQ findNearestHQ(double lat, double lng) {
+    if (allInspectorates.isEmpty) {
+      return defaultInspectorates.first;
+    }
     InspectorateHQ nearest = allInspectorates.first;
     double minDistance = distanceBetween(lat, lng, nearest.latitude, nearest.longitude);
 
