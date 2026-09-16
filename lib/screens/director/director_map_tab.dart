@@ -397,7 +397,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           left: 12,
           right: 12,
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: AppTheme.CardColor.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(16),
@@ -410,112 +410,124 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             ),
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.AccentColor,
+                    child: SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.AccentColor,
+                      ),
                     ),
                   )
-                : Row(
-                    children: [
-                      _legend(
-                        loc.inField,
-                        present.length,
-                        AppTheme.SuccessColor,
-                      ),
-                      const SizedBox(width: 14),
-                      _legend('معاينات ميدانية', visitMarkers.length, const Color(0xFF38BDF8)),
-                      const SizedBox(width: 14),
-                      _legend(loc.absent, absent.length, AppTheme.DangerColor),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: _loadData,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.AccentColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.refresh,
-                            size: 18,
-                            color: AppTheme.AccentColor,
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _legend(
+                          loc.inField,
+                          present.length,
+                          AppTheme.SuccessColor,
+                        ),
+                        const SizedBox(width: 14),
+                        _legend('معاينات ميدانية', visitMarkers.length, const Color(0xFF38BDF8)),
+                        const SizedBox(width: 14),
+                        _legend(loc.absent, absent.length, AppTheme.DangerColor),
+                        const SizedBox(width: 16),
+                        GestureDetector(
+                          onTap: _loadData,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.AccentColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.refresh,
+                              size: 16,
+                              color: AppTheme.AccentColor,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
           ),
         ),
 
         // Top Controls: Map Style Switcher + Search Agent Button
         Positioned(
-          top: 72,
+          top: 68,
           right: 12,
           left: 12,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Search Agent Button
-              GestureDetector(
-                onTap: _showSearchInspectorSheet,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Search Agent Button
+                GestureDetector(
+                  onTap: _showSearchInspectorSheet,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.CardColor.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                      ),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black38, blurRadius: 8),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.search, size: 16, color: Color(0xFFD4AF37)),
+                        SizedBox(width: 6),
+                        Text(
+                          'بحث عن عون...',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Map Layer Switcher (100% Free - Satellite vs Streets)
+                Container(
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: AppTheme.CardColor.withValues(alpha: 0.95),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                      color: AppTheme.BorderColor.withValues(alpha: 0.4),
                     ),
                     boxShadow: const [
                       BoxShadow(color: Colors.black38, blurRadius: 8),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.search, size: 16, color: Color(0xFFD4AF37)),
-                      SizedBox(width: 6),
-                      Text(
-                        'بحث عن عون...',
-                        style: TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      _styleChip('satellite', 'أقمار صناعية'),
+                      _styleChip('osm', 'خريطة الشوارع'),
                     ],
                   ),
                 ),
-              ),
-
-              // Map Layer Switcher (100% Free - Satellite vs Streets)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppTheme.CardColor.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppTheme.BorderColor.withValues(alpha: 0.4),
-                  ),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black38, blurRadius: 8),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _styleChip('satellite', 'أقمار صناعية'),
-                    _styleChip('osm', 'خريطة الشوارع'),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
 
         // Regional Inspectorates Quick Jump Filter Chips
         Positioned(
-          top: 118,
+          top: 114,
           right: 12,
           left: 12,
           child: SingleChildScrollView(
