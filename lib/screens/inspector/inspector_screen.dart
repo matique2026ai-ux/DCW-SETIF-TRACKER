@@ -1361,133 +1361,235 @@ class _InspectorScreenState extends State<InspectorScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF2D1035),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
           automaticallyImplyLeading: false,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF260D2E), Color(0xFF16061D)],
+              ),
+              border: const Border(
+                bottom: BorderSide(
+                  color: Color(0x33D4AF37),
+                  width: 0.8,
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+          titleSpacing: 16,
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFD4AF37), Color(0xFF92400E)],
+                  border: Border.all(color: const Color(0xFFD4AF37), width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/gold_coin_floating.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Image.asset(
+                      'assets/images/gold_emblem.jpg',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-                child: const Center(
-                  child: Icon(Icons.explore, size: 18, color: Colors.white),
-                ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
-                style: const TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            if (_pendingSyncCount > 0)
-              InkWell(
-                onTap: _isSyncing ? null : () => _syncPendingItems(silent: false),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD97706),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
                     children: [
-                      _isSyncing
-                          ? const SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.sync, color: Colors.white, size: 14),
-                      const SizedBox(width: 6),
                       Text(
-                        '$_pendingSyncCount معلق',
+                        loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
                         style: const TextStyle(
                           fontFamily: 'Tajawal',
-                          fontSize: 11,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Text(
+                          'مفتش ميداني',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              )
-            else
-              IconButton(
-                icon: const Icon(Icons.cloud_done, color: Color(0xFF10B981), size: 20),
-                tooltip: 'جميع البيانات متزامنة',
-                onPressed: () => _syncPendingItems(silent: false),
-              ),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.mark_email_unread, color: Color(0xFFD4AF37)),
-                  tooltip: 'الاستفسارات الإدارية',
-                  onPressed: () => InspectorInquiriesSheet.show(context, user?.employeeId ?? user?.id ?? 1),
-                ),
-                if (_pendingInquiryCount > 0)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                      child: Text(
-                        '$_pendingInquiryCount',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  const SizedBox(height: 1),
+                  Text(
+                    (user?.fullName != null && user!.fullName!.isNotEmpty)
+                        ? '${user.fullName} • ${user.serviceName ?? "مديرية التجارة - سطيف"}'
+                        : 'مديرية التجارة وضبط السوق — ولاية سطيف',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 10.5,
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37)),
-              tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
-              onPressed: () => ChangePasswordDialog.show(context),
-            ),
-            IconButton(
-              icon: const Icon(Icons.language, color: Colors.white70),
-              tooltip: loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
-              onPressed: () =>
-                  context.read<LanguageProvider>().toggleLanguage(),
-            ),
-
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white70),
-              onPressed: () {
-                context.read<AuthService>().logout();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: Colors.black38,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_pendingSyncCount > 0)
+                    InkWell(
+                      onTap: _isSyncing ? null : () => _syncPendingItems(silent: false),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _isSyncing
+                                ? const SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.sync, color: Colors.white, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$_pendingSyncCount',
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.cloud_done, color: Color(0xFF10B981), size: 18),
+                      tooltip: 'جميع البيانات متزامنة',
+                      onPressed: () => _syncPendingItems(silent: false),
+                    ),
+                  Container(width: 1, height: 16, color: Colors.white12),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.mark_email_unread, color: Color(0xFFD4AF37), size: 18),
+                        tooltip: 'الاستفسارات الإدارية',
+                        onPressed: () => InspectorInquiriesSheet.show(context, user?.employeeId ?? user?.id ?? 1),
+                      ),
+                      if (_pendingInquiryCount > 0)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                            child: Text(
+                              '$_pendingInquiryCount',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  Container(width: 1, height: 16, color: Colors.white12),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
+                    tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
+                    onPressed: () => ChangePasswordDialog.show(context),
+                  ),
+                  Container(width: 1, height: 16, color: Colors.white12),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.language, color: Colors.white70, size: 18),
+                    tooltip: loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
+                    onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
+                  ),
+                  Container(width: 1, height: 16, color: Colors.white12),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
+                    tooltip: loc.isArabic ? 'تسجيل الخروج' : 'Déconnexion',
+                    onPressed: () {
+                      context.read<AuthService>().logout();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
