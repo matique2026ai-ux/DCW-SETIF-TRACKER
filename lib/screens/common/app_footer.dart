@@ -26,16 +26,16 @@ class AppFooter extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFF140A1A).withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFF13081A).withValues(alpha: 0.82),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-                width: 0.6,
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.38),
+                width: 0.7,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.06),
-                  blurRadius: 6,
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                  blurRadius: 8,
                   spreadRadius: 0,
                 ),
               ],
@@ -43,12 +43,36 @@ class AppFooter extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  size: 12,
-                  color: Color(0xFFD4AF37),
+                // Ultra-HD 3D Engraved Engineering Seal Medallion
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
+                      width: 0.6,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/engineering_seal.jpg',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 11,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 6),
                 Text(
                   isArabic
                       ? 'جميع حقوق التصميم والبرمجة محفوظة © المهندس عكرور توفيق'
@@ -57,11 +81,11 @@ class AppFooter extends StatelessWidget {
                     fontFamily: isArabic ? 'Tajawal' : null,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: isArabic ? 0.25 : 0.5,
-                    color: const Color(0xFFD4AF37),
+                    letterSpacing: isArabic ? 0.2 : 0.5,
+                    color: const Color(0xFFE6C665),
                     shadows: [
                       Shadow(
-                        color: Colors.black.withValues(alpha: 0.8),
+                        color: Colors.black.withValues(alpha: 0.95),
                         offset: const Offset(0.5, 0.5),
                         blurRadius: 1.0,
                       ),
