@@ -459,6 +459,9 @@ class _LoginScreenState extends State<LoginScreen>
                             ],
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        const AppFooter(),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -468,7 +471,6 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
       ),
-      bottomNavigationBar: const AppFooter(),
     );
   }
 

@@ -24,17 +24,17 @@ class AppFooter extends StatelessWidget {
         top: false,
         child: Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2.5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFF120717).withValues(alpha: 0.7),
+              color: const Color(0xFF140A1A).withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.28),
-                width: 0.5,
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                width: 0.6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.05),
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.06),
                   blurRadius: 6,
                   spreadRadius: 0,
                 ),
@@ -43,17 +43,10 @@ class AppFooter extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [Color(0xFFFFDF7A), Color(0xFFB8860B)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ).createShader(bounds),
-                  child: const Icon(
-                    Icons.workspace_premium_rounded,
-                    size: 11,
-                    color: Colors.white,
-                  ),
+                const Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 12,
+                  color: Color(0xFFD4AF37),
                 ),
                 const SizedBox(width: 5),
                 Text(
@@ -64,11 +57,11 @@ class AppFooter extends StatelessWidget {
                     fontFamily: isArabic ? 'Tajawal' : null,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: isArabic ? 0.25 : 0.6,
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.88),
+                    letterSpacing: isArabic ? 0.25 : 0.5,
+                    color: const Color(0xFFD4AF37),
                     shadows: [
                       Shadow(
-                        color: Colors.black.withValues(alpha: 0.9),
+                        color: Colors.black.withValues(alpha: 0.8),
                         offset: const Offset(0.5, 0.5),
                         blurRadius: 1.0,
                       ),

@@ -70,7 +70,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
       final List<Map<String, dynamic>> deptList = [];
       for (final emp in allEmployees) {
-        final id = emp['Id'] as int;
+        final id = int.tryParse('${emp['Id'] ?? emp['id'] ?? 0}') ?? 0;
         final liveInfo = mapLookup[id];
         final fullName = '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim();
         
