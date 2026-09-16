@@ -11,12 +11,13 @@ class PdfReportService {
     required List<Map<String, dynamic>> attendance,
     required List<Map<String, dynamic>> visits,
     required String directorName,
+    DateTime? reportDate,
   }) async {
     final pdf = pw.Document();
 
-    final now = DateTime.now();
+    final now = reportDate ?? DateTime.now();
     final dateStr = DateFormat('yyyy/MM/dd').format(now);
-    final timeStr = DateFormat('HH:mm').format(now);
+    final timeStr = DateFormat('HH:mm').format(DateTime.now());
 
     // Filter present and absent
     final checkedInIds = attendance.map((a) => a['EmployeeId']).toSet();

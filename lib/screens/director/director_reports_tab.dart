@@ -20,6 +20,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   List<Map<String, dynamic>> _deductions = [];
   List<Map<String, dynamic>> _programs = [];
   String _searchQuery = '';
+  DateTime _selectedDate = DateTime.now();
   String _selectedFilter = 'absent'; // 'all', 'present', 'absent'
   bool _isLoading = true;
 
@@ -29,12 +30,17 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({DateTime? targetDate}) async {
+    final date = targetDate ?? _selectedDate;
+    setState(() {
+      _isLoading = true;
+      _selectedDate = date;
+    });
     try {
       final api = context.read<AuthService>().api;
-      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
       final emp = await api.getEmployees();
-      final att = await api.getAttendance(date: todayStr);
+      final att = await api.getAttendance(date: dateStr);
       final ded = await api.getDeductions();
       final progs = await api.getPrograms();
       if (mounted) {
@@ -48,6 +54,32 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2024, 1, 1),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFD4AF37),
+              onPrimary: Colors.black,
+              surface: Color(0xFF240D2D),
+              onSurface: Colors.white,
+            ),
+            dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1E0B26)),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && !DateUtils.isSameDay(picked, _selectedDate)) {
+      _load(targetDate: picked);
     }
   }
 
@@ -492,9 +524,21 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
     String filterSubtitle;
     Color filterColor;
 
+    final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
+    final dayNames = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+    final monthNames = [
+      'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
+      'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ];
+    final dayName = dayNames[_selectedDate.weekday - 1];
+    final monthName = monthNames[_selectedDate.month - 1];
+    final formattedDateStr = '$dayName ${_selectedDate.day} $monthName ${_selectedDate.year}';
+
     if (_selectedFilter == 'present') {
       activeList = present;
-      filterTitle = 'حاضرون اليوم (${present.length})';
+      filterTitle = isToday
+          ? 'حاضرون اليوم (${present.length})'
+          : 'حاضرون يوم $formattedDateStr (${present.length})';
       filterSubtitle = 'مسجلون رسمياً بالبصمة الجغرافية والـ GPS';
       filterColor = AppTheme.SuccessColor;
     } else if (_selectedFilter == 'all') {
@@ -504,8 +548,12 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       filterColor = const Color(0xFFD4AF37);
     } else {
       activeList = absent;
-      filterTitle = 'غائبين اليوم (${absent.length})';
-      filterSubtitle = 'لم يسجلوا الحضور اليوم (يتطلب متابعة)';
+      filterTitle = isToday
+          ? 'غائبين اليوم (${absent.length})'
+          : 'غائبون يوم $formattedDateStr (${absent.length})';
+      filterSubtitle = isToday
+          ? 'لم يسجلوا الحضور اليوم (يتطلب متابعة)'
+          : 'سجل الغياب المعتمد والمثبت في هذا التاريخ';
       filterColor = AppTheme.DangerColor;
     }
 
@@ -524,6 +572,122 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Date Selector & History Navigation Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isToday
+                    ? [const Color(0xFF240D2D), const Color(0xFF16061D)]
+                    : [const Color(0xFF3B1D11), const Color(0xFF240D2D)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isToday
+                    ? const Color(0xFFD4AF37).withValues(alpha: 0.4)
+                    : const Color(0xFFF59E0B),
+                width: isToday ? 1.0 : 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: 'اليوم السابق',
+                  icon: const Icon(Icons.chevron_right, color: Color(0xFFD4AF37), size: 26),
+                  onPressed: () {
+                    final prevDate = _selectedDate.subtract(const Duration(days: 1));
+                    _load(targetDate: prevDate);
+                  },
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isToday ? Icons.calendar_today : Icons.history,
+                                color: isToday ? const Color(0xFFD4AF37) : const Color(0xFFF59E0B),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  formattedDateStr,
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37), size: 18),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isToday
+                                ? '🟢 بث حي ومباشر (اليوم الحالي)'
+                                : '📜 أرشيف وسجل تاريخي معتمد بالأدلة الرقمية',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 10,
+                              fontWeight: isToday ? FontWeight.normal : FontWeight.bold,
+                              color: isToday ? const Color(0xFF10B981) : const Color(0xFFFBBF24),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (!isToday)
+                  TextButton.icon(
+                    onPressed: () => _load(targetDate: DateTime.now()),
+                    icon: const Icon(Icons.today, color: Color(0xFF10B981), size: 14),
+                    label: const Text(
+                      'العودة لليوم',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  )
+                else
+                  IconButton(
+                    tooltip: 'اليوم التالي',
+                    icon: Icon(
+                      Icons.chevron_left,
+                      color: isToday ? Colors.white24 : const Color(0xFFD4AF37),
+                      size: 26,
+                    ),
+                    onPressed: isToday
+                        ? null
+                        : () {
+                            final nextDate = _selectedDate.add(const Duration(days: 1));
+                            _load(targetDate: nextDate);
+                          },
+                  ),
+              ],
+            ),
+          ),
+
           // Top Interactive Stat Cards
           Row(
             children: [
@@ -536,7 +700,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
               ),
               const SizedBox(width: 8),
               _stat(
-                loc.presentToday,
+                isToday ? loc.presentToday : 'حاضرون بالسجل',
                 present.length,
                 AppTheme.SuccessColor,
                 Icons.check_circle,
@@ -544,7 +708,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
               ),
               const SizedBox(width: 8),
               _stat(
-                loc.absentToday,
+                isToday ? loc.absentToday : 'غائبون بالسجل',
                 absent.length,
                 AppTheme.DangerColor,
                 Icons.cancel,
@@ -565,12 +729,13 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                       attendance: _attendance,
                       visits: [],
                       directorName: 'السيد المدير الولائي',
+                      reportDate: _selectedDate,
                     );
                   },
                   icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 16),
-                  label: const Text(
-                    'تصدير محضر PDF',
-                    style: TextStyle(
+                  label: Text(
+                    isToday ? 'تصدير محضر PDF' : 'تصدير أرشيف PDF',
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
