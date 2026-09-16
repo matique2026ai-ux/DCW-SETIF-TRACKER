@@ -1196,10 +1196,31 @@ class _AdminScreenState extends State<AdminScreen>
             ),
             const SizedBox(height: 8),
 
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _filteredUsers.length,
+            if (_filteredUsers.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF240D2D),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF4A2050)),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.search_off, size: 36, color: Colors.white38),
+                    SizedBox(height: 8),
+                    Text(
+                      'لا توجد حسابات مطابقة لمعايير البحث الحالية',
+                      style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 13),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _filteredUsers.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, idx) {
                 final u = _filteredUsers[idx];
