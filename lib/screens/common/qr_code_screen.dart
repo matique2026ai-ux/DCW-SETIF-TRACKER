@@ -52,12 +52,24 @@ class QRCodeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final info = _parseData();
+    final isInspectorateBadge = info['type'] == 'OFFICIAL_INSPECTORATE_BADGE' || info['inspectorateId'] != null;
+    final isVisitBadge = info['type'] == 'visit';
+
     final employeeName = info['employee'] ?? info['employeeName'] ?? info['name'] ?? subtitle;
     final dateStr = info['date'] ?? DateTime.now().toIso8601String().split('T')[0];
     final timeStr = info['time'] ?? '';
-    final locName = info['location'] ?? info['locationName'] ?? 'المقر الرئيسي لمديرية التجارة سطيف';
-    final typeStr = info['type'] == 'visit' ? 'معاينة ميدانية رسمية' : 'إثبات حضور جغرافي معتمد';
-    final passId = (info['id'] != null ? '#${info['id']}' : '#${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}');
+    final locName = info['location'] ?? info['locationName'] ?? (isInspectorateBadge ? (info['name'] ?? 'مقر إقليمي') : 'المقر الرئيسي لمديرية التجارة سطيف');
+    
+    String typeStr;
+    if (isInspectorateBadge) {
+      typeStr = 'مقر رقابي إقليمي معتمد (بصمة GPS)';
+    } else if (isVisitBadge) {
+      typeStr = 'معاينة وتفتيش ميداني رسمي';
+    } else {
+      typeStr = 'إثبات حضور جغرافي معتمد';
+    }
+
+    final passId = (info['id'] != null ? '#${info['id']}' : (info['inspectorateId'] != null ? '#${info['inspectorateId']}' : '#${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'));
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0514),
@@ -141,39 +153,42 @@ class QRCodeScreen extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: Colors.white.withValues(alpha: 0.85),
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
 
-                    // QR Code in White Container
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                    // QR Code Presentation Box
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black45,
+                              blurRadius: 15,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: QrImageView(
+                          data: data.isNotEmpty ? data : 'https://dcw-setif-tracker.onrender.com/verify?id=$passId',
+                          version: QrVersions.auto,
+                          size: 200,
+                          backgroundColor: Colors.white,
+                          eyeStyle: const QrEyeStyle(
+                            eyeShape: QrEyeShape.square,
+                            color: Color(0xFF1E0B26),
                           ),
-                        ],
-                      ),
-                      child: QrImageView(
-                        data: data,
-                        version: QrVersions.auto,
-                        size: 210,
-                        backgroundColor: Colors.white,
-                        errorCorrectionLevel: QrErrorCorrectLevel.M,
-                        errorStateBuilder: (cxt, err) => const Center(
-                          child: Text(
-                            'تعذر توليد الرمز',
-                            style: TextStyle(color: Colors.red, fontSize: 11),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.square,
+                            color: Color(0xFF1E0B26),
                           ),
                         ),
                       ),
@@ -189,14 +204,16 @@ class QRCodeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: const Color(0xFF10B981), width: 1.2),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.verified, color: Color(0xFF10B981), size: 16),
-                          SizedBox(width: 6),
+                          const Icon(Icons.verified, color: Color(0xFF10B981), size: 16),
+                          const SizedBox(width: 6),
                           Text(
-                            'إثبات رقمي رسمي معتمد بالبصمة الجغرافية',
-                            style: TextStyle(
+                            isInspectorateBadge
+                                ? 'شارة مقر إقليمي معتمد في المنظومة الجغرافية'
+                                : 'إثبات رقمي رسمي معتمد بالبصمة الجغرافية',
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 11,
                               color: Color(0xFF10B981),
@@ -209,7 +226,7 @@ class QRCodeScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // Employee & Details Card
+                    // Details Card
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Container(
@@ -223,19 +240,33 @@ class QRCodeScreen extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            if (employeeName.toString().isNotEmpty) ...[
-                              _buildInfoRow('الموظف / المفتش', employeeName.toString(), Icons.person_outline),
+                            if (isInspectorateBadge) ...[
+                              _buildInfoRow('المقر / الملحقة الإقليمية', info['name']?.toString() ?? locName, Icons.apartment),
                               const Divider(color: Color(0xFF2D1035), height: 16),
-                            ],
-                            _buildInfoRow('نوع الإثبات', typeStr, Icons.assignment_turned_in_outlined),
-                            const Divider(color: Color(0xFF2D1035), height: 16),
-                            _buildInfoRow('التاريخ والتوقيت', '$dateStr ${timeStr.toString().isNotEmpty ? '• $timeStr' : ''}', Icons.access_time),
-                            if (locName.toString().isNotEmpty) ...[
+                              _buildInfoRow('نوع الاعتماد', typeStr, Icons.verified_user_outlined),
+                              if (info['latitude'] != null && info['longitude'] != null) ...[
+                                const Divider(color: Color(0xFF2D1035), height: 16),
+                                _buildInfoRow('الإحداثيات الجغرافية (GPS)', '${(info['latitude'] as num).toDouble().toStringAsFixed(4)}, ${(info['longitude'] as num).toDouble().toStringAsFixed(4)}', Icons.my_location),
+                              ],
                               const Divider(color: Color(0xFF2D1035), height: 16),
-                              _buildInfoRow('المقر / الموقع', locName.toString(), Icons.location_on_outlined),
+                              _buildInfoRow('تاريخ الاعتماد في المنظومة', dateStr, Icons.calendar_today_outlined),
+                              const Divider(color: Color(0xFF2D1035), height: 16),
+                              _buildInfoRow('الرمز المرجعي للمقر', 'DCW-SETIF-HQ-$passId', Icons.tag),
+                            ] else ...[
+                              if (employeeName.toString().isNotEmpty) ...[
+                                _buildInfoRow('الموظف / المفتش', employeeName.toString(), Icons.person_outline),
+                                const Divider(color: Color(0xFF2D1035), height: 16),
+                              ],
+                              _buildInfoRow('نوع الإثبات', typeStr, Icons.assignment_turned_in_outlined),
+                              const Divider(color: Color(0xFF2D1035), height: 16),
+                              _buildInfoRow('التاريخ والتوقيت', '$dateStr ${timeStr.toString().isNotEmpty ? '• $timeStr' : ''}', Icons.access_time),
+                              if (locName.toString().isNotEmpty) ...[
+                                const Divider(color: Color(0xFF2D1035), height: 16),
+                                _buildInfoRow('المقر / الموقع', locName.toString(), Icons.location_on_outlined),
+                              ],
+                              const Divider(color: Color(0xFF2D1035), height: 16),
+                              _buildInfoRow('الرقم المرجعي للإثبات', 'DCW-SETIF-$passId', Icons.tag),
                             ],
-                            const Divider(color: Color(0xFF2D1035), height: 16),
-                            _buildInfoRow('الرقم المرجعي للإثبات', 'DCW-SETIF-$passId', Icons.tag),
                           ],
                         ),
                       ),
