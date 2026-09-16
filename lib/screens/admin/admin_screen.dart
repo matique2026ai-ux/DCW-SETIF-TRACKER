@@ -829,8 +829,7 @@ class _AdminScreenState extends State<AdminScreen>
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final isAr = loc.isArabic;
+    final isAr = context.watch<LanguageProvider>().isArabic;
 
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
@@ -862,13 +861,13 @@ class _AdminScreenState extends State<AdminScreen>
               ],
             ),
           ),
-          titleSpacing: 16,
+          titleSpacing: 12,
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFD4AF37), width: 1.0),
@@ -890,57 +889,64 @@ class _AdminScreenState extends State<AdminScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'الإدارة التقنية للمنظومة',
-                        style: TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                            width: 0.5,
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Flexible(
+                          child: Text(
+                            'الإدارة التقنية للمنظومة',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        child: const Text(
-                          'مدير النظام (Admin)',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: const Text(
+                            'Admin',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFD4AF37),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 1),
-                  const Text(
-                    'التحكم في الخوادم وقواعد البيانات والمستخدمين • ولاية سطيف',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 10.5,
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.w500,
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 1),
+                    const Text(
+                      'التحكم في الخوادم وقواعد البيانات والمستخدمين',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 10,
+                        color: Color(0xFFD4AF37),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
