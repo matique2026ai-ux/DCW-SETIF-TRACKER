@@ -1405,155 +1405,397 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     );
   }
 
+  bool _isEmployeeAssignedToHQ(Map<String, dynamic> emp, InspectorateHQ insp) {
+    final service = (emp['service'] ?? emp['Service'] ?? emp['serviceName'] ?? '').toString().toLowerCase();
+    final fonction = (emp['fonction'] ?? emp['FonctionExercee'] ?? '').toString().toLowerCase();
+    final text = '$service $fonction';
+
+    if (insp.id == 'insp_airport_arnat') {
+      return text.contains('مطار') || text.contains('aéroport') || text.contains('حدودية') || text.contains('frontalière');
+    } else if (insp.id == 'insp_eulma') {
+      return text.contains('علمة') || text.contains('eulma');
+    } else if (insp.id == 'insp_ain_oulmene') {
+      return text.contains('ولمان') || text.contains('oulmene') || text.contains('oulmène');
+    } else if (insp.id == 'insp_bougaa') {
+      return text.contains('بوقاعة') || text.contains('bougaa') || text.contains('bougaâ');
+    } else if (insp.id == 'annex_ain_azel') {
+      return text.contains('آزال') || text.contains('azel');
+    } else if (insp.id == 'annex_ain_kebira') {
+      return text.contains('كبيرة') || text.contains('kebira');
+    } else if (insp.id == 'annex_ain_arnat') {
+      return (text.contains('أرنات') || text.contains('arnat')) && !text.contains('مطار');
+    } else if (insp.isMainDirectorate || insp.id == 'hq_setif') {
+      final isRegional = text.contains('علمة') || text.contains('eulma') ||
+                         text.contains('ولمان') || text.contains('oulmene') ||
+                         text.contains('بوقاعة') || text.contains('bougaa') ||
+                         text.contains('مطار') || text.contains('aéroport') ||
+                         text.contains('آزال') || text.contains('azel') ||
+                         text.contains('كبيرة') || text.contains('kebira');
+      return !isRegional;
+    }
+    return false;
+  }
+
   void _showInspectorateHQModal(InspectorateHQ insp) {
-    final nearbyEmps = _mapData.where((e) {
-      if (e['latitude'] == null || e['longitude'] == null) return false;
-      final lat = (e['latitude'] as num).toDouble();
-      final lng = (e['longitude'] as num).toDouble();
-      final d = AppConstants.distanceBetween(lat, lng, insp.latitude, insp.longitude);
-      return d <= insp.radiusMeters;
+    final assignedEmps = _mapData.where((e) {
+      final isAssigned = _isEmployeeAssignedToHQ(e, insp);
+      final lat = (e['latitude'] as num?)?.toDouble();
+      final lng = (e['longitude'] as num?)?.toDouble();
+      final isPhysicallyHere = (lat != null && lng != null && AppConstants.distanceBetween(lat, lng, insp.latitude, insp.longitude) <= insp.radiusMeters);
+      return isAssigned || isPhysicallyHere;
     }).toList();
+
+    final presentInHQ = assignedEmps.where((e) {
+      final lat = (e['latitude'] as num?)?.toDouble();
+      final lng = (e['longitude'] as num?)?.toDouble();
+      if (lat == null || lng == null) return false;
+      return AppConstants.distanceBetween(lat, lng, insp.latitude, insp.longitude) <= insp.radiusMeters;
+    }).toList();
+
+    final inField = assignedEmps.where((e) {
+      final isCheckedIn = e['isCheckedIn'] == true;
+      return isCheckedIn && !presentInHQ.contains(e);
+    }).toList();
+
+    final absent = assignedEmps.where((e) => e['isCheckedIn'] != true).toList();
+
+    String currentFilter = 'all';
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppTheme.CardColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.4)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          List<Map<String, dynamic>> displayedList = assignedEmps;
+          if (currentFilter == 'present') displayedList = presentInHQ;
+          if (currentFilter == 'field') displayedList = inField;
+          if (currentFilter == 'absent') displayedList = absent;
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF160A1D),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.35)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: (insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF0284C7)).withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      insp.isMainDirectorate ? Icons.account_balance : Icons.apartment,
-                      color: insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF38BDF8),
-                      size: 24,
+                  // Pull handle
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                  // Header with Icon & Title
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: (insp.isMainDirectorate ? const Color(0xFFD4AF37) : const Color(0xFF38BDF8)).withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          insp.isMainDirectorate ? Icons.account_balance : Icons.apartment,
+                          color: insp.isMainDirectorate ? const Color(0xFFD4AF37) : const Color(0xFF38BDF8),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              insp.nameAr,
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              '${insp.nameFr} • نطاق الحضور: ${insp.radiusMeters.round()}م',
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                color: AppTheme.TextSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white60),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 4-Stats Quick Bar
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1F0D28),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF3D1645)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Text(
-                          insp.nameAr,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          insp.nameFr,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 11,
-                            color: AppTheme.TextSecondary,
-                          ),
-                        ),
+                        _hqStatItem('الأعوان المعينين', '${assignedEmps.length}', Colors.white),
+                        _hqStatItem('حاضرون بالمقر', '${presentInHQ.length}', const Color(0xFF10B981)),
+                        _hqStatItem('في الميدان', '${inField.length}', const Color(0xFF38BDF8)),
+                        _hqStatItem('غائبون', '${absent.length}', const Color(0xFFF87171)),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _hqStatItem('الأعوان الحاضرون بالمقر', '${nearbyEmps.length}', AppTheme.SuccessColor),
-                    _hqStatItem('نطاق الحضور الجغرافي', '${insp.radiusMeters.round()}م', const Color(0xFF38BDF8)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 44,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _mapController.move(LatLng(insp.latitude, insp.longitude), 16.0);
-                        },
-                        icon: const Icon(Icons.center_focus_strong, color: Colors.black, size: 18),
-                        label: const Text(
-                          'تركيز الخريطة',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4AF37),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
+                  const SizedBox(height: 12),
+
+                  // Filter Chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip('الكل (${assignedEmps.length})', 'all', currentFilter, (v) => setModalState(() => currentFilter = v)),
+                        const SizedBox(width: 6),
+                        _buildFilterChip('حاضرون بالمقر (${presentInHQ.length})', 'present', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF10B981)),
+                        const SizedBox(width: 6),
+                        _buildFilterChip('في الميدان (${inField.length})', 'field', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF38BDF8)),
+                        const SizedBox(width: 6),
+                        _buildFilterChip('غائبون (${absent.length})', 'absent', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFFF87171)),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(height: 10),
+
+                  // List of Employees in this HQ
                   Expanded(
-                    child: SizedBox(
-                      height: 44,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          QRCodeScreen.show(
-                            context,
-                            record: {
-                              'type': 'OFFICIAL_INSPECTORATE_BADGE',
-                              'inspectorateId': insp.id,
-                              'name': insp.nameAr,
-                              'latitude': insp.latitude,
-                              'longitude': insp.longitude,
-                              'date': DateTime.now().toIso8601String().split('T')[0],
+                    child: displayedList.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.people_outline, color: Colors.white.withValues(alpha: 0.3), size: 40),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'لا يوجد أعوان في هذا التصنيف حالياً',
+                                  style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: displayedList.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            itemBuilder: (context, i) {
+                              final emp = displayedList[i];
+                              final isField = inField.contains(emp);
+                              final isAbs = absent.contains(emp);
+
+                              Color statusColor = const Color(0xFF10B981);
+                              String statusText = 'حاضر بالمقر';
+                              IconData statusIcon = Icons.check_circle;
+
+                              if (isField) {
+                                statusColor = const Color(0xFF38BDF8);
+                                statusText = 'في مهمة ميدانية';
+                                statusIcon = Icons.explore;
+                              } else if (isAbs) {
+                                statusColor = const Color(0xFFF87171);
+                                statusText = 'غائب (لم يسجل)';
+                                statusIcon = Icons.cancel;
+                              }
+
+                              final name = (emp['name'] ?? emp['NomAr'] ?? emp['Nom'] ?? 'مفتش').toString();
+                              final grade = (emp['grade'] ?? emp['Grade'] ?? 'مفتش رئيسي').toString();
+                              final service = (emp['service'] ?? emp['Service'] ?? '').toString();
+
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  _showInspectorModal(emp);
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1F0D28),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: statusColor.withValues(alpha: 0.15),
+                                          border: Border.all(color: statusColor, width: 1.5),
+                                        ),
+                                        child: Center(
+                                          child: Icon(statusIcon, color: statusColor, size: 18),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              name,
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '$grade ${service.isNotEmpty ? '• $service' : ''}',
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 11,
+                                                color: Colors.white60,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: statusColor.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          statusText,
+                                          style: TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: statusColor,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.arrow_back_ios_new, size: 12, color: Colors.white30),
+                                    ],
+                                  ),
+                                ),
+                              );
                             },
-                            title: 'الشارة الرقمية للمقر — ${insp.nameAr}',
-                          );
-                        },
-                        icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37), size: 18),
-                        label: const Text(
-                          'الشارة الرقمية (QR)',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            color: Colors.white,
+                          ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Bottom Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 42,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _mapController.move(LatLng(insp.latitude, insp.longitude), 16.0);
+                            },
+                            icon: const Icon(Icons.center_focus_strong, color: Colors.black, size: 16),
+                            label: const Text(
+                              'تركيز الخريطة',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: Colors.black,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD4AF37),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
                           ),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFD4AF37)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SizedBox(
+                          height: 42,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              QRCodeScreen.showOfficialBadge(context, insp);
+                            },
+                            icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37), size: 16),
+                            label: const Text(
+                              'الشارة الرقمية (QR)',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFD4AF37)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value, String current, Function(String) onSelect, {Color? color}) {
+    final isSelected = current == value;
+    final activeColor = color ?? const Color(0xFFD4AF37);
+
+    return InkWell(
+      onTap: () => onSelect(value),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withValues(alpha: 0.2) : Colors.black26,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeColor : Colors.white12,
+            width: isSelected ? 1.2 : 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? activeColor : Colors.white70,
           ),
         ),
       ),
