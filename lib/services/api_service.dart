@@ -13,6 +13,8 @@ class ApiService {
     return 'https://drh-setif-api.onrender.com/api';
   }
 
+  static const Duration defaultTimeout = Duration(seconds: 10);
+
   String? _token;
 
   String? get token => _token;
@@ -37,19 +39,69 @@ class ApiService {
       }
     } catch (_) {}
 
-    if (response.statusCode == 401) {
-      return 'بيانات الدخول غير صحيحة أو انتهت صلاحية الجلسة';
+    switch (response.statusCode) {
+      case 400:
+        return 'طلب غير صالح، يرجى مراجعة البيانات المدخلة';
+      case 401:
+        return 'انتهت صلاحية الجلسة أو بيانات الاعتماد غير صحيحة';
+      case 403:
+        return 'عذراً، ليس لديك الصلاحية الإدارية اللازمة لتنفيذ هذه العملية';
+      case 404:
+        return 'البيانات أو السجل المطلوب غير موجود على الخادم';
+      case 500:
+        return 'حدث خطأ داخلي في معالجة الطلب على الخادم (كود: 500)';
+      case 502:
+        return 'بوابة الخادم السحابي غير متاحة مؤقتاً (كود: 502)';
+      case 503:
+        return 'الخدمة السحابية قيد الصيانة أو بدء التشغيل، يرجى المحاولة بعد لحظات (كود: 503)';
+      case 504:
+        return 'انتهت مهلة استجابة الخادم السحابي (كود: 504)';
+      default:
+        return '$defaultMessage (كود: ${response.statusCode})';
     }
-    if (response.statusCode == 403) {
-      return 'ليس لديك الصلاحية الكافية للقيام بهذا الإجراء الإداري';
+  }
+
+  Exception _handleNetworkException(Object e, [String defaultMessage = 'تعذر الاتصال بالخادم']) {
+    final msg = e.toString();
+    if (msg.contains('TimeoutException') || msg.contains('timed out')) {
+      return Exception('استغرق الخادم وقتاً أطول للاستجابة (تجاوز 10 ثوانٍ)، يرجى إعادة المحاولة');
     }
-    if (response.statusCode == 404) {
-      return 'البيان أو المسار المطلوب غير متوفر';
+    if (msg.contains('SocketException') || msg.contains('ClientException') || msg.contains('Failed host lookup')) {
+      return Exception('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت');
     }
-    if (response.statusCode >= 500) {
-      return 'تعذر إتمام العملية من الخادم (كود: ${response.statusCode})';
-    }
-    return '$defaultMessage (كود: ${response.statusCode})';
+    if (e is Exception) return e;
+    return Exception('$defaultMessage: $msg');
+  }
+
+  List<Map<String, dynamic>> _safeDecodeList(String? body) {
+    if (body == null) return [];
+    final trimmed = body.trim();
+    if (trimmed.isEmpty || trimmed.startsWith('<') || trimmed == 'null') return [];
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map<dynamic, dynamic>>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      } else if (decoded is Map) {
+        return [Map<String, dynamic>.from(decoded)];
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Map<String, dynamic> _safeDecodeMap(String? body) {
+    if (body == null) return {};
+    final trimmed = body.trim();
+    if (trimmed.isEmpty || trimmed.startsWith('<') || trimmed == 'null') return {};
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {}
+    return {};
   }
 
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -58,24 +110,17 @@ class ApiService {
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        _token = data['token'] as String;
+        final data = _safeDecodeMap(response.body);
+        _token = data['token'] as String?;
         return data;
       } else {
         throw Exception(_parseError(response, 'خطأ في تسجيل الدخول'));
       }
     } catch (e) {
-      final msg = e.toString();
-      if (msg.contains('TimeoutException') || msg.contains('timed out')) {
-        throw Exception('استغرق السيرفر وقتاً أطول للاستجابة، يرجى إعادة المحاولة');
-      }
-      if (msg.contains('SocketException') || msg.contains('ClientException') || msg.contains('Failed host lookup')) {
-        throw Exception('تعذر الاتصال بالخادم، يرجى التحقق من شبكة الإنترنت');
-      }
-      rethrow;
+      throw _handleNetworkException(e, 'خطأ في تسجيل الدخول');
     }
   }
 
@@ -100,10 +145,10 @@ class ApiService {
           'currentPassword': currentPassword,
           'newPassword': newPassword,
         }),
-      );
+      ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        return _safeDecodeMap(response.body);
       } else if (response.statusCode == 400 || response.statusCode == 401) {
         final body = response.body.trim();
         if (!body.startsWith('<')) {
@@ -119,7 +164,7 @@ class ApiService {
       }
     } catch (e) {
       final msg = e.toString();
-      if (!msg.contains('404') && !msg.contains('Socket') && !msg.contains('Failed')) {
+      if (!msg.contains('404') && !msg.contains('Socket') && !msg.contains('Failed') && !msg.contains('Timeout')) {
         rethrow;
       }
     }
@@ -133,10 +178,10 @@ class ApiService {
           'currentPassword': currentPassword,
           'newPassword': newPassword,
         }),
-      );
+      ).timeout(defaultTimeout);
 
       if (directResponse.statusCode == 200) {
-        return jsonDecode(directResponse.body) as Map<String, dynamic>;
+        return _safeDecodeMap(directResponse.body);
       } else if (directResponse.statusCode == 400 || directResponse.statusCode == 401) {
         final body = directResponse.body.trim();
         if (!body.startsWith('<')) {
@@ -152,7 +197,7 @@ class ApiService {
       }
     } catch (e) {
       final msg = e.toString();
-      if (!msg.contains('404') && !msg.contains('Socket') && !msg.contains('Failed')) {
+      if (!msg.contains('404') && !msg.contains('Socket') && !msg.contains('Failed') && !msg.contains('Timeout')) {
         rethrow;
       }
     }
@@ -174,11 +219,10 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/auth/users'),
         headers: _headers,
-      );
+      ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        final list = jsonDecode(response.body) as List;
-        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        return _safeDecodeList(response.body);
       } else if (response.statusCode == 404) {
         return [];
       } else {
@@ -196,22 +240,26 @@ class ApiService {
     required String role,
     int? employeeId,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/users'),
-      headers: _headers,
-      body: jsonEncode({
-        'username': username,
-        'password': password,
-        'fullName': fullName,
-        'role': role,
-        'employeeId': employeeId,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/users'),
+        headers: _headers,
+        body: jsonEncode({
+          'username': username,
+          'password': password,
+          'fullName': fullName,
+          'role': role,
+          'employeeId': employeeId,
+        }),
+      ).timeout(defaultTimeout);
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } else {
-      throw Exception(_parseError(response, 'فشل إنشاء المستخدم'));
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل إنشاء المستخدم'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إنشاء المستخدم');
     }
   }
 
@@ -222,21 +270,25 @@ class ApiService {
     required bool isActive,
     int? employeeId,
   }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/auth/users/$id'),
-      headers: _headers,
-      body: jsonEncode({
-        'fullName': fullName,
-        'role': role,
-        'isActive': isActive,
-        'employeeId': employeeId,
-      }),
-    );
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/auth/users/$id'),
+        headers: _headers,
+        body: jsonEncode({
+          'fullName': fullName,
+          'role': role,
+          'isActive': isActive,
+          'employeeId': employeeId,
+        }),
+      ).timeout(defaultTimeout);
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } else {
-      throw Exception(_parseError(response, 'فشل تحديث المستخدم'));
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل تحديث المستخدم'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تحديث المستخدم');
     }
   }
 
@@ -249,10 +301,10 @@ class ApiService {
         Uri.parse('$baseUrl/auth/users/$id/reset-password'),
         headers: _headers,
         body: jsonEncode({'newPassword': newPassword}),
-      );
+      ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        return _safeDecodeMap(response.body);
       }
     } catch (_) {}
 
@@ -270,10 +322,10 @@ class ApiService {
         Uri.parse('$baseUrl/auth/generate-all-accounts'),
         headers: _headers,
         body: jsonEncode({'defaultPassword': defaultPassword}),
-      );
+      ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        return _safeDecodeMap(response.body);
       }
     } catch (_) {}
 
@@ -287,15 +339,19 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> deleteSystemUser(int id) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/auth/users/$id'),
-      headers: _headers,
-    );
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/auth/users/$id'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } else {
-      throw Exception(_parseError(response, 'فشل حذف المستخدم'));
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل حذف المستخدم'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل حذف المستخدم');
     }
   }
 
@@ -304,10 +360,10 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$baseUrl/clean-test-data'),
         headers: _headers,
-      );
+      ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        return _safeDecodeMap(response.body);
       }
     } catch (_) {}
 
@@ -317,9 +373,6 @@ class ApiService {
     };
   }
 
-
-
-
   Future<List<Map<String, dynamic>>> getEmployees({
     bool activeOnly = false,
     bool all = false,
@@ -327,85 +380,115 @@ class ApiService {
     String? status,
     bool? brigadeOnly,
   }) async {
-    final params = <String, String>{};
-    if (activeOnly) params['active'] = '1';
-    if (all) params['all'] = 'true';
-    if (department != null) params['department'] = department;
-    if (status != null) params['status'] = status;
-    if (brigadeOnly == true) params['brigade'] = 'true';
+    try {
+      final params = <String, String>{};
+      if (activeOnly) params['active'] = '1';
+      if (all) params['all'] = 'true';
+      if (department != null) params['department'] = department;
+      if (status != null) params['status'] = status;
+      if (brigadeOnly == true) params['brigade'] = 'true';
 
-    final uri = Uri.parse(
-      '$baseUrl/employees',
-    ).replace(queryParameters: params);
-    final response = await http.get(uri, headers: _headers);
+      final uri = Uri.parse('$baseUrl/employees').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب الموظفين'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب الموظفين');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب الموظفين'));
   }
 
   Future<List<String>> getDepartments() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/employees/departments'),
-      headers: _headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<String>();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/employees/departments'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is List) {
+          return decoded.map((e) => e.toString()).toList();
+        }
+        return [];
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب الأقسام'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب الأقسام');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب الأقسام'));
   }
 
   Future<List<String>> getAllDepartments() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/employees/all-departments'),
-      headers: _headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<String>();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/employees/all-departments'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is List) {
+          return decoded.map((e) => e.toString()).toList();
+        }
+        return [];
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب المصالح'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب المصالح');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب المصالح'));
   }
 
   Future<void> updateEmployeeAdminStatus(
     int employeeId,
     Map<String, dynamic> data,
   ) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/employees/$employeeId/admin-status'),
-      headers: _headers,
-      body: jsonEncode(data),
-    );
-    if (response.statusCode != 200) {
-      throw Exception(_parseError(response, 'خطأ في تحديث البيانات الإدارية'));
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/employees/$employeeId/admin-status'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في تحديث البيانات الإدارية'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في تحديث البيانات الإدارية');
     }
   }
 
   Future<Map<String, dynamic>> getDashboardStats() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/dashboard/stats'),
-      headers: _headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return Map<String, dynamic>.from(data as Map);
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/dashboard/stats'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب الإحصائيات'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب الإحصائيات');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب الإحصائيات'));
   }
 
   Future<List<Map<String, dynamic>>> getRecentActivity() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/dashboard/recent-activity'),
-      headers: _headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/dashboard/recent-activity'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب النشاطات'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب النشاطات');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب النشاطات'));
   }
 
   Future<void> checkIn(
@@ -416,20 +499,25 @@ class ApiService {
     String? location,
     String? notes,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/attendance/checkin'),
-      headers: _headers,
-      body: jsonEncode({
-        'employeeId': employeeId,
-        'latitude': latitude,
-        'longitude': longitude,
-        'photo': photo,
-        'location': location,
-        'notes': notes,
-      }),
-    );
-    if (response.statusCode != 201) {
-      throw Exception(_parseError(response, 'خطأ في تسجيل الحضور'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/attendance/checkin'),
+        headers: _headers,
+        body: jsonEncode({
+          'employeeId': employeeId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'photo': photo,
+          'location': location,
+          'notes': notes,
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في تسجيل الحضور'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في تسجيل الحضور');
     }
   }
 
@@ -440,30 +528,34 @@ class ApiService {
     String? location,
     String? notes,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/attendance/checkout'),
-      headers: _headers,
-      body: jsonEncode({
-        'employeeId': employeeId,
-        'latitude': latitude,
-        'longitude': longitude,
-        'location': location,
-        'notes': notes,
-      }),
-    );
-    if (response.statusCode != 200) {
-      throw Exception(_parseError(response, 'خطأ في تسجيل الانصراف'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/attendance/checkout'),
+        headers: _headers,
+        body: jsonEncode({
+          'employeeId': employeeId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'location': location,
+          'notes': notes,
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في تسجيل الانصراف'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في تسجيل الانصراف');
     }
   }
 
   Future<void> cancelCheckOut(int employeeId) async {
     try {
-      final response = await http.post(
+      await http.post(
         Uri.parse('$baseUrl/attendance/cancel-checkout'),
         headers: _headers,
         body: jsonEncode({'employeeId': employeeId}),
-      );
-      if (response.statusCode == 200) return;
+      ).timeout(defaultTimeout);
     } catch (_) {}
   }
 
@@ -471,20 +563,21 @@ class ApiService {
     String? date,
     int? employeeId,
   }) async {
-    final params = <String, String>{};
-    if (date != null) params['date'] = date;
-    if (employeeId != null) params['employeeId'] = employeeId.toString();
+    try {
+      final params = <String, String>{};
+      if (date != null) params['date'] = date;
+      if (employeeId != null) params['employeeId'] = employeeId.toString();
 
-    final uri = Uri.parse(
-      '$baseUrl/attendance',
-    ).replace(queryParameters: params);
-    final response = await http.get(uri, headers: _headers);
+      final uri = Uri.parse('$baseUrl/attendance').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب بيانات الحضور'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب بيانات الحضور');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب بيانات الحضور'));
   }
 
   Future<Map<String, dynamic>?> getTodayAttendance() async {
@@ -492,30 +585,32 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/attendance/today-self'),
         headers: _headers,
-      );
+      ).timeout(defaultTimeout);
+
       if (response.statusCode == 200) {
-        final body = response.body.trim();
-        if (body.startsWith('<') || body.isEmpty || body == 'null') return null;
-        final data = jsonDecode(body);
-        if (data == null) return null;
-        return Map<String, dynamic>.from(data as Map);
+        final map = _safeDecodeMap(response.body);
+        return map.isNotEmpty ? map : null;
       }
     } catch (_) {}
     return null;
   }
 
   Future<List<Map<String, dynamic>>> getPrograms({String? service, String? type}) async {
-    final params = <String, String>{};
-    if (service != null) params['service'] = service;
-    if (type != null) params['type'] = type;
+    try {
+      final params = <String, String>{};
+      if (service != null) params['service'] = service;
+      if (type != null) params['type'] = type;
 
-    final uri = Uri.parse('$baseUrl/programs').replace(queryParameters: params);
-    final response = await http.get(uri, headers: _headers);
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
+      final uri = Uri.parse('$baseUrl/programs').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب البرامج'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب البرامج');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب البرامج'));
   }
 
   Future<void> createProgram({
@@ -529,36 +624,45 @@ class ApiService {
     String? serviceName,
     int? createdBy,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/programs'),
-      headers: _headers,
-      body: jsonEncode({
-        'title': title,
-        'description': description,
-        'type': type ?? 'daily',
-        'weekDate': weekDate,
-        'targetArea': targetArea,
-        'targetType': targetType,
-        'focusPoints': focusPoints,
-        'serviceName': serviceName,
-        'createdBy': createdBy,
-      }),
-    );
-    if (response.statusCode != 201) {
-      throw Exception(_parseError(response, 'خطأ في إنشاء أمر المهمة'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/programs'),
+        headers: _headers,
+        body: jsonEncode({
+          'title': title,
+          'description': description,
+          'type': type ?? 'daily',
+          'weekDate': weekDate,
+          'targetArea': targetArea,
+          'targetType': targetType,
+          'focusPoints': focusPoints,
+          'serviceName': serviceName,
+          'createdBy': createdBy,
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في إنشاء أمر المهمة'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في إنشاء أمر المهمة');
     }
   }
 
   Future<List<Map<String, dynamic>>> getMapData() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/attendance/map-data'),
-      headers: _headers,
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/attendance/map-data'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب بيانات الخريطة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب بيانات الخريطة');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب بيانات الخريطة'));
   }
 
   Future<List<Map<String, dynamic>>> getTodayVisits([int? employeeId]) async {
@@ -569,12 +673,10 @@ class ApiService {
       final response = await http.get(
         Uri.parse(url),
         headers: _headers,
-      );
+      ).timeout(defaultTimeout);
+
       if (response.statusCode == 200) {
-        final body = response.body.trim();
-        if (body.startsWith('<') || body.isEmpty) return [];
-        final data = jsonDecode(body) as List;
-        return data.cast<Map<String, dynamic>>();
+        return _safeDecodeList(response.body);
       }
     } catch (_) {}
     return [];
@@ -588,12 +690,10 @@ class ApiService {
       if (isApproved != null) params['isApproved'] = isApproved.toString();
 
       final uri = Uri.parse('$baseUrl/visits').replace(queryParameters: params);
-      final response = await http.get(uri, headers: _headers);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
+
       if (response.statusCode == 200) {
-        final body = response.body.trim();
-        if (body.startsWith('<') || body.isEmpty) return [];
-        final data = jsonDecode(body) as List;
-        return data.cast<Map<String, dynamic>>();
+        return _safeDecodeList(response.body);
       }
     } catch (_) {}
     return [];
@@ -616,29 +716,34 @@ class ApiService {
     String? legalAction,
     double? seizureValue,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/visits'),
-      headers: _headers,
-      body: jsonEncode({
-        'employeeId': employeeId,
-        'latitude': latitude,
-        'longitude': longitude,
-        'accuracy': accuracy,
-        'locationName': locationName,
-        'shopName': shopName,
-        'shopType': shopType,
-        'photo': photo,
-        'assignmentId': assignmentId,
-        'notes': notes,
-        'violationFound': violationFound ?? false,
-        'violationType': violationType,
-        'violationNotes': violationNotes,
-        'legalAction': legalAction,
-        'seizureValue': seizureValue ?? 0,
-      }),
-    );
-    if (response.statusCode != 201 && response.statusCode != 200) {
-      throw Exception(_parseError(response, 'خطأ في تسجيل الزيارة'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/visits'),
+        headers: _headers,
+        body: jsonEncode({
+          'employeeId': employeeId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'accuracy': accuracy,
+          'locationName': locationName,
+          'shopName': shopName,
+          'shopType': shopType,
+          'photo': photo,
+          'assignmentId': assignmentId,
+          'notes': notes,
+          'violationFound': violationFound ?? false,
+          'violationType': violationType,
+          'violationNotes': violationNotes,
+          'legalAction': legalAction,
+          'seizureValue': seizureValue ?? 0,
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في تسجيل الزيارة'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في تسجيل الزيارة');
     }
   }
 
@@ -646,33 +751,39 @@ class ApiService {
     required int visitId,
     String? approvedBy,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/visits/$visitId/approve'),
-      headers: _headers,
-      body: jsonEncode({
-        'approvedBy': approvedBy ?? 'رئيس المصلحة المختصة',
-      }),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/visits/$visitId/approve'),
+        headers: _headers,
+        body: jsonEncode({
+          'approvedBy': approvedBy ?? 'رئيس المصلحة المختصة',
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في تأشير واعتماد المعاينة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في تأشير واعتماد المعاينة');
     }
-    throw Exception(_parseError(response, 'خطأ في تأشير واعتماد المعاينة'));
   }
 
   Future<List<Map<String, dynamic>>> getDeductions({String? status}) async {
-    final params = <String, String>{};
-    if (status != null) params['status'] = status;
+    try {
+      final params = <String, String>{};
+      if (status != null) params['status'] = status;
 
-    final uri = Uri.parse(
-      '$baseUrl/deductions',
-    ).replace(queryParameters: params);
-    final response = await http.get(uri, headers: _headers);
+      final uri = Uri.parse('$baseUrl/deductions').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب طلبات الخصم'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب طلبات الخصم');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب طلبات الخصم'));
   }
 
   Future<void> requestDeduction({
@@ -683,20 +794,25 @@ class ApiService {
     double? amount,
     String? evidence,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/deductions'),
-      headers: _headers,
-      body: jsonEncode({
-        'employeeId': employeeId,
-        'requestedBy': requestedBy,
-        'reason': reason,
-        'daysCount': daysCount,
-        'amount': amount,
-        'evidence': evidence,
-      }),
-    );
-    if (response.statusCode != 201) {
-      throw Exception(_parseError(response, 'خطأ في إنشاء طلب الخصم'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/deductions'),
+        headers: _headers,
+        body: jsonEncode({
+          'employeeId': employeeId,
+          'requestedBy': requestedBy,
+          'reason': reason,
+          'daysCount': daysCount,
+          'amount': amount,
+          'evidence': evidence,
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في إنشاء طلب الخصم'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في إنشاء طلب الخصم');
     }
   }
 
@@ -704,13 +820,18 @@ class ApiService {
     required int id,
     required int approvedBy,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/deductions/$id/approve'),
-      headers: _headers,
-      body: jsonEncode({'approvedBy': approvedBy}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception(_parseError(response, 'خطأ في الموافقة على الخصم'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/deductions/$id/approve'),
+        headers: _headers,
+        body: jsonEncode({'approvedBy': approvedBy}),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في الموافقة على الخصم'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في الموافقة على الخصم');
     }
   }
 
@@ -718,51 +839,69 @@ class ApiService {
     required int id,
     required int approvedBy,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/deductions/$id/reject'),
-      headers: _headers,
-      body: jsonEncode({'approvedBy': approvedBy}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception(_parseError(response, 'خطأ في رفض طلب الخصم'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/deductions/$id/reject'),
+        headers: _headers,
+        body: jsonEncode({'approvedBy': approvedBy}),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في رفض طلب الخصم'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في رفض طلب الخصم');
     }
   }
 
   // Justifications API
   Future<List<Map<String, dynamic>>> getJustifications({String? status, int? employeeId}) async {
-    final params = <String, String>{};
-    if (status != null) params['status'] = status;
-    if (employeeId != null) params['employeeId'] = employeeId.toString();
+    try {
+      final params = <String, String>{};
+      if (status != null) params['status'] = status;
+      if (employeeId != null) params['employeeId'] = employeeId.toString();
 
-    final uri = Uri.parse('$baseUrl/justifications').replace(queryParameters: params);
-    final response = await http.get(uri, headers: _headers);
+      final uri = Uri.parse('$baseUrl/justifications').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data.cast<Map<String, dynamic>>();
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب مبررات الغياب'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب مبررات الغياب');
     }
-    throw Exception(_parseError(response, 'خطأ في جلب مبررات الغياب'));
   }
 
   Future<void> submitJustification(Map<String, dynamic> data) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/justifications'),
-      headers: _headers,
-      body: jsonEncode(data),
-    );
-    if (response.statusCode != 201) {
-      throw Exception(_parseError(response, 'خطأ في إرسال التبرير'));
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/justifications'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في إرسال التبرير'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في إرسال التبرير');
     }
   }
 
   Future<void> updateJustificationStatus(int id, String status, {String? reviewNotes}) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/justifications/$id/status'),
-      headers: _headers,
-      body: jsonEncode({'status': status, 'reviewNotes': reviewNotes}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception(_parseError(response, 'خطأ في تحديث حالة التبرير'));
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/justifications/$id/status'),
+        headers: _headers,
+        body: jsonEncode({'status': status, 'reviewNotes': reviewNotes}),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في تحديث حالة التبرير'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في تحديث حالة التبرير');
     }
   }
 
@@ -777,14 +916,15 @@ class ApiService {
     } catch (_) {}
 
     try {
-      final response = await http.get(Uri.parse('$baseUrl/settings'), headers: _headers);
+      final response = await http.get(
+        Uri.parse('$baseUrl/settings'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
       if (response.statusCode == 200) {
-        final body = response.body.trim();
-        if (!body.startsWith('<')) {
-          final map = jsonDecode(body) as Map<String, dynamic>;
-          if (map['morning_grace_time'] != null) morningGrace = map['morning_grace_time'].toString();
-          if (map['work_start_time'] != null) workStart = map['work_start_time'].toString();
-        }
+        final map = _safeDecodeMap(response.body);
+        if (map['morning_grace_time'] != null) morningGrace = map['morning_grace_time'].toString();
+        if (map['work_start_time'] != null) workStart = map['work_start_time'].toString();
       }
     } catch (_) {}
 
@@ -803,7 +943,7 @@ class ApiService {
         Uri.parse('$baseUrl/settings'),
         headers: _headers,
         body: jsonEncode({'key': key, 'value': value, 'description': description}),
-      );
+      ).timeout(defaultTimeout);
     } catch (_) {}
   }
 
@@ -816,18 +956,10 @@ class ApiService {
       if (graceTime != null) params['graceTime'] = graceTime;
 
       final uri = Uri.parse('$baseUrl/attendance/delays-summary').replace(queryParameters: params);
-      final response = await http.get(uri, headers: _headers);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        final body = response.body.trim();
-        if (!body.startsWith('<')) {
-          final data = jsonDecode(body);
-          if (data is List) {
-            return data.cast<Map<String, dynamic>>();
-          } else if (data is Map) {
-            return [Map<String, dynamic>.from(data)];
-          }
-        }
+        return _safeDecodeList(response.body);
       }
     } catch (_) {}
     return [];
@@ -843,14 +975,11 @@ class ApiService {
       if (employeeId != null) params['employeeId'] = employeeId.toString();
 
       final uri = Uri.parse('$baseUrl/inquiries').replace(queryParameters: params);
-      final response = await http.get(uri, headers: _headers);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        final body = response.body.trim();
-        if (!body.startsWith('<')) {
-          final data = jsonDecode(body) as List;
-          return data.cast<Map<String, dynamic>>();
-        }
+        final list = _safeDecodeList(response.body);
+        if (list.isNotEmpty) return list;
       }
     } catch (_) {}
 
@@ -867,12 +996,11 @@ class ApiService {
         Uri.parse('$baseUrl/inquiries'),
         headers: _headers,
         body: jsonEncode(data),
-      );
-      if (response.statusCode == 201) {
-        final body = response.body.trim();
-        if (!body.startsWith('<')) {
-          return jsonDecode(body) as Map<String, dynamic>;
-        }
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final res = _safeDecodeMap(response.body);
+        if (res.isNotEmpty) return res;
       }
     } catch (_) {}
 
@@ -890,7 +1018,8 @@ class ApiService {
         Uri.parse('$baseUrl/inquiries/$id/reply'),
         headers: _headers,
         body: jsonEncode({'reply': reply, 'attachment': attachment}),
-      );
+      ).timeout(defaultTimeout);
+
       if (response.statusCode == 200) return;
     } catch (_) {}
 
@@ -914,7 +1043,8 @@ class ApiService {
           'notes': notes,
           'deductionDays': deductionDays,
         }),
-      );
+      ).timeout(defaultTimeout);
+
       if (response.statusCode == 200) return;
     } catch (_) {}
 
@@ -943,7 +1073,8 @@ class ApiService {
           'executedBy': executedBy,
           'executionNotes': executionNotes,
         }),
-      );
+      ).timeout(defaultTimeout);
+
       if (response.statusCode == 200) return;
     } catch (_) {}
 
@@ -963,7 +1094,8 @@ class ApiService {
       final response = await http.delete(
         Uri.parse('$baseUrl/inquiries/$id'),
         headers: _headers,
-      );
+      ).timeout(defaultTimeout);
+
       if (response.statusCode == 200) return;
     } catch (_) {}
     _inquiriesCache.removeWhere((i) => i['Id'] == id);
