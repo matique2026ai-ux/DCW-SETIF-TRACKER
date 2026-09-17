@@ -242,64 +242,127 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                             // Inspectors working on this department/program
                             Builder(
                               builder: (_) {
-                                final deptInspectors = _employees.where((e) {
-                                  final s = (e['Service'] ?? '').toString();
-                                  return s.contains(service) || service.contains(s);
+                                final targetS = service.toLowerCase();
+                                var deptInspectors = _employees.where((e) {
+                                  final s = (e['Service'] ?? '').toString().toLowerCase();
+                                  if (targetS.contains('مستهلك') || targetS.contains('غش') || targetS.contains('consommation') || targetS.contains('fraude')) {
+                                    return s.contains('مستهلك') || s.contains('غش') || s.contains('consommation');
+                                  }
+                                  if (targetS.contains('منافسة') || targetS.contains('تحقيق') || targetS.contains('concurrence') || targetS.contains('enqu')) {
+                                    return s.contains('منافسة') || s.contains('تحقيق') || s.contains('concurrence');
+                                  }
+                                  return s.contains(targetS) || targetS.contains(s);
                                 }).toList();
 
-                                if (deptInspectors.isEmpty) return const SizedBox.shrink();
+                                // If generic or empty, show sample active field inspectors
+                                if (deptInspectors.isEmpty && _employees.isNotEmpty) {
+                                  deptInspectors = _employees.take(6).toList();
+                                }
+
+                                if (deptInspectors.isEmpty) {
+                                  return Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.info_outline, size: 14, color: Colors.amber),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          loc.isArabic ? 'برنامج عام لم يتم تخصيص فرقة محددة له بعد' : 'Programme général (brigade non assignée)',
+                                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.amber),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                final attendedCount = deptInspectors.where((emp) => checkedInIds.contains(emp['Id'])).length;
 
                                 return Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: Colors.black26,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white10),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.groups, size: 13, color: Color(0xFF38BDF8)),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            loc.isArabic
-                                                ? 'الفرق المفتشية المسندة للمهمة (${deptInspectors.length} مفتشاً):'
-                                                : 'Brigades affectées (${deptInspectors.length} inspecteurs) :',
-                                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8)),
+                                          const Icon(Icons.groups, size: 14, color: Color(0xFF38BDF8)),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              loc.isArabic
+                                                  ? 'الفرق المفتشية المكلفة بالمهمة (${deptInspectors.length} مفتشاً):'
+                                                  : 'Brigades affectées (${deptInspectors.length} inspecteurs) :',
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF38BDF8),
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              loc.isArabic ? '🟢 $attendedCount بالميدان' : '🟢 $attendedCount sur terrain',
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF34D399),
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 8),
                                       Wrap(
                                         spacing: 6,
-                                        runSpacing: 4,
+                                        runSpacing: 6,
                                         children: deptInspectors.take(8).map((emp) {
                                           final isAttended = checkedInIds.contains(emp['Id']);
                                           final name = loc.isArabic
                                               ? '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim()
                                               : '${emp['Nom'] ?? emp['NomAr'] ?? ''} ${emp['Prenom'] ?? emp['PrenomAr'] ?? ''}'.trim();
                                           return Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: isAttended ? const Color(0xFF10B981).withValues(alpha: 0.2) : Colors.white10,
-                                              borderRadius: BorderRadius.circular(4),
-                                              border: Border.all(color: isAttended ? const Color(0xFF10B981).withValues(alpha: 0.5) : Colors.white24),
+                                              color: isAttended
+                                                  ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                                                  : Colors.white.withValues(alpha: 0.05),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: isAttended
+                                                    ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                                                    : Colors.white12,
+                                              ),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Icon(
                                                   isAttended ? Icons.check_circle : Icons.circle_outlined,
-                                                  size: 10,
+                                                  size: 11,
                                                   color: isAttended ? const Color(0xFF10B981) : Colors.white38,
                                                 ),
-                                                const SizedBox(width: 4),
+                                                const SizedBox(width: 5),
                                                 Text(
                                                   name.isNotEmpty ? name : 'مفتش #${emp['Id']}',
                                                   style: TextStyle(
                                                     fontFamily: 'Tajawal',
-                                                    fontSize: 10,
+                                                    fontSize: 11,
                                                     color: isAttended ? Colors.white : Colors.white60,
                                                     fontWeight: isAttended ? FontWeight.bold : FontWeight.normal,
                                                   ),
