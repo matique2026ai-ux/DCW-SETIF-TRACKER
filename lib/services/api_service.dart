@@ -13,7 +13,7 @@ class ApiService {
     return 'https://drh-setif-api.onrender.com/api';
   }
 
-  static const Duration defaultTimeout = Duration(seconds: 10);
+  static const Duration defaultTimeout = Duration(seconds: 25);
 
   String? _token;
 

@@ -209,210 +209,218 @@ class _LoginScreenState extends State<LoginScreen>
                 child: SlideTransition(
                   position: _slideAnimation,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Official 3D Medallion Emblem
-                        const GoldenEmblemCoin(
-                          size: 120,
-                          showOuterGlow: true,
-                        ),
-                        const SizedBox(height: 22),
-
-                        // Title
-                        Text(
-                          loc.isArabic
-                              ? 'منصة الرقابة والتفتيش الميداني'
-                              : 'Plateforme de Contrôle et d\'Inspection',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: fontFam,
-                            fontSize: isAr ? 22 : 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: isAr ? 0 : 0.4,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          loc.isArabic
-                              ? 'مديرية التجارة الداخلية وضبط السوق — سطيف'
-                              : 'Direction du Commerce Intérieur et de la Régulation — Sétif',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: fontFam,
-                            fontSize: isAr ? 13 : 12,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFD4AF37),
-                            letterSpacing: isAr ? 0 : 0.3,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 36),
-
-                        // Username field
-                        AnimatedBuilder(
-                          animation: _shakeAnimation,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: Offset(
-                                sin(_shakeAnimation.value * 2 * pi * 3) * 5,
-                                0,
-                              ),
-                              child: TextField(
-                                controller: _usernameCtrl,
-                                textDirection: TextDirection.ltr,
-                                style: TextStyle(
-                                  fontFamily: fontFam,
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: loc.loginUsername,
-                                  labelStyle: TextStyle(
-                                    fontFamily: fontFam,
-                                    fontSize: 13,
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.person_outline,
-                                    color: Color(0xFFD4AF37),
-                                  ),
-                                  filled: true,
-                                  fillColor: const Color(0xFF3D1A45),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFF4A2050),
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFF4A2050),
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFD4AF37),
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Password field
-                        TextField(
-                          controller: _passwordCtrl,
-                          obscureText: _obscure,
-                          textDirection: TextDirection.ltr,
-                          style: TextStyle(
-                            fontFamily: fontFam,
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                          onSubmitted: (_) => _login(),
-                          decoration: InputDecoration(
-                            labelText: loc.loginPassword,
-                            labelStyle: TextStyle(
-                              fontFamily: fontFam,
-                              fontSize: 13,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.lock_outline,
-                              color: Color(0xFFD4AF37),
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscure
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
-                              ),
-                              onPressed: () =>
-                                  setState(() => _obscure = !_obscure),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFF3D1A45),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: Color(0xFF4A2050)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: Color(0xFF4A2050)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFD4AF37),
-                                width: 2,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    child: Center(
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 440),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Official 3D Medallion Emblem
+                            const Center(
+                              child: GoldenEmblemCoin(
+                                size: 110,
+                                showOuterGlow: true,
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                            const SizedBox(height: 20),
 
-                        // Error
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              _error!,
+                            // Title
+                            Text(
+                              loc.isArabic
+                                  ? 'منصة الرقابة والتفتيش الميداني'
+                                  : 'Plateforme de Contrôle et d\'Inspection',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontFamily: fontFam,
-                                color: const Color(0xFFEF4444),
-                                fontSize: 13,
+                                fontSize: isAr ? 22 : 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: isAr ? 0 : 0.4,
+                                height: 1.3,
                               ),
                             ),
-                          ),
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 8),
+                            Text(
+                              loc.isArabic
+                                  ? 'مديرية التجارة الداخلية وضبط السوق — سطيف'
+                                  : 'Direction du Commerce Intérieur et de la Régulation — Sétif',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: fontFam,
+                                fontSize: isAr ? 13 : 12,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFFD4AF37),
+                                letterSpacing: isAr ? 0 : 0.3,
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
 
-                        // Login button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _login,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD4AF37),
-                              foregroundColor: const Color(0xFF1A0A1F),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Color(0xFF1A0A1F),
-                                    ),
-                                  )
-                                : Text(
-                                    loc.loginButton,
+                            // Username field
+                            AnimatedBuilder(
+                              animation: _shakeAnimation,
+                              builder: (context, child) {
+                                return Transform.translate(
+                                  offset: Offset(
+                                    sin(_shakeAnimation.value * 2 * pi * 3) * 5,
+                                    0,
+                                  ),
+                                  child: TextField(
+                                    controller: _usernameCtrl,
+                                    textDirection: TextDirection.ltr,
                                     style: TextStyle(
                                       fontFamily: fontFam,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: isAr ? 0 : 0.4,
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                    decoration: InputDecoration(
+                                      labelText: loc.loginUsername,
+                                      labelStyle: TextStyle(
+                                        fontFamily: fontFam,
+                                        fontSize: 13,
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.person_outline,
+                                        color: Color(0xFFD4AF37),
+                                      ),
+                                      filled: true,
+                                      fillColor: const Color(0xFF3D1A45),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFF4A2050),
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFF4A2050),
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFD4AF37),
+                                          width: 2,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                          ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Password field
+                            TextField(
+                              controller: _passwordCtrl,
+                              obscureText: _obscure,
+                              textDirection: TextDirection.ltr,
+                              style: TextStyle(
+                                fontFamily: fontFam,
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                              onSubmitted: (_) => _login(),
+                              decoration: InputDecoration(
+                                labelText: loc.loginPassword,
+                                labelStyle: TextStyle(
+                                  fontFamily: fontFam,
+                                  fontSize: 13,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline,
+                                  color: Color(0xFFD4AF37),
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscure
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
+                                  ),
+                                  onPressed: () =>
+                                      setState(() => _obscure = !_obscure),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF3D1A45),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFD4AF37),
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Error
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  _error!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: fontFam,
+                                    color: const Color(0xFFEF4444),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 24),
+
+                            // Login button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD4AF37),
+                                  foregroundColor: const Color(0xFF1A0A1F),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  elevation: 4,
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Color(0xFF1A0A1F),
+                                        ),
+                                      )
+                                    : Text(
+                                        loc.loginButton,
+                                        style: TextStyle(
+                                          fontFamily: fontFam,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: isAr ? 0 : 0.4,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            const AppFooter(),
+                            const SizedBox(height: 12),
+                          ],
                         ),
-                        const SizedBox(height: 28),
-                        const AppFooter(),
-                        const SizedBox(height: 12),
-                      ],
+                      ),
                     ),
                   ),
                 ),
