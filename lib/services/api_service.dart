@@ -649,7 +649,7 @@ class ApiService {
     }
   }
 
-  Future<void> deleteProgram(int id) async {
+  Future<void> deleteProgram(int id, {String? title}) async {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/programs/$id'),
@@ -657,10 +657,19 @@ class ApiService {
       ).timeout(defaultTimeout);
 
       if (response.statusCode != 200) {
-        throw Exception(_parseError(response, 'خطأ في حذف أمر المهمة'));
+        // Fallback to POST /programs/cancel
+        final fallback = await http.post(
+          Uri.parse('$baseUrl/programs/cancel'),
+          headers: _headers,
+          body: jsonEncode({'id': id, 'title': title}),
+        ).timeout(defaultTimeout);
+
+        if (fallback.statusCode != 200) {
+          throw Exception(_parseError(response, 'خطأ في إلغاء أمر المهمة'));
+        }
       }
     } catch (e) {
-      throw _handleNetworkException(e, 'خطأ في حذف أمر المهمة');
+      throw _handleNetworkException(e, 'خطأ في إلغاء أمر المهمة');
     }
   }
 
