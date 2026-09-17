@@ -211,37 +211,36 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                         title: Row(
                                           children: [
-                                            const Icon(Icons.delete_forever, color: Color(0xFFEF4444)),
+                                            const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444)),
                                             const SizedBox(width: 8),
                                             Text(
-                                              loc.isArabic ? 'حذف أمر المهمة' : 'Supprimer l\'ordre',
+                                              loc.isArabic ? 'إلغاء سريان أمر المهمة' : 'Annuler l\'ordre de mission',
                                               style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold),
                                             ),
                                           ],
                                         ),
                                         content: Text(
                                           loc.isArabic
-                                              ? 'هل أنت متأكد من حذف هذا البرنامج الرقابي / أمر المهمة؟'
-                                              : 'Êtes-vous sûr de vouloir supprimer ce programme ?',
+                                              ? 'هل أنت متأكد من إلغاء سريان هذا البرنامج الرقابي / أمر المهمة وإنهاء العمل به؟'
+                                              : 'Êtes-vous sûr de vouloir annuler la validité de cet ordre de mission ?',
                                           style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
                                         ),
                                         actions: [
                                           TextButton(
                                             onPressed: () => Navigator.pop(c, false),
-                                            child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal')),
+                                            child: Text(loc.isArabic ? 'تراجع' : 'Retour', style: const TextStyle(fontFamily: 'Tajawal')),
                                           ),
                                           ElevatedButton(
                                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
                                             onPressed: () => Navigator.pop(c, true),
-                                            child: Text(loc.isArabic ? 'تأكيد الحذف' : 'Supprimer', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+                                            child: Text(loc.isArabic ? 'تأكيد الإلغاء' : 'Confirmer l\'annulation', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
                                           ),
                                         ],
                                       ),
                                     );
 
-                                    if (confirm == true && p['Id'] != null) {
-                                      final progId = int.tryParse(p['Id'].toString());
-                                      if (progId == null) return;
+                                    if (confirm == true) {
+                                      final progId = int.tryParse(p['Id']?.toString() ?? '0') ?? 0;
                                       try {
                                         await api.deleteProgram(progId);
                                         nav.pop();
@@ -250,7 +249,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                           SnackBar(
                                             backgroundColor: const Color(0xFF10B981),
                                             content: Text(
-                                              loc.isArabic ? 'تم حذف البرنامج بنجاح ✅' : 'Programme supprimé ✅',
+                                              loc.isArabic ? 'تم إلغاء أمر المهمة بنجاح ✅' : 'Ordre de mission annulé ✅',
                                               style: const TextStyle(fontFamily: 'Tajawal'),
                                             ),
                                           ),
@@ -271,7 +270,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                       color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Icon(Icons.delete_outline, color: Color(0xFFF87171), size: 14),
+                                    child: const Icon(Icons.cancel_outlined, color: Color(0xFFF87171), size: 14),
                                   ),
                                 ),
                               ],
