@@ -197,6 +197,83 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                   loc.isArabic ? 'أمر مهمة ساري' : 'Ordre valide',
                                   style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981)),
                                 ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () async {
+                                    final api = context.read<AuthService>().api;
+                                    final messenger = ScaffoldMessenger.of(context);
+                                    final nav = Navigator.of(ctx);
+
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (c) => AlertDialog(
+                                        backgroundColor: const Color(0xFF1E0B26),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        title: Row(
+                                          children: [
+                                            const Icon(Icons.delete_forever, color: Color(0xFFEF4444)),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              loc.isArabic ? 'حذف أمر المهمة' : 'Supprimer l\'ordre',
+                                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                        content: Text(
+                                          loc.isArabic
+                                              ? 'هل أنت متأكد من حذف هذا البرنامج الرقابي / أمر المهمة؟'
+                                              : 'Êtes-vous sûr de vouloir supprimer ce programme ?',
+                                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(c, false),
+                                            child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal')),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                                            onPressed: () => Navigator.pop(c, true),
+                                            child: Text(loc.isArabic ? 'تأكيد الحذف' : 'Supprimer', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true && p['Id'] != null) {
+                                      final progId = int.tryParse(p['Id'].toString());
+                                      if (progId == null) return;
+                                      try {
+                                        await api.deleteProgram(progId);
+                                        nav.pop();
+                                        _load();
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            backgroundColor: const Color(0xFF10B981),
+                                            content: Text(
+                                              loc.isArabic ? 'تم حذف البرنامج بنجاح ✅' : 'Programme supprimé ✅',
+                                              style: const TextStyle(fontFamily: 'Tajawal'),
+                                            ),
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            backgroundColor: const Color(0xFFEF4444),
+                                            content: Text(e.toString()),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Icon(Icons.delete_outline, color: Color(0xFFF87171), size: 14),
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),

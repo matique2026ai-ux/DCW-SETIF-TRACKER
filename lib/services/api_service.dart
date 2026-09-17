@@ -649,6 +649,21 @@ class ApiService {
     }
   }
 
+  Future<void> deleteProgram(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/programs/$id'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response, 'خطأ في حذف أمر المهمة'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في حذف أمر المهمة');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getMapData() async {
     try {
       final response = await http.get(
