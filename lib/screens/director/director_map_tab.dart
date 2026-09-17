@@ -79,6 +79,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   Future<void> _locateDirectorLocation() async {
     if (_isLocating) return;
     setState(() => _isLocating = true);
+    final loc = AppLocalizations.of(context);
 
     try {
       LocationPermission perm = await Geolocator.checkPermission();
@@ -94,9 +95,11 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.all(16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              content: const Text(
-                '📍 تم التوجيه إلى مركز ولاية سطيف (صلاحية GPS غير مفعلة في المتصفح)',
-                style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
+              content: Text(
+                loc.isArabic
+                    ? '📍 تم التوجيه إلى مركز ولاية سطيف (صلاحية GPS غير مفعلة في المتصفح)'
+                    : '📍 Redirection vers le centre de Sétif (GPS non autorisé)',
+                style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
               ),
               backgroundColor: AppTheme.WarningColor,
               duration: const Duration(seconds: 3),
@@ -121,7 +124,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             content: Text(
-              '🎯 تم تحديد موقعك المباشر بنجاح (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})',
+              loc.isArabic
+                  ? '🎯 تم تحديد موقعك المباشر بنجاح (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})'
+                  : '🎯 Position actuelle localisée (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})',
               style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
             ),
             backgroundColor: AppTheme.SuccessColor,
@@ -137,9 +142,11 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            content: const Text(
-              '📍 تم التوجيه إلى مركز ولاية سطيف والمقر الرئيسي',
-              style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
+            content: Text(
+              loc.isArabic
+                  ? '📍 تم التوجيه إلى مركز ولاية سطيف والمقر الرئيسي'
+                  : '📍 Redirection vers le siège principal (Sétif)',
+              style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
             ),
             backgroundColor: AppTheme.AccentColor,
             duration: const Duration(seconds: 3),
@@ -490,19 +497,19 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
               _actionButton(
                 Icons.add,
                 _zoomIn,
-                tooltip: 'تكبير الخريطة (+)',
+                tooltip: loc.isArabic ? 'تكبير الخريطة (+)' : 'Zoomer (+)',
               ),
               const SizedBox(height: 10),
               _actionButton(
                 Icons.remove,
                 _zoomOut,
-                tooltip: 'تصغير الخريطة (-)',
+                tooltip: loc.isArabic ? 'تصغير الخريطة (-)' : 'Dézoomer (-)',
               ),
               const SizedBox(height: 10),
               _actionButton(
                 Icons.my_location,
                 _locateDirectorLocation,
-                tooltip: 'تحديد موقعي المباشر (GPS)',
+                tooltip: loc.isArabic ? 'تحديد موقعي المباشر (GPS)' : 'Ma position actuelle (GPS)',
                 isLoading: _isLocating,
                 highlightColor: AppTheme.AccentColor,
               ),
@@ -646,8 +653,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   void _showInspectorModal(Map<String, dynamic> emp) {
-    final String name = (emp['name'] ?? 'مفتش').toString();
-    final String service = (emp['service'] ?? 'مديرية التجارة').toString();
+    final loc = AppLocalizations.of(context);
+    final String name = (emp['name'] ?? (loc.isArabic ? 'مفتش' : 'Agent')).toString();
+    final String service = (emp['service'] ?? (loc.isArabic ? 'مديرية التجارة' : 'Direction du Commerce')).toString();
     final String checkInStr = _formatAttendanceTime(emp['checkInTime']);
     final bool isPresent = emp['hasCheckedIn'] == true;
     final bool isOut = emp['isCheckedOut'] == true;
@@ -655,17 +663,17 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     final String? checkInPhoto = emp['checkInPhoto']?.toString();
 
     // Precise administrative status:
-    String statusText = 'غائب (لم يسجل)';
+    String statusText = loc.isArabic ? 'غائب (لم يسجل)' : 'Absent (Non pointé)';
     Color statusColor = AppTheme.DangerColor;
     if (isOut) {
-      statusText = 'انصرف';
+      statusText = loc.isArabic ? 'انصرف' : 'Sorti';
       statusColor = const Color(0xFF64748B);
     } else if (isPresent) {
       if (visits.isNotEmpty) {
-        statusText = 'نشط في الميدان (${visits.length} معاينات)';
+        statusText = loc.isArabic ? 'نشط في الميدان (${visits.length} معاينات)' : 'En mission (${visits.length} visites)';
         statusColor = const Color(0xFF38BDF8);
       } else {
-        statusText = 'حاضر بالمقر (مسجل حضور)';
+        statusText = loc.isArabic ? 'حاضر بالمقر (مسجل حضور)' : 'Présent au siège';
         statusColor = AppTheme.SuccessColor;
       }
     }
@@ -730,16 +738,20 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             const SizedBox(height: 16),
             const Divider(color: AppTheme.BorderColor),
             const SizedBox(height: 8),
-            _infoRow(Icons.access_time, 'توقيت الحضور', checkInStr),
+            _infoRow(Icons.access_time, loc.isArabic ? 'توقيت الحضور' : 'Heure de pointage', checkInStr),
             if (emp['notes'] != null && emp['notes'].toString().isNotEmpty) ...[
               const SizedBox(height: 8),
-              _infoRow(Icons.notes, 'ملاحظة الانصراف/المبرر', emp['notes'].toString()),
+              _infoRow(Icons.notes, loc.isArabic ? 'ملاحظة الانصراف/المبرر' : 'Note / Justification', emp['notes'].toString()),
             ],
             const SizedBox(height: 8),
-            _infoRow(Icons.store, 'المعاينات المنجزة اليوم', '${visits.length} معاينات'),
+            _infoRow(
+              Icons.store,
+              loc.isArabic ? 'المعاينات المنجزة اليوم' : 'Visites de contrôle aujourd\'hui',
+              loc.isArabic ? '${visits.length} معاينات' : '${visits.length} visites',
+            ),
             if (checkInPhoto != null && checkInPhoto.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Text('صورة إثبات الحضور الميداني:', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
+              Text(loc.isArabic ? 'صورة إثبات الحضور الميداني:' : 'Photo de présence terrain :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -754,7 +766,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             ],
             const SizedBox(height: 16),
             if (visits.isNotEmpty) ...[
-              const Text('سجل المحلات المعاينة اليوم:', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
+              Text(loc.isArabic ? 'سجل المحلات المعاينة اليوم:' : 'Commerces contrôlés aujourd\'hui :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ...visits.map((v) => Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -803,11 +815,14 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                       'visitsCount': visits.length,
                       'status': 'VERIFIED_OFFICIAL_INSPECTOR',
                     },
-                    title: 'البطاقة الرقمية الرسمية للمفتش',
+                    title: loc.isArabic ? 'البطاقة الرقمية الرسمية للمفتش' : 'Badge numérique officiel de l\'agent',
                   );
                 },
                 icon: const Icon(Icons.qr_code_2),
-                label: const Text('فحص الإثبات الرقمي والـ QR للعون', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                label: Text(
+                  loc.isArabic ? 'فحص الإثبات الرقمي والـ QR للعون' : 'Vérifier le badge numérique (QR)',
+                  style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
               ),
             ),
@@ -822,9 +837,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     _showOrderInquiryForEmployee(emp);
                   },
                   icon: const Icon(Icons.gavel, color: Colors.orangeAccent, size: 18),
-                  label: const Text(
-                    'أمر مكتب المستخدمين بتوجيه استفسار كتابي',
-                    style: TextStyle(
+                  label: Text(
+                    loc.isArabic ? 'أمر مكتب المستخدمين بتوجيه استفسار كتابي' : 'Ordonner une demande d\'explications',
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -845,10 +860,17 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   void _showOrderInquiryForEmployee(Map<String, dynamic> emp) {
-    final name = (emp['name'] ?? 'عون رقابة').toString();
+    final loc = AppLocalizations.of(context);
+    final name = (emp['name'] ?? (loc.isArabic ? 'عون رقابة' : 'Agent de contrôle')).toString();
     final empId = emp['id'] ?? emp['Id'] ?? emp['employeeId'];
-    final subjectCtrl = TextEditingController(text: 'استفسار وأمر بالانضباط حول الغياب / التأخر');
-    final detailsCtrl = TextEditingController(text: 'بناءً على المعطيات الرقابية في الخريطة المركزية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف ($name) مع إلزامه بالرد خلال مهلة 48 ساعة القانونية.');
+    final subjectCtrl = TextEditingController(
+      text: loc.isArabic ? 'استفسار وأمر بالانضباط حول الغياب / التأخر' : 'Demande d\'explications sur l\'absence / retard',
+    );
+    final detailsCtrl = TextEditingController(
+      text: loc.isArabic
+          ? 'بناءً على المعطيات الرقابية في الخريطة المركزية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف ($name) مع إلزامه بالرد خلال مهلة 48 ساعة القانونية.'
+          : 'Sur la base des données de la carte centrale, le bureau du personnel est chargé d\'adresser une demande d\'explications officielle à l\'agent ($name) sous 48h.',
+    );
 
     showDialog(
       context: context,
@@ -864,7 +886,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'أمر بتوجيه استفسار — $name',
+                loc.isArabic ? 'أمر بتوجيه استفسار — $name' : 'Ordre d\'explications — $name',
                 style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
@@ -879,16 +901,18 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'المدير الولائي يكلف مكتب المستخدمين بإصدار استفسار كتابي رسمي للموظف عبر المنظومة:',
-              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+            Text(
+              loc.isArabic
+                  ? 'المدير الولائي يكلف مكتب المستخدمين بإصدار استفسار كتابي رسمي للموظف عبر المنظومة:'
+                  : 'Le Directeur de Wilaya charge le bureau du personnel d\'émettre une demande d\'explications :',
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: subjectCtrl,
-              textDirection: TextDirection.rtl,
+              textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: 'الموضوع',
+                labelText: loc.isArabic ? 'الموضوع' : 'Objet',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37)),
                 filled: true,
                 fillColor: Colors.black26,
@@ -899,9 +923,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             TextField(
               controller: detailsCtrl,
               maxLines: 3,
-              textDirection: TextDirection.rtl,
+              textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: 'تعليمات وتفاصيل الاستفسار',
+                labelText: loc.isArabic ? 'تعليمات وتفاصيل الاستفسار' : 'Instructions et détails',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
                 filled: true,
                 fillColor: Colors.black26,
@@ -913,7 +937,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dlgCtx),
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+            child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -937,7 +961,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     backgroundColor: AppTheme.SuccessColor,
                     content: Text(
-                      '✅ تم تكليف مكتب المستخدمين بإصدار الاستفسار لـ $name بنجاح',
+                      loc.isArabic
+                          ? '✅ تم تكليف مكتب المستخدمين بإصدار الاستفسار لـ $name بنجاح'
+                          : '✅ Demande transmise au bureau du personnel pour $name',
                       style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -959,7 +985,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('إصدار الأمر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            child: Text(loc.isArabic ? 'إصدار الأمر' : 'Émettre l\'ordre', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -967,7 +993,8 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   void _showVisitDetailsModal(Map<String, dynamic> v, String inspectorName) {
-    final String shop = (v['shopName'] ?? 'محل تجاري').toString();
+    final loc = AppLocalizations.of(context);
+    final String shop = (v['shopName'] ?? (loc.isArabic ? 'محل تجاري' : 'Commerce')).toString();
     final String? photo = v['photo']?.toString();
     final dynamic lat = v['latitude'];
     final dynamic lng = v['longitude'];
@@ -999,7 +1026,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(shop, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text('المفتش: $inspectorName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
+                      Text('${loc.isArabic ? "المفتش" : "Inspecteur"}: $inspectorName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
                     ],
                   ),
                 ),
@@ -1020,7 +1047,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
               const SizedBox(height: 12),
             ],
             if (lat != null && lng != null)
-              Text('الإحداثيات الجغرافية: $lat, $lng', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70)),
+              Text(
+                '${loc.isArabic ? "الإحداثيات الجغرافية" : "Coordonnées GPS"}: $lat, $lng',
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+              ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -1038,11 +1068,14 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                       'longitude': lng,
                       'id': v['id'] ?? DateTime.now().millisecondsSinceEpoch,
                     },
-                    title: 'إثبات المعاينة الميدانية (QR)',
+                    title: loc.isArabic ? 'إثبات المعاينة الميدانية (QR)' : 'Preuve de visite terrain (QR)',
                   );
                 },
                 icon: const Icon(Icons.qr_code),
-                label: const Text('عرض رمز الاستجابة السريعة للزيارة', style: TextStyle(fontFamily: 'Tajawal')),
+                label: Text(
+                  loc.isArabic ? 'عرض رمز الاستجابة السريعة للزيارة' : 'Afficher le QR code de la visite',
+                  style: const TextStyle(fontFamily: 'Tajawal'),
+                ),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
               ),
             ),
@@ -1080,6 +1113,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   void _showSearchInspectorSheet() {
+    final loc = AppLocalizations.of(context);
     String query = '';
     showModalBottomSheet(
       context: context,
@@ -1120,10 +1154,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     children: [
                       const Icon(Icons.person_search, color: Color(0xFFD4AF37)),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'البحث عن عون ومتابعة حالته الميدانية',
-                          style: TextStyle(
+                          loc.isArabic ? 'البحث عن عون ومتابعة حالته الميدانية' : 'Rechercher un agent et suivre son état',
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -1140,10 +1174,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: TextField(
-                    textDirection: TextDirection.rtl,
+                    textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
                     onChanged: (val) => setSheetState(() => query = val),
                     decoration: InputDecoration(
-                      hintText: 'ابحث بالاسم، اللقب أو المصلحة...',
+                      hintText: loc.isArabic ? 'ابحث بالاسم، اللقب أو المصلحة...' : 'Rechercher par nom ou service...',
                       hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
                       prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
                       filled: true,
@@ -1159,10 +1193,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 const Divider(color: Colors.white12, height: 16),
                 Expanded(
                   child: filtered.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
-                            'لم يتم العثور على أي عون يطابق البحث',
-                            style: TextStyle(
+                            loc.isArabic ? 'لم يتم العثور على أي عون يطابق البحث' : 'Aucun agent trouvé',
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               color: AppTheme.TextSecondary,
                             ),
@@ -1173,13 +1207,19 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
                             final emp = filtered[index];
-                            final name = emp['name']?.toString() ?? 'عون رقابة';
-                            final service = emp['service']?.toString() ?? 'مديرية التجارة';
+                            final name = emp['name']?.toString() ?? (loc.isArabic ? 'عون رقابة' : 'Agent de contrôle');
+                            final service = emp['service']?.toString() ?? (loc.isArabic ? 'مديرية التجارة' : 'Direction du Commerce');
                             final bool hasCheckedIn = emp['hasCheckedIn'] == true;
                             final bool isCheckedOut = emp['isCheckedOut'] == true;
                             final visits = (emp['visits'] as List?) ?? [];
                             final double? lat = (emp['latitude'] as num?)?.toDouble();
                             final double? lng = (emp['longitude'] as num?)?.toDouble();
+
+                            final statusStr = hasCheckedIn
+                                ? (isCheckedOut
+                                    ? (loc.isArabic ? 'انصرف' : 'Sorti')
+                                    : (loc.isArabic ? 'في الميدان (${visits.length} زيارات)' : 'Sur le terrain (${visits.length} v.)'))
+                                : (loc.isArabic ? 'لم يسجل الحضور اليوم' : 'Non pointé');
 
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -1216,7 +1256,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                                   ),
                                 ),
                                 subtitle: Text(
-                                  '$service • ${hasCheckedIn ? (isCheckedOut ? 'انصرف' : 'في الميدان (${visits.length} زيارات)') : 'لم يسجل الحضور اليوم'}',
+                                  '$service • $statusStr',
                                   style: TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 11,
@@ -1247,7 +1287,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                                             const SizedBox(width: 10),
                                             Expanded(
                                               child: Text(
-                                                'العون ($name) لم يسجل حضوره اليوم بعد (لا تتوفر إحداثيات GPS مباشرة)',
+                                                loc.isArabic
+                                                    ? 'العون ($name) لم يسجل حضوره اليوم بعد (لا تتوفر إحداثيات GPS مباشرة)'
+                                                    : 'L\'agent ($name) n\'a pas encore pointé aujourd\'hui',
                                                 style: const TextStyle(
                                                   fontFamily: 'Tajawal',
                                                   color: Colors.white,
@@ -1276,24 +1318,38 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     );
   }
 
-  String _getInspectorateLabel(String id) {
-    if (id == 'الكل') return '📌 كل ولاية سطيف';
+  String _getInspectorateLabel(String id, AppLocalizations loc) {
+    if (id == 'الكل') return loc.isArabic ? '📌 كل ولاية سطيف' : '📌 Toute la Wilaya';
     final matches = AppConstants.allInspectorates.where((i) => i.id == id);
     if (matches.isNotEmpty) {
       final insp = matches.first;
-      String cleanName = insp.nameAr;
-      if (insp.isMainDirectorate) {
-        cleanName = '🏢 المقر الرئيسي (المعبودة)';
-      } else if (cleanName.contains('مطار')) {
-        cleanName = '✈️ مطار 8 ماي (عين أرنات)';
-      } else if (cleanName.contains('المفتشية الإقليمية للتجارة — ')) {
-        cleanName = '🏛️ مفتشية ${cleanName.replaceAll('المفتشية الإقليمية للتجارة — ', '')}';
-      } else if (cleanName.contains('الملحقة التجارية — ')) {
-        cleanName = '🏪 ملحقة ${cleanName.replaceAll('الملحقة التجارية — ', '')}';
+      if (loc.isArabic) {
+        String cleanName = insp.nameAr;
+        if (insp.isMainDirectorate) {
+          cleanName = '🏢 المقر الرئيسي (المعبودة)';
+        } else if (cleanName.contains('مطار')) {
+          cleanName = '✈️ مطار 8 ماي (عين أرنات)';
+        } else if (cleanName.contains('المفتشية الإقليمية للتجارة — ')) {
+          cleanName = '🏛️ مفتشية ${cleanName.replaceAll('المفتشية الإقليمية للتجارة — ', '')}';
+        } else if (cleanName.contains('الملحقة التجارية — ')) {
+          cleanName = '🏪 ملحقة ${cleanName.replaceAll('الملحقة التجارية — ', '')}';
+        }
+        return cleanName;
+      } else {
+        String cleanName = insp.nameFr;
+        if (insp.isMainDirectorate) {
+          cleanName = '🏢 Siège Principal (Maabouda)';
+        } else if (cleanName.contains('Aéroport')) {
+          cleanName = '✈️ Aéroport 8 Mai (Ain Arnat)';
+        } else if (cleanName.contains('Inspection Territoriale — ')) {
+          cleanName = '🏛️ Insp. ${cleanName.replaceAll('Inspection Territoriale — ', '')}';
+        } else if (cleanName.contains('Annexe — ')) {
+          cleanName = '🏪 Annexe ${cleanName.replaceAll('Annexe — ', '')}';
+        }
+        return cleanName;
       }
-      return cleanName;
     }
-    return '📌 كل ولاية سطيف';
+    return loc.isArabic ? '📌 كل ولاية سطيف' : '📌 Toute la Wilaya';
   }
 
   void _selectInspectorate(String id) {
@@ -1311,8 +1367,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   Widget _searchAgentButton({bool isCompact = false}) {
+    final loc = AppLocalizations.of(context);
     return Tooltip(
-      message: 'بحث سريع عن عون رقابة',
+      message: loc.isArabic ? 'بحث سريع عن عون رقابة' : 'Rechercher un agent',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -1337,9 +1394,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 const Icon(Icons.person_search, size: 16, color: Color(0xFFD4AF37)),
                 if (!isCompact) ...[
                   const SizedBox(width: 6),
-                  const Text(
-                    'بحث عن عون...',
-                    style: TextStyle(
+                  Text(
+                    loc.isArabic ? 'بحث عن عون...' : 'Recherche...',
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -1356,9 +1413,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   Widget _hqSelectorDropdown({bool isCompact = false}) {
-    final currentLabel = _getInspectorateLabel(_selectedInspectorateId);
+    final loc = AppLocalizations.of(context);
+    final currentLabel = _getInspectorateLabel(_selectedInspectorateId, loc);
     return PopupMenuButton<String>(
-      tooltip: 'اختيار المقر أو المفتشية الإقليمية',
+      tooltip: loc.isArabic ? 'اختيار المقر أو المفتشية الإقليمية' : 'Sélectionner le siège ou l\'inspection',
       offset: const Offset(0, 42),
       color: const Color(0xFF1E0B26),
       shape: RoundedRectangleBorder(
@@ -1373,10 +1431,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
             children: [
               const Icon(Icons.public, color: Color(0xFFD4AF37), size: 18),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  '📌 كامل ولاية سطيف (الكل)',
-                  style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                  loc.isArabic ? '📌 كامل ولاية سطيف (الكل)' : '📌 Toute la Wilaya de Sétif',
+                  style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
                 ),
               ),
               if (_selectedInspectorateId == 'الكل')
@@ -1387,7 +1445,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         const PopupMenuDivider(height: 1),
         ...AppConstants.allInspectorates.map((insp) {
           final isSelected = _selectedInspectorateId == insp.id;
-          final label = _getInspectorateLabel(insp.id);
+          final label = _getInspectorateLabel(insp.id, loc);
           final IconData icon = insp.isMainDirectorate
               ? Icons.account_balance
               : (insp.nameAr.contains('مطار') ? Icons.flight : Icons.apartment);
@@ -1412,7 +1470,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                         ),
                       ),
                       Text(
-                        'نطاق البصمة: ${insp.radiusMeters.round()}م',
+                        loc.isArabic
+                            ? 'نطاق البصمة: ${insp.radiusMeters.round()}م'
+                            : 'Rayon GPS : ${insp.radiusMeters.round()}m',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.TextSecondary),
                       ),
                     ],
@@ -1465,6 +1525,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   Widget _mapStyleSwitcher({bool isCompact = false}) {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
@@ -1480,8 +1541,8 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _styleChip('satellite', isCompact ? '🛰️' : 'أقمار صناعية'),
-          _styleChip('osm', isCompact ? '🗺️' : 'خريطة الشوارع'),
+          _styleChip('satellite', isCompact ? '🛰️' : (loc.isArabic ? 'أقمار صناعية' : 'Satellite')),
+          _styleChip('osm', isCompact ? '🗺️' : (loc.isArabic ? 'خريطة الشوارع' : 'Rues')),
         ],
       ),
     );
@@ -1505,7 +1566,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         children: [
           _legend(loc.inField, inFieldCount, AppTheme.SuccessColor),
           const SizedBox(width: 12),
-          _legend('معاينات اليوم', visitsCount, const Color(0xFF38BDF8)),
+          _legend(loc.isArabic ? 'معاينات اليوم' : 'Visites du jour', visitsCount, const Color(0xFF38BDF8)),
           const SizedBox(width: 12),
           _legend(loc.absent, absentCount, AppTheme.DangerColor),
           const SizedBox(width: 10),
@@ -1561,6 +1622,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   }
 
   void _showInspectorateHQModal(InspectorateHQ insp) {
+    final loc = AppLocalizations.of(context);
     final assignedEmps = _mapData.where((e) {
       final isAssigned = _isEmployeeAssignedToHQ(e, insp);
       final lat = (e['latitude'] as num?)?.toDouble();
@@ -1597,7 +1659,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
           if (currentFilter == 'absent') displayedList = absent;
 
           return Directionality(
-            textDirection: TextDirection.rtl,
+            textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
             child: Container(
               height: MediaQuery.of(context).size.height * 0.85,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -1643,7 +1705,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              insp.nameAr,
+                              loc.isArabic ? insp.nameAr : insp.nameFr,
                               style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontSize: 16,
@@ -1652,7 +1714,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                               ),
                             ),
                             Text(
-                              '${insp.nameFr} • نطاق الحضور: ${insp.radiusMeters.round()}م',
+                              loc.isArabic
+                                  ? '${insp.nameFr} • نطاق الحضور: ${insp.radiusMeters.round()}م'
+                                  : '${insp.nameAr} • Rayon GPS : ${insp.radiusMeters.round()}m',
                               style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontSize: 11,
@@ -1681,10 +1745,10 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _hqStatItem('الأعوان المعينين', '${assignedEmps.length}', Colors.white),
-                        _hqStatItem('حاضرون بالمقر', '${presentInHQ.length}', const Color(0xFF10B981)),
-                        _hqStatItem('في الميدان', '${inField.length}', const Color(0xFF38BDF8)),
-                        _hqStatItem('غائبون', '${absent.length}', const Color(0xFFF87171)),
+                        _hqStatItem(loc.isArabic ? 'الأعوان المعينين' : 'Effectif', '${assignedEmps.length}', Colors.white),
+                        _hqStatItem(loc.isArabic ? 'حاضرون بالمقر' : 'Au siège', '${presentInHQ.length}', const Color(0xFF10B981)),
+                        _hqStatItem(loc.isArabic ? 'في الميدان' : 'Terrain', '${inField.length}', const Color(0xFF38BDF8)),
+                        _hqStatItem(loc.isArabic ? 'غائبون' : 'Absents', '${absent.length}', const Color(0xFFF87171)),
                       ],
                     ),
                   ),
@@ -1695,13 +1759,13 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildFilterChip('الكل (${assignedEmps.length})', 'all', currentFilter, (v) => setModalState(() => currentFilter = v)),
+                        _buildFilterChip(loc.isArabic ? 'الكل (${assignedEmps.length})' : 'Tous (${assignedEmps.length})', 'all', currentFilter, (v) => setModalState(() => currentFilter = v)),
                         const SizedBox(width: 6),
-                        _buildFilterChip('حاضرون بالمقر (${presentInHQ.length})', 'present', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF10B981)),
+                        _buildFilterChip(loc.isArabic ? 'حاضرون بالمقر (${presentInHQ.length})' : 'Au siège (${presentInHQ.length})', 'present', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF10B981)),
                         const SizedBox(width: 6),
-                        _buildFilterChip('في الميدان (${inField.length})', 'field', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF38BDF8)),
+                        _buildFilterChip(loc.isArabic ? 'في الميدان (${inField.length})' : 'Terrain (${inField.length})', 'field', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF38BDF8)),
                         const SizedBox(width: 6),
-                        _buildFilterChip('غائبون (${absent.length})', 'absent', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFFF87171)),
+                        _buildFilterChip(loc.isArabic ? 'غائبون (${absent.length})' : 'Absents (${absent.length})', 'absent', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFFF87171)),
                       ],
                     ),
                   ),
@@ -1716,9 +1780,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                               children: [
                                 Icon(Icons.people_outline, color: Colors.white.withValues(alpha: 0.3), size: 40),
                                 const SizedBox(height: 8),
-                                const Text(
-                                  'لا يوجد أعوان في هذا التصنيف حالياً',
-                                  style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 13),
+                                Text(
+                                  loc.isArabic ? 'لا يوجد أعوان في هذا التصنيف حالياً' : 'Aucun agent dans cette catégorie',
+                                  style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 13),
                                 ),
                               ],
                             ),
@@ -1732,21 +1796,21 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                               final isAbs = absent.contains(emp);
 
                               Color statusColor = const Color(0xFF10B981);
-                              String statusText = 'حاضر بالمقر';
+                              String statusText = loc.isArabic ? 'حاضر بالمقر' : 'Au siège';
                               IconData statusIcon = Icons.check_circle;
 
                               if (isField) {
                                 statusColor = const Color(0xFF38BDF8);
-                                statusText = 'في مهمة ميدانية';
+                                statusText = loc.isArabic ? 'في مهمة ميدانية' : 'En mission';
                                 statusIcon = Icons.explore;
                               } else if (isAbs) {
                                 statusColor = const Color(0xFFF87171);
-                                statusText = 'غائب (لم يسجل)';
+                                statusText = loc.isArabic ? 'غائب (لم يسجل)' : 'Absent';
                                 statusIcon = Icons.cancel;
                               }
 
-                              final name = (emp['name'] ?? emp['NomAr'] ?? emp['Nom'] ?? 'مفتش').toString();
-                              final grade = (emp['grade'] ?? emp['Grade'] ?? 'مفتش رئيسي').toString();
+                              final name = (emp['name'] ?? emp['NomAr'] ?? emp['Nom'] ?? (loc.isArabic ? 'مفتش' : 'Agent')).toString();
+                              final grade = (emp['grade'] ?? emp['Grade'] ?? (loc.isArabic ? 'مفتش رئيسي' : 'Inspecteur')).toString();
                               final service = (emp['service'] ?? emp['Service'] ?? '').toString();
 
                               return InkWell(
@@ -1843,9 +1907,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                               _mapController.move(LatLng(insp.latitude, insp.longitude), 16.0);
                             },
                             icon: const Icon(Icons.center_focus_strong, color: Colors.black, size: 16),
-                            label: const Text(
-                              'تركيز الخريطة',
-                              style: TextStyle(
+                            label: Text(
+                              loc.isArabic ? 'تركيز الخريطة' : 'Centrer la carte',
+                              style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
@@ -1869,9 +1933,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                               QRCodeScreen.showOfficialBadge(context, insp);
                             },
                             icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37), size: 16),
-                            label: const Text(
-                              'الشارة الرقمية (QR)',
-                              style: TextStyle(
+                            label: Text(
+                              loc.isArabic ? 'الشارة الرقمية (QR)' : 'Badge numérique (QR)',
+                              style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,

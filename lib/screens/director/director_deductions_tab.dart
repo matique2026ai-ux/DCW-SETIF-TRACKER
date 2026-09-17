@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
+import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
 
 class DirectorDeductionsTab extends StatefulWidget {
@@ -48,6 +49,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   Future<void> _updateGraceTime(String newTime) async {
+    final loc = AppLocalizations.of(context);
     try {
       final api = context.read<AuthService>().api;
       await api.updateSetting('morning_grace_time', newTime);
@@ -57,7 +59,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         setState(() => _delaysSummary = delays);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم تعديل فترة التسامح الصباحية إلى $newTime وتحديث حساب التأخرات'),
+            content: Text(
+              loc.isArabic
+                  ? '✅ تم تعديل فترة التسامح الصباحية إلى $newTime وتحديث حساب التأخرات'
+                  : '✅ Tolérance matinale modifiée à $newTime et retards recalculés',
+            ),
             backgroundColor: AppTheme.SuccessColor,
           ),
         );
@@ -72,10 +78,19 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   void _showDirectorOrderModal(Map<String, dynamic> employee) {
+    final loc = AppLocalizations.of(context);
     final name = '${employee['NomAr'] ?? employee['Nom'] ?? ''} ${employee['PrenomAr'] ?? employee['Prenom'] ?? ''}';
     final empId = employee['Id'] ?? employee['id'];
-    final subjectCtrl = TextEditingController(text: 'استفسار وأمر بالانضباط حول الحضور والمردودية');
-    final detailsCtrl = TextEditingController(text: 'بناءً على المعطيات الرقابية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف المذكور مع منحه 48 ساعة للرد.');
+    final subjectCtrl = TextEditingController(
+      text: loc.isArabic
+          ? 'استفسار وأمر بالانضباط حول الحضور والمردودية'
+          : 'Demande d\'explications et ordre de discipline',
+    );
+    final detailsCtrl = TextEditingController(
+      text: loc.isArabic
+          ? 'بناءً على المعطيات الرقابية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف المذكور مع منحه 48 ساعة للرد.'
+          : 'Sur la base des données de contrôle, le bureau du personnel est chargé d\'adresser une demande d\'explications officielle à l\'agent concerné (délai de réponse: 48h).',
+    );
 
     showDialog(
       context: context,
@@ -91,7 +106,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'أمر بتوجيه استفسار — $name',
+                loc.isArabic ? 'أمر بتوجيه استفسار — $name' : 'Ordre d\'explications — $name',
                 style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
@@ -106,16 +121,18 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'المدير الولائي يكلف مكتب المستخدمين بإصدار استفسار كتابي رسمي للموظف عبر التطبيق:',
-              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+            Text(
+              loc.isArabic
+                  ? 'المدير الولائي يكلف مكتب المستخدمين بإصدار استفسار كتابي رسمي للموظف عبر التطبيق:'
+                  : 'Le Directeur de Wilaya charge le bureau du personnel d\'émettre une demande d\'explications officielle via l\'application :',
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: subjectCtrl,
-              textDirection: TextDirection.rtl,
+              textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: 'الموضوع',
+                labelText: loc.isArabic ? 'الموضوع' : 'Objet',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37)),
                 filled: true,
                 fillColor: Colors.black26,
@@ -126,9 +143,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             TextField(
               controller: detailsCtrl,
               maxLines: 3,
-              textDirection: TextDirection.rtl,
+              textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: 'تعليمات وتفاصيل الاستفسار',
+                labelText: loc.isArabic ? 'تعليمات وتفاصيل الاستفسار' : 'Instructions et détails',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
                 filled: true,
                 fillColor: Colors.black26,
@@ -140,7 +157,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dlgCtx),
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+            child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -159,7 +176,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('✅ تم تكليف مكتب المستخدمين بإصدار الاستفسار لـ $name'),
+                    content: Text(
+                      loc.isArabic
+                          ? '✅ تم تكليف مكتب المستخدمين بإصدار الاستفسار لـ $name'
+                          : '✅ Demande d\'explications transmise au bureau du personnel pour $name',
+                    ),
                     backgroundColor: AppTheme.SuccessColor,
                   ),
                 );
@@ -176,7 +197,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('إصدار الأمر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            child: Text(loc.isArabic ? 'إصدار الأمر' : 'Émettre l\'ordre', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -188,6 +209,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
     }
+    final loc = AppLocalizations.of(context);
 
     final answeredInquiries = _inquiries.where((i) => i['Status'] == 'answered').toList();
     final decidedInquiries = _inquiries.where((i) => ['justified', 'warning', 'deduction_ordered', 'executed'].contains(i['Status'])).toList();
@@ -226,10 +248,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                       child: const Icon(Icons.tune, color: Color(0xFFD4AF37), size: 20),
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'فترة التسامح الصباحية (Tolérance)',
-                        style: TextStyle(
+                        loc.isArabic ? 'فترة التسامح الصباحية (Tolérance)' : 'Tolérance Matinale (Tolérance)',
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -256,12 +278,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                             color: Color(0xFFD4AF37),
                             fontSize: 13,
                           ),
-                          items: const [
-                            DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
-                            DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
-                            DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
-                            DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
-                            DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
+                          items: [
+                            DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 ص' : '08:15')),
+                            DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 ص' : '08:30')),
+                            DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 ص (الموصى بها)' : '08:45 (Recommandée)')),
+                            DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 ص (مرونة قصوى)' : '09:00 (Flexibilité Max)')),
+                            DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 ص' : '09:15')),
                           ],
                           onChanged: (val) {
                             if (val != null && val != _morningGraceTime) {
@@ -275,7 +297,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'التوقيت الحالي: $_morningGraceTime ص — التأخرات الصباحية تُحسب بعده مباشرة.',
+                  loc.isArabic
+                      ? 'التوقيت الحالي: $_morningGraceTime ص — التأخرات الصباحية تُحسب بعده مباشرة.'
+                      : 'Heure actuelle : $_morningGraceTime — Les retards sont comptabilisés au-delà.',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 11,
@@ -303,7 +327,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'سجل النظام ${_delaysSummary.where((d) => ((d['lateDaysCount'] as num?)?.toInt() ?? 0) > 0).length} موظفين تجاوزوا موعد التسامح ($_morningGraceTime) هذا الشهر.',
+                      loc.isArabic
+                          ? 'سجل النظام ${_delaysSummary.where((d) => ((d['lateDaysCount'] as num?)?.toInt() ?? 0) > 0).length} موظفين تجاوزوا موعد التسامح ($_morningGraceTime) هذا الشهر.'
+                          : 'Le système enregistre ${_delaysSummary.where((d) => ((d['lateDaysCount'] as num?)?.toInt() ?? 0) > 0).length} agent(s) ayant dépassé la tolérance ($_morningGraceTime) ce mois-ci.',
                       style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white),
                     ),
                   ),
@@ -319,9 +345,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             child: ElevatedButton.icon(
               onPressed: () => _showEmployeePicker(),
               icon: const Icon(Icons.person_search, color: Colors.black),
-              label: const Text(
-                'طلب توجيه استفسار كتابي لموظف محدد',
-                style: TextStyle(
+              label: Text(
+                loc.isArabic ? 'طلب توجيه استفسار كتابي لموظف محدد' : "Ordonner une demande d'explications",
+                style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -343,13 +369,17 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             children: [
               const Icon(Icons.rate_review, color: Colors.cyanAccent, size: 22),
               const SizedBox(width: 8),
-              Text(
-                'ملفات الاستفسارات التي تم الرد عليها وبانتظار قراركم السيادي (${answeredInquiries.length})',
-                style: const TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Expanded(
+                child: Text(
+                  loc.isArabic
+                      ? 'ملفات الاستفسارات التي تم الرد عليها وبانتظار قراركم السيادي (${answeredInquiries.length})'
+                      : "Demandes d'explications répondues en attente de décision (${answeredInquiries.length})",
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -364,10 +394,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white12),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'لا توجد ردود جديدة معلقة — كافة الملفات تمت معالجتها واتخاذ القرارات بشأنها ✨',
-                  style: TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
+                  loc.isArabic
+                      ? 'لا توجد ردود جديدة معلقة — كافة الملفات تمت معالجتها واتخاذ القرارات بشأنها ✨'
+                      : 'Aucun dossier en attente — Toutes les réponses ont été traitées ✨',
+                  style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
                 ),
               ),
             )
@@ -382,13 +414,17 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               children: [
                 const Icon(Icons.timer_outlined, color: AppTheme.WarningColor, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'استفسارات موجهة بانتظار رد الموظف خلال 48 ساعة (${sentInquiries.length})',
-                  style: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white70,
+                Expanded(
+                  child: Text(
+                    loc.isArabic
+                        ? 'استفسارات موجهة بانتظار رد الموظف خلال 48 ساعة (${sentInquiries.length})'
+                        : 'Demandes envoyées en attente de réponse sous 48h (${sentInquiries.length})',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white70,
+                    ),
                   ),
                 ),
               ],
@@ -404,13 +440,17 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               children: [
                 const Icon(Icons.history, color: AppTheme.SuccessColor, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'سجل القرارات الصادرة والأوامر المنفذة (${decidedInquiries.length})',
-                  style: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white70,
+                Expanded(
+                  child: Text(
+                    loc.isArabic
+                        ? 'سجل القرارات الصادرة والأوامر المنفذة (${decidedInquiries.length})'
+                        : 'Historique des décisions et ordres exécutés (${decidedInquiries.length})',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white70,
+                    ),
                   ),
                 ),
               ],
@@ -426,32 +466,34 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 }
 
   Widget _buildInquiryCard(Map<String, dynamic> inq, {required bool isActionable}) {
+    final loc = AppLocalizations.of(context);
     final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
     final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
     final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
         ? '$nomAr $prenomAr'.trim()
-        : (inq['EmployeeName'] ?? inq['employee_name'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
+        : (inq['EmployeeName'] ?? inq['employee_name'] ?? (loc.isArabic ? 'عضو فرقة الرقابة والتفتيش' : 'Agent de contrôle')).toString();
     final status = (inq['Status'] ?? inq['status'] ?? 'sent').toString();
-    final service = (inq['Service'] ?? inq['service'] ?? 'مديرية التجارة لولاية سطيف').toString();
-    final subject = (inq['Subject'] ?? inq['subject'] ?? inq['Details'] ?? inq['details'] ?? 'استفسار إداري حول الانضباط ومواقيت العمل').toString();
+    final service = (inq['Service'] ?? inq['service'] ?? (loc.isArabic ? 'مديرية التجارة لولاية سطيف' : 'Direction du Commerce de Sétif')).toString();
+    final subject = (inq['Subject'] ?? inq['subject'] ?? inq['Details'] ?? inq['details'] ?? (loc.isArabic ? 'استفسار إداري حول الانضباط ومواقيت العمل' : 'Demande d\'explications sur la ponctualité')).toString();
 
     Color statusColor = AppTheme.WarningColor;
-    String statusText = 'بانتظار رد الموظف';
+    String statusText = loc.isArabic ? 'بانتظار رد الموظف' : 'En attente de réponse';
     if (status == 'answered') {
       statusColor = Colors.cyan;
-      statusText = 'تم الرد — اضغط للفصل في الملف 👈';
+      statusText = loc.isArabic ? 'تم الرد — اضغط للفصل في الملف 👈' : 'Répondu — Cliquez pour statuer 👈';
     } else if (status == 'justified') {
       statusColor = AppTheme.SuccessColor;
-      statusText = '✅ تم قبول التبرير وحفظ الملف';
+      statusText = loc.isArabic ? '✅ تم قبول التبرير وحفظ الملف' : '✅ Justification acceptée / Classé';
     } else if (status == 'warning') {
       statusColor = Colors.orange;
-      statusText = '⚠️ تم توجيه تنبيه إداري';
+      statusText = loc.isArabic ? '⚠️ تم توجيه تنبيه إداري' : '⚠️ Avertissement administratif';
     } else if (status == 'deduction_ordered') {
       statusColor = AppTheme.DangerColor;
-      statusText = '❌ قرار خصم (${inq['DeductionDays'] ?? inq['deductiondays'] ?? 1} يوم) محال للمستخدمين';
+      final days = inq['DeductionDays'] ?? inq['deductiondays'] ?? 1;
+      statusText = loc.isArabic ? '❌ قرار خصم ($days يوم) محال للمستخدمين' : '❌ Déduction ($days j) transmise';
     } else if (status == 'executed') {
       statusColor = Colors.green;
-      statusText = '✔️ تم الخصم في الراتب';
+      statusText = loc.isArabic ? '✔️ تم الخصم في الراتب' : '✔️ Déduit sur la paie';
     }
 
     return GestureDetector(
@@ -549,15 +591,16 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   void _showInquiryDossier(Map<String, dynamic> inq) {
+    final loc = AppLocalizations.of(context);
     final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
     final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
     final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
         ? '$nomAr $prenomAr'.trim()
-        : (inq['EmployeeName'] ?? inq['employee_name'] ?? 'عضو فرقة الرقابة والتفتيش').toString();
-    final service = (inq['Service'] ?? inq['service'] ?? 'مديرية التجارة سطيف').toString();
+        : (inq['EmployeeName'] ?? inq['employee_name'] ?? (loc.isArabic ? 'عضو فرقة الرقابة والتفتيش' : 'Agent de contrôle')).toString();
+    final service = (inq['Service'] ?? inq['service'] ?? (loc.isArabic ? 'مديرية التجارة سطيف' : 'Direction du Commerce Sétif')).toString();
     final status = (inq['Status'] ?? inq['status'] ?? 'sent').toString();
     final rawDate = (inq['IncidentDate'] ?? inq['incidentdate'] ?? inq['Date'] ?? inq['date'] ?? inq['CreatedAt'] ?? '').toString();
-    final dateStr = rawDate.length >= 10 ? rawDate.substring(0, 10) : (rawDate.isNotEmpty ? rawDate : 'اليوم');
+    final dateStr = rawDate.length >= 10 ? rawDate.substring(0, 10) : (rawDate.isNotEmpty ? rawDate : (loc.isArabic ? 'اليوم' : 'Aujourd\'hui'));
     final reply = inq['EmployeeReply'] ?? inq['employeereply'] ?? inq['Reply'] ?? inq['reply'];
     final int lateMins = ((inq['LateMinutes'] ?? inq['lateminutes'] ?? 0) as num).toInt();
     final bool hasLateMins = lateMins > 0;
@@ -601,13 +644,13 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     child: const Icon(Icons.gavel, color: Color(0xFFD4AF37), size: 22),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ملف الاستفسار واتخاذ القرار السيادي للمدير',
-                          style: TextStyle(
+                          loc.isArabic ? 'ملف الاستفسار واتخاذ القرار السيادي للمدير' : 'Dossier d\'explications & Décision souveraine',
+                          style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -615,8 +658,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                           ),
                         ),
                         Text(
-                          'Dossier Disciplinaire & Pouvoir d\'Appréciation - المدير الولائي الآمر بالصرف',
-                          style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.TextSecondary),
+                          loc.isArabic
+                              ? 'Dossier Disciplinaire & Pouvoir d\'Appréciation - المدير الولائي الآمر بالصرف'
+                              : 'Dossier Disciplinaire & Pouvoir d\'Appréciation - Directeur Ordonnateur',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.TextSecondary),
                         ),
                       ],
                     ),
@@ -666,7 +711,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'تاريخ الواقعة: $dateStr  ${hasLateMins ? " | تأخر: $lateMins دقيقة" : ""}',
+                                loc.isArabic
+                                    ? 'تاريخ الواقعة: $dateStr  ${hasLateMins ? " | تأخر: $lateMins دقيقة" : ""}'
+                                    : 'Date: $dateStr  ${hasLateMins ? " | Retard: $lateMins min" : ""}',
                                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
                               ),
                             ],
@@ -703,13 +750,17 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               size: 18,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              hasReply ? 'رد وتبريرات الموظف الرسمية:' : 'الموظف لم يرسل رده بعد (ضمن مهلة 48 ساعة)',
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: hasReply ? Colors.cyanAccent : Colors.orange,
+                            Expanded(
+                              child: Text(
+                                hasReply
+                                    ? (loc.isArabic ? 'رد وتبريرات الموظف الرسمية:' : 'Réponse et justifications écrites :')
+                                    : (loc.isArabic ? 'الموظف لم يرسل رده بعد (ضمن مهلة 48 ساعة)' : 'En attente de réponse (délai légal de 48h)'),
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: hasReply ? Colors.cyanAccent : Colors.orange,
+                                ),
                               ),
                             ),
                           ],
@@ -718,7 +769,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         Text(
                           hasReply
                               ? '$reply'
-                              : 'بانتظار إدخال الموظف لمبرراته عبر التطبيق أو تقديم وثيقة رسمية.',
+                              : (loc.isArabic
+                                  ? 'بانتظار إدخال الموظف لمبرراته عبر التطبيق أو تقديم وثيقة رسمية.'
+                                  : 'En attente des explications de l\'agent via l\'application ou document officiel.'),
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 12,
@@ -733,9 +786,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   const SizedBox(height: 14),
 
                   // 4 Digital Evidence Cards
-                  const Text(
-                    'أدلة وقرائن الإثبات الرقمية (GPS & الحضور):',
-                    style: TextStyle(
+                  Text(
+                    loc.isArabic ? 'أدلة وقرائن الإثبات الرقمية (GPS & الحضور):' : 'Preuves et constats numériques (GPS & Pointage) :',
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -745,19 +798,29 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   const SizedBox(height: 8),
                   _evidenceCard(
                     icon: Icons.timer_off_outlined,
-                    title: '1. موعد الانطلاق وفترة التسامح ($_morningGraceTime)',
+                    title: loc.isArabic
+                        ? '1. موعد الانطلاق وفترة التسامح ($_morningGraceTime)'
+                        : '1. Départ et heure de tolérance ($_morningGraceTime)',
                     desc: hasLateMins
-                        ? 'تجاوز فترة التسامح الصباحية بمقدار $lateMins دقيقة تأخر.'
-                        : 'عدم تسجيل حضور في النطاق الجغرافي المحدد.',
-                    status: hasLateMins ? '$lateMins دقيقة تأخر ⚠️' : 'غير مسجل ❌',
+                        ? (loc.isArabic
+                            ? 'تجاوز فترة التسامح الصباحية بمقدار $lateMins دقيقة تأخر.'
+                            : 'Dépassement de la tolérance matinale de $lateMins min.')
+                        : (loc.isArabic
+                            ? 'عدم تسجيل حضور في النطاق الجغرافي المحدد.'
+                            : 'Aucun pointage dans le périmètre géographique requis.'),
+                    status: hasLateMins
+                        ? (loc.isArabic ? '$lateMins دقيقة تأخر ⚠️' : '$lateMins min retard ⚠️')
+                        : (loc.isArabic ? 'غير مسجل ❌' : 'Non pointé ❌'),
                     statusColor: hasLateMins ? AppTheme.WarningColor : AppTheme.DangerColor,
                   ),
                   const SizedBox(height: 6),
                   _evidenceCard(
                     icon: Icons.storefront_outlined,
-                    title: '2. المردودية والزيارات الميدانية',
-                    desc: 'سجل الزيارات والمعاينات التجارية والمحاضر الرقابية في هذا التاريخ.',
-                    status: '0 زيارات ❌',
+                    title: loc.isArabic ? '2. المردودية والزيارات الميدانية' : '2. Rendement et visites de contrôle',
+                    desc: loc.isArabic
+                        ? 'سجل الزيارات والمعاينات التجارية والمحاضر الرقابية في هذا التاريخ.'
+                        : 'Registre des visites commerciales et PV établis à cette date.',
+                    status: loc.isArabic ? '0 زيارات ❌' : '0 visites ❌',
                     statusColor: AppTheme.DangerColor,
                   ),
 
@@ -767,9 +830,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   OutlinedButton.icon(
                     onPressed: () => InquiryLetterDialog.show(context, inq),
                     icon: const Icon(Icons.picture_as_pdf, color: Color(0xFFD4AF37)),
-                    label: const Text(
-                      'معاينة استمارة الاستفسار الإداري الرسمية',
-                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                    label: Text(
+                      loc.isArabic ? 'معاينة استمارة الاستفسار الإداري الرسمية' : 'Aperçu du formulaire officiel de demande d\'explications',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFFD4AF37)),
@@ -782,9 +845,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
                   // Sovereign Decision Buttons for Director (if status == 'answered' or 'sent')
                   if (status == 'answered' || status == 'sent') ...[
-                    const Text(
-                      'القرار السيادي للمدير الولائي (صاحب السلطة والآمر بالصرف):',
-                      style: TextStyle(
+                    Text(
+                      loc.isArabic
+                          ? 'القرار السيادي للمدير الولائي (صاحب السلطة والآمر بالصرف):'
+                          : 'Décision souveraine du Directeur de Wilaya (Ordonnateur) :',
+                      style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -804,9 +869,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               parentCtx: ctx,
                             ),
                             icon: const Icon(Icons.check, size: 16),
-                            label: const Text(
-                              'قبول التبرير (حفظ)',
-                              style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                            label: Text(
+                              loc.isArabic ? 'قبول التبرير (حفظ)' : 'Accepter (Classer)',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.SuccessColor,
@@ -827,9 +892,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               parentCtx: ctx,
                             ),
                             icon: const Icon(Icons.warning_amber, size: 16),
-                            label: const Text(
-                              'توجيه إنذار',
-                              style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                            label: Text(
+                              loc.isArabic ? 'توجيه إنذار' : 'Avertissement',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orange,
@@ -849,9 +914,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               parentCtx: ctx,
                             ),
                             icon: const Icon(Icons.gavel, size: 16),
-                            label: const Text(
-                              'قرار خصم نافذ',
-                              style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                            label: Text(
+                              loc.isArabic ? 'قرار خصم نافذ' : 'Ordre de déduction',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.DangerColor,
@@ -876,8 +941,13 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   void _showDeductionDaysDialog({required int inquiryId, required String name, required BuildContext parentCtx}) {
+    final loc = AppLocalizations.of(context);
     double selectedDays = 1.0;
-    final notesCtrl = TextEditingController(text: 'خصم من الراتب لعدم كفاية التبريرات المسجلة بناءً على المقتضيات القانونية');
+    final notesCtrl = TextEditingController(
+      text: loc.isArabic
+          ? 'خصم من الراتب لعدم كفاية التبريرات المسجلة بناءً على المقتضيات القانونية'
+          : 'Déduction sur salaire pour justifications insuffisantes conformément à la réglementation',
+    );
 
     showDialog(
       context: context,
@@ -894,7 +964,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'إصدار قرار خصم نهائي — $name',
+                  loc.isArabic ? 'إصدار قرار خصم نهائي — $name' : 'Décision de déduction définitive — $name',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontWeight: FontWeight.bold,
@@ -909,28 +979,30 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'حدد عدد أيام الخصم الواجب اقتطاعها رسمياً وإحالتها لمكتب المستخدمين لتنفيذها في كشف الراتب:',
-                style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+              Text(
+                loc.isArabic
+                    ? 'حدد عدد أيام الخصم الواجب اقتطاعها رسمياً وإحالتها لمكتب المستخدمين لتنفيذها في كشف الراتب:'
+                    : 'Indiquez le nombre de jours à déduire officiellement sur la fiche de paie par le bureau du personnel :',
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
               ),
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ChoiceChip(
-                    label: const Text('نصف يوم (0.5)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                    label: Text(loc.isArabic ? 'نصف يوم (0.5)' : '0.5 jour', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                     selected: selectedDays == 0.5,
                     selectedColor: AppTheme.DangerColor,
                     onSelected: (val) => setDlgState(() => selectedDays = 0.5),
                   ),
                   ChoiceChip(
-                    label: const Text('يوم كامل (1.0)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                    label: Text(loc.isArabic ? 'يوم كامل (1.0)' : '1.0 jour', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                     selected: selectedDays == 1.0,
                     selectedColor: AppTheme.DangerColor,
                     onSelected: (val) => setDlgState(() => selectedDays = 1.0),
                   ),
                   ChoiceChip(
-                    label: const Text('يومان (2.0)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                    label: Text(loc.isArabic ? 'يومان (2.0)' : '2.0 jours', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                     selected: selectedDays == 2.0,
                     selectedColor: AppTheme.DangerColor,
                     onSelected: (val) => setDlgState(() => selectedDays = 2.0),
@@ -941,9 +1013,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               TextField(
                 controller: notesCtrl,
                 maxLines: 2,
-                textDirection: TextDirection.rtl,
+                textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
                 decoration: InputDecoration(
-                  labelText: 'ملاحظات وتوجيهات المدير لمكتب المستخدمين',
+                  labelText: loc.isArabic ? 'ملاحظات وتوجيهات المدير لمكتب المستخدمين' : 'Instructions du Directeur au bureau du personnel',
                   labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
                   filled: true,
                   fillColor: Colors.black26,
@@ -955,7 +1027,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dlgCtx),
-              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+              child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -972,7 +1044,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   );
                   messenger.showSnackBar(
                     SnackBar(
-                      content: Text('✅ تم إصدار قرار الخصم بمقدار $selectedDays يوم وإحالته لمكتب المستخدمين للتنفيذ الفوري'),
+                      content: Text(
+                        loc.isArabic
+                            ? '✅ تم إصدار قرار الخصم بمقدار $selectedDays يوم وإحالته لمكتب المستخدمين للتنفيذ الفوري'
+                            : '✅ Décision de déduction de $selectedDays jour(s) transmise au bureau du personnel',
+                      ),
                       backgroundColor: AppTheme.SuccessColor,
                     ),
                   );
@@ -984,7 +1060,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.DangerColor),
-              child: const Text('تأكيد وإصدار القرار النافذ', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              child: Text(
+                loc.isArabic ? 'تأكيد وإصدار القرار النافذ' : 'Confirmer la décision',
+                style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -998,6 +1077,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     required String name,
     required BuildContext parentCtx,
   }) async {
+    final loc = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final api = context.read<AuthService>().api;
     Navigator.pop(parentCtx);
@@ -1005,7 +1085,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       await api.submitDirectorDecision(inquiryId, decision);
       messenger.showSnackBar(
         SnackBar(
-          content: Text(decision == 'justified' ? '✅ تم قبول تبرير $name وحفظ الملف' : '⚠️ تم توجيه تنبيه إداري لـ $name'),
+          content: Text(
+            decision == 'justified'
+                ? (loc.isArabic ? '✅ تم قبول تبرير $name وحفظ الملف' : '✅ Justification acceptée pour $name (Classé)')
+                : (loc.isArabic ? '⚠️ تم توجيه تنبيه إداري لـ $name' : '⚠️ Avertissement administratif adressé à $name'),
+          ),
           backgroundColor: decision == 'justified' ? AppTheme.SuccessColor : Colors.orange,
         ),
       );
@@ -1075,6 +1159,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   void _showEmployeePicker() {
+    final loc = AppLocalizations.of(context);
     String searchQuery = '';
     showModalBottomSheet(
       context: context,
@@ -1083,10 +1168,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
           final filtered = _employees.where((e) {
-            final name = '${e['NomAr'] ?? e['Nom'] ?? ''} ${e['PrenomAr'] ?? e['Prenom'] ?? ''}'.toLowerCase();
+            final nameAr = '${e['NomAr'] ?? ''} ${e['PrenomAr'] ?? ''}'.toLowerCase();
+            final nameFr = '${e['Nom'] ?? ''} ${e['Prenom'] ?? ''}'.toLowerCase();
             final service = (e['Service'] ?? '').toString().toLowerCase();
             final q = searchQuery.trim().toLowerCase();
-            return name.contains(q) || service.contains(q);
+            return nameAr.contains(q) || nameFr.contains(q) || service.contains(q);
           }).toList();
 
           return Container(
@@ -1104,11 +1190,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   ),
                   child: Row(
                     children: [
-                      const Text(
-                        'اختر موظفاً لإصدار أمر استفسار بشأنه',
-                        style: TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                      Expanded(
+                        child: Text(
+                          loc.isArabic ? 'اختر موظفاً لإصدار أمر استفسار بشأنه' : 'Sélectionner un agent pour ordonner une demande',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
                       ),
-                      const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white70),
                         onPressed: () => Navigator.pop(ctx),
@@ -1119,10 +1206,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: TextField(
-                    textDirection: TextDirection.rtl,
+                    textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
                     onChanged: (val) => setSheetState(() => searchQuery = val),
                     decoration: InputDecoration(
-                      hintText: 'ابحث عن مفتش بالاسم أو المصلحة...',
+                      hintText: loc.isArabic ? 'ابحث عن مفتش بالاسم أو المصلحة...' : 'Rechercher un agent par nom ou service...',
                       hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white38),
                       prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
                       filled: true,
@@ -1137,9 +1224,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final e = filtered[index];
-                      final name = e['NomAr'] != null
-                          ? '${e['NomAr']} ${e['PrenomAr'] ?? ''}'
-                          : '${e['Nom'] ?? ''} ${e['Prenom'] ?? ''}';
+                      final name = loc.isArabic
+                          ? (e['NomAr'] != null ? '${e['NomAr']} ${e['PrenomAr'] ?? ''}'.trim() : '${e['Nom'] ?? ''} ${e['Prenom'] ?? ''}'.trim())
+                          : (e['Nom'] != null ? '${e['Nom']} ${e['Prenom'] ?? ''}'.trim() : '${e['NomAr'] ?? ''} ${e['PrenomAr'] ?? ''}'.trim());
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: AppTheme.PrimaryColor.withValues(alpha: 0.2),

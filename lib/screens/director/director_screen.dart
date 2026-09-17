@@ -40,7 +40,7 @@ class _DirectorScreenState extends State<DirectorScreen>
     final loc = AppLocalizations.of(context);
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
@@ -91,9 +91,9 @@ class _DirectorScreenState extends State<DirectorScreen>
                               width: 0.5,
                             ),
                           ),
-                          child: const Text(
-                            'الآمر بالصرف',
-                            style: TextStyle(
+                          child: Text(
+                            loc.isArabic ? 'الآمر بالصرف' : 'Ordonnateur',
+                            style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 9.5,
                               fontWeight: FontWeight.bold,
@@ -104,9 +104,9 @@ class _DirectorScreenState extends State<DirectorScreen>
                       ],
                     ),
                     const SizedBox(height: 1),
-                    const Text(
-                      'مديرية التجارة — ولاية سطيف',
-                      style: TextStyle(
+                    Text(
+                      loc.isArabic ? 'مديرية التجارة — ولاية سطيف' : 'Direction du Commerce — Wilaya de Sétif',
+                      style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 10.5,
                         color: Color(0xFFD4AF37),
