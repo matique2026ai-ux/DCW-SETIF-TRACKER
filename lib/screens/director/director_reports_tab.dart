@@ -567,11 +567,14 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       return nameAr.contains(q) || nameFr.contains(q) || service.contains(q) || matricule.contains(q);
     }).toList();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1080),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Date Selector & History Navigation Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1023,7 +1026,9 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                 ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   void _showAbsentEmployeeOptions(Map<String, dynamic> emp) {

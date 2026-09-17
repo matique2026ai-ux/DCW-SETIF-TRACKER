@@ -196,9 +196,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     return RefreshIndicator(
       onRefresh: _load,
       color: const Color(0xFFD4AF37),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1050),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
           // 1. Morning Grace Time Setting Header
           Container(
             padding: const EdgeInsets.all(16),
@@ -417,8 +420,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           ],
         ],
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildInquiryCard(Map<String, dynamic> inq, {required bool isActionable}) {
     final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
