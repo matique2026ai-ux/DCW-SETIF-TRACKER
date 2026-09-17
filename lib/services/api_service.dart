@@ -26,33 +26,56 @@ class ApiService {
   String _parseError(http.Response response, String defaultMessage) {
     try {
       final body = response.body.trim();
-      if (body.startsWith('<')) {
-        return '$defaultMessage (كود الخطأ: ${response.statusCode})';
-      }
-      final error = jsonDecode(body);
-      if (error is Map && error['error'] != null) {
-        return error['error'].toString();
-      }
-      if (error is Map && error['message'] != null) {
-        return error['message'].toString();
+      if (!body.startsWith('<')) {
+        final error = jsonDecode(body);
+        if (error is Map && error['error'] != null && error['error'].toString().isNotEmpty) {
+          return error['error'].toString();
+        }
+        if (error is Map && error['message'] != null && error['message'].toString().isNotEmpty) {
+          return error['message'].toString();
+        }
       }
     } catch (_) {}
+
+    if (response.statusCode == 401) {
+      return 'بيانات الدخول غير صحيحة أو انتهت صلاحية الجلسة';
+    }
+    if (response.statusCode == 403) {
+      return 'ليس لديك الصلاحية الكافية للقيام بهذا الإجراء الإداري';
+    }
+    if (response.statusCode == 404) {
+      return 'البيان أو المسار المطلوب غير متوفر';
+    }
+    if (response.statusCode >= 500) {
+      return 'تعذر إتمام العملية من الخادم (كود: ${response.statusCode})';
+    }
     return '$defaultMessage (كود: ${response.statusCode})';
   }
 
   Future<Map<String, dynamic>> login(String username, String password) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
+      ).timeout(const Duration(seconds: 15));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      _token = data['token'] as String;
-      return data;
-    } else {
-      throw Exception(_parseError(response, 'خطأ في تسجيل الدخول'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        _token = data['token'] as String;
+        return data;
+      } else {
+        throw Exception(_parseError(response, 'خطأ في تسجيل الدخول'));
+      }
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('TimeoutException') || msg.contains('timed out')) {
+        throw Exception('استغرق السيرفر وقتاً أطول للاستجابة، يرجى إعادة المحاولة');
+      }
+      if (msg.contains('SocketException') || msg.contains('ClientException') || msg.contains('Failed host lookup')) {
+        throw Exception('تعذر الاتصال بالخادم، يرجى التحقق من شبكة الإنترنت');
+      }
+      rethrow;
     }
   }
 
