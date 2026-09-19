@@ -163,12 +163,21 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final inField = _mapData
-        .where((e) => e['hasCheckedIn'] == true && e['isCheckedOut'] != true && (e['locationType'] == 'in_field' || (((e['visitsCount'] as num?)?.toInt() ?? 0) > 0)))
-        .toList();
-    final atHQ = _mapData
-        .where((e) => e['hasCheckedIn'] == true && e['isCheckedOut'] != true && e['locationType'] != 'in_field' && (((e['visitsCount'] as num?)?.toInt() ?? 0) == 0))
-        .toList();
+    final inField = _mapData.where((e) {
+      final bool checkedIn = e['hasCheckedIn'] == true;
+      final bool notCheckedOut = e['isCheckedOut'] != true;
+      final bool isFieldLoc = e['locationType'] == 'in_field';
+      final int visits = ((e['visitsCount'] as num?)?.toInt() ?? 0);
+      return checkedIn && notCheckedOut && (isFieldLoc || visits > 0);
+    }).toList();
+
+    final atHQ = _mapData.where((e) {
+      final bool checkedIn = e['hasCheckedIn'] == true;
+      final bool notCheckedOut = e['isCheckedOut'] != true;
+      final bool isFieldLoc = e['locationType'] == 'in_field';
+      final int visits = ((e['visitsCount'] as num?)?.toInt() ?? 0);
+      return checkedIn && notCheckedOut && (!isFieldLoc && visits == 0);
+    }).toList();
     final checkedOut = _mapData.where((e) => e['isCheckedOut'] == true).toList();
     final notRegistered = _mapData.where((e) => e['hasCheckedIn'] != true).toList();
 
