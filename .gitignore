@@ -60,3 +60,5 @@ app.*.map.json
 
 # Local DevTools configuration
 devtools_options.yaml
+
+build/
