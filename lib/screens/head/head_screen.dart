@@ -25,6 +25,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   List<Map<String, dynamic>> _programs = [];
   List<Map<String, dynamic>> _todayVisits = [];
   List<Map<String, dynamic>> _departmentInspectors = [];
+  List<Map<String, dynamic>> _allAvailableEmployees = [];
   String _inspectorSearchQuery = '';
   String _selectedBrigadeFilter = 'الكل';
 
@@ -128,6 +129,10 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
         final progs = await api.getPrograms(service: _departmentName);
         final visits = await api.getTodayVisits();
         final deptEmployees = await api.getEmployees(department: _departmentName);
+        List<Map<String, dynamic>> allEmps = [];
+        try {
+          allEmps = await api.getEmployees(all: true);
+        } catch (_) {}
 
         final List<Map<String, dynamic>> deptList = [];
         for (final emp in deptEmployees) {
@@ -159,6 +164,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
               return s.isEmpty || s.contains(_departmentName) || _departmentName.contains(s);
             }).toList();
             _departmentInspectors = deptList;
+            _allAvailableEmployees = allEmps;
             _isLoading = false;
           });
         }
@@ -1106,22 +1112,279 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   // COMMERCIAL & FRAUD SERVICES TABS
   // ==========================================
 
+  List<String> _getDepartmentBrigades() {
+    if (_departmentName.contains('المنافسة')) {
+      return [
+        'فرقة التحقيقات الاقتصادية وتتبع الفوترة 01',
+        'فرقة مراقبة الممارسات التجارية وهوامش الربح 02',
+        'فرقة تتبع مسالك التوزيع والمخازن 03',
+        'فرقة مكافحة المضاربة غير المشروعة 04',
+        'فرقة المداومة والمناوبة المسائية',
+        'احتياط المصلحة (بدون تعيين ميداني)',
+      ];
+    } else {
+      return [
+        'فرقة التدخل 01 (حي تبيانت والمركز)',
+        'فرقة التدخل 02 (المعبودة وسوق الجملة)',
+        'فرقة التدخل 03 (الهضاب والقطاع الشرقي)',
+        'فرقة التدخل 04 (المنطقة الحضرية الجديدة)',
+        'فرقة سحب العينات والمطابقة المخبرية (CACQE)',
+        'فرقة المداومة والمناوبة المسائية',
+        'احتياط المصلحة (بدون تعيين ميداني)',
+      ];
+    }
+  }
+
+  void _showAttachEmployeeDialog() {
+    final assignedIds = _departmentInspectors.map((e) => e['id']).toSet();
+    final available = _allAvailableEmployees.where((e) {
+      final id = int.tryParse('${e['Id'] ?? e['id'] ?? 0}') ?? 0;
+      return id > 0 && !assignedIds.contains(id);
+    }).toList();
+
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('جميع موظفي المديرية ملحقون بمصالحهم حالياً، أو يمكن إدراج عون جديد عبر مكتب المستخدمين.', style: TextStyle(fontFamily: 'Tajawal')),
+          backgroundColor: AppTheme.WarningColor,
+        ),
+      );
+      return;
+    }
+
+    int selectedEmpId = int.tryParse('${available.first['Id'] ?? available.first['id'] ?? 0}') ?? 0;
+    final brigades = _getDepartmentBrigades();
+    String selectedBrigade = brigades.first;
+    bool isLeader = false;
+    final positions = [
+      'مفتش ميداني',
+      'رئيس فرقة رقابية',
+      'عون مراقبة وتفتيش',
+      'محقق رئيسي للمنافسة',
+      'عضو فرقة تحقيق',
+      'مفتش سحب عينات ومطابقة',
+    ];
+    String selectedPosition = positions.first;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dlgCtx, setModalState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E102F),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.person_add_alt_1, color: Color(0xFFD4AF37), size: 22),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'إلحاق عون رقابة بالمصلحة',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    Text(
+                      'المصلحة المستقبلة: $_departmentName',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: Container(
+            constraints: const BoxConstraints(maxWidth: 480),
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'اختر العون من السجل الإداري العام للمديرية:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<int>(
+                    initialValue: selectedEmpId,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: available.map((emp) {
+                      final id = int.tryParse('${emp['Id'] ?? emp['id'] ?? 0}') ?? 0;
+                      final name = '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim();
+                      final grade = (emp['Grade'] ?? emp['FonctionExercee'] ?? '').toString().trim();
+                      final currentSvc = (emp['Service'] ?? 'غير معين').toString().trim();
+                      return DropdownMenuItem<int>(
+                        value: id,
+                        child: Text(
+                          '$name ($grade) • [حالياً: $currentSvc]',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => selectedEmpId = val);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'إسناد الفرقة الرقابية بالمصلحة:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedBrigade,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.groups, color: Color(0xFFD4AF37), size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: brigades.map((b) => DropdownMenuItem(
+                      value: b,
+                      child: Text(b, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => selectedBrigade = val);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'الوظيفة والمهمة الميدانية المسندة:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedPosition,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.work_outline, color: Color(0xFFD4AF37), size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: positions.map((p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(p, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => selectedPosition = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'تعيين كرئيس فرقة (Chef de brigade)',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    subtitle: const Text(
+                      'يمنحه شارة القيادة ⭐ وصلاحية قيادة الثنائي الميداني وتنسيق المحاضر',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white54),
+                    ),
+                    value: isLeader,
+                    activeThumbColor: const Color(0xFFD4AF37),
+                    onChanged: (val) => setModalState(() => isLeader = val),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dlgCtx),
+              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('تأكيد الإلحاق والتكليف', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              onPressed: () async {
+                final auth = context.read<AuthService>();
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(dlgCtx);
+                setState(() => _isLoading = true);
+
+                try {
+                  await auth.api.updateEmployeeAdminStatus(selectedEmpId, {
+                    'assignedDepartment': _departmentName,
+                    'brigadeName': selectedBrigade,
+                    'isBrigadeLeader': isLeader,
+                    'assignedPosition': selectedPosition,
+                  });
+                  await _loadAllData();
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('✅ تم إلحاق العون بمصلحة ($_departmentName) بنجاح وتعيين فرقته الرقابية', style: const TextStyle(fontFamily: 'Tajawal')),
+                      backgroundColor: AppTheme.SuccessColor,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  setState(() => _isLoading = false);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('خطأ أثناء إلحاق العون: $e', style: const TextStyle(fontFamily: 'Tajawal')),
+                      backgroundColor: AppTheme.DangerColor,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showEditBrigadeDialog(Map<String, dynamic> inspector) {
     final name = (inspector['name'] ?? 'مفتش').toString();
     final int id = inspector['id'] as int;
-    String currentBrigade = (inspector['brigade'] ?? 'فرقة التدخل 01 (حي تبيانت والمركز)').toString();
+    final defaultBrigades = _getDepartmentBrigades();
+    String currentBrigade = (inspector['brigade'] ?? defaultBrigades.first).toString();
     bool isLeader = inspector['isBrigadeLeader'] == true;
-
-    final defaultBrigades = [
-      'فرقة التدخل 01 (حي تبيانت والمركز)',
-      'فرقة التدخل 02 (المعبودة وسوق الجملة)',
-      'فرقة التدخل 03 (الهضاب والقطاع الشرقي)',
-      'فرقة التدخل 04 (المنطقة الحضرية الجديدة)',
-      'فرقة التحقيقات والفوترة ومسارات التوزيع',
-      'فرقة سحب العينات والمطابقة المخبرية',
-      'فرقة المداومة والمناوبة المسائية',
-      'احتياط المصلحة (بدون تعيين ميداني)',
+    final positions = [
+      'مفتش ميداني',
+      'رئيس فرقة رقابية',
+      'عون مراقبة وتفتيش',
+      'محقق رئيسي للمنافسة',
+      'عضو فرقة تحقيق',
+      'مفتش سحب عينات ومطابقة',
     ];
+    String currentPosition = (inspector['grade'] ?? positions.first).toString();
+    if (!positions.contains(currentPosition)) {
+      positions.insert(0, currentPosition);
+    }
 
     if (!defaultBrigades.contains(currentBrigade) && currentBrigade.isNotEmpty) {
       defaultBrigades.insert(0, currentBrigade);
@@ -1130,7 +1393,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
+        builder: (dlgCtx, setModalState) => AlertDialog(
           backgroundColor: AppTheme.CardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(
@@ -1185,6 +1448,30 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                     },
                   ),
                   const SizedBox(height: 14),
+                  const Text(
+                    'الوظيفة والمهمة الميدانية:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: currentPosition,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.work_outline, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: positions.map((p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(p, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => currentPosition = val);
+                    },
+                  ),
+                  const SizedBox(height: 14),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('تعيين كرئيس فرقة (Chef de brigade)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
@@ -1199,7 +1486,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(dlgCtx),
               child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
             ),
             ElevatedButton.icon(
@@ -1211,8 +1498,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                     'brigadeName': currentBrigade,
                     'isBrigadeLeader': isLeader,
                     'assignedDepartment': _departmentName,
+                    'assignedPosition': currentPosition,
                   });
-                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (dlgCtx.mounted) Navigator.pop(dlgCtx);
                   _loadAllData();
                   messenger.showSnackBar(
                     SnackBar(
@@ -1251,6 +1539,11 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     String assignmentMode = 'brigade';
     String? selectedBrigadeName;
     int? selectedInspectorId;
+    int? selectedLeaderId = _departmentInspectors.isNotEmpty
+        ? (_departmentInspectors.firstWhere((i) => i['isBrigadeLeader'] == true, orElse: () => _departmentInspectors.first)['id'] as int?)
+        : null;
+    final Set<int> selectedCompanionIds = {};
+    String transportMode = 'سيارة الخدمة التابعة للمديرية';
 
     final Map<String, List<Map<String, dynamic>>> brigadesMap = {};
     for (final emp in _departmentInspectors) {
@@ -1472,6 +1765,110 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                     ),
                   ],
                   const SizedBox(height: 12),
+                  const Text(
+                    'تعيين رئيس المهمة الرقابية (Chef de Mission) *:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFD4AF37)),
+                  ),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<int?>(
+                    initialValue: selectedLeaderId,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.star, color: Color(0xFFD4AF37), size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: _departmentInspectors.map((insp) {
+                      final id = insp['id'] as int;
+                      final name = (insp['name'] ?? '').toString();
+                      final grade = (insp['grade'] ?? '').toString();
+                      final isL = insp['isBrigadeLeader'] == true;
+                      return DropdownMenuItem<int?>(
+                        value: id,
+                        child: Text(
+                          '$name ($grade)${isL ? " ⭐ [رئيس فرقة]" : ""}',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11.5),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) => setModalState(() {
+                      selectedLeaderId = val;
+                      if (val != null) selectedCompanionIds.remove(val);
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'الأعوان المرافقون في المهمة (حدد الأعضاء):',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  if (_departmentInspectors.where((i) => i['id'] != selectedLeaderId).isEmpty)
+                    const Text('لا يوجد أعوان آخرون متاحون بالمصلحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white38))
+                  else
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _departmentInspectors.where((i) => i['id'] != selectedLeaderId).map((insp) {
+                        final id = insp['id'] as int;
+                        final isChosen = selectedCompanionIds.contains(id);
+                        return FilterChip(
+                          selected: isChosen,
+                          label: Text(
+                            insp['name']?.toString() ?? '',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              color: isChosen ? Colors.black : Colors.white70,
+                              fontWeight: isChosen ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                          selectedColor: const Color(0xFFD4AF37),
+                          backgroundColor: const Color(0xFF2D1035),
+                          checkmarkColor: Colors.black,
+                          onSelected: (selected) {
+                            setModalState(() {
+                              if (selected) {
+                                selectedCompanionIds.add(id);
+                              } else {
+                                selectedCompanionIds.remove(id);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'وسيلة التنقل والتدخل الميداني:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    initialValue: transportMode,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF2D1035),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.directions_car, color: AppTheme.AccentColor, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E0B26),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'سيارة الخدمة التابعة للمديرية', child: Text('سيارة الخدمة التابعة للمديرية')),
+                      DropdownMenuItem(value: 'دورية راجلة / تنقل حضري محلي', child: Text('دورية راجلة / تنقل حضري محلي')),
+                      DropdownMenuItem(value: 'حافلة النقل الجماعي أو قطار', child: Text('حافلة النقل الجماعي أو قطار')),
+                      DropdownMenuItem(value: 'سيارة خاصة مرخصة بمهمة', child: Text('سيارة خاصة مرخصة بمهمة')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => transportMode = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: titleCtrl,
                     textDirection: TextDirection.rtl,
@@ -1601,13 +1998,30 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   targetSummary = 'المفتش: ${insp['name'] ?? ''}';
                 }
 
-                final fullTitle = '[$programCategory] [$targetSummary] ${titleCtrl.text.trim()}';
+                final leaderInsp = _departmentInspectors.firstWhere((i) => i['id'] == selectedLeaderId, orElse: () => {});
+                final leaderName = (leaderInsp['name'] ?? '').toString();
+                final companionNames = _departmentInspectors
+                    .where((i) => selectedCompanionIds.contains(i['id']))
+                    .map((i) => (i['name'] ?? '').toString())
+                    .where((n) => n.isNotEmpty)
+                    .toList();
+
+                final fullTitle = '[$programCategory] [$targetSummary] ${leaderName.isNotEmpty ? "[رئيس المهمة: $leaderName] " : ""}${titleCtrl.text.trim()}';
+
+                final fullDescription = [
+                  if (leaderName.isNotEmpty) '👑 رئيس المهمة المكلف: $leaderName (${leaderInsp['grade'] ?? ''})',
+                  if (companionNames.isNotEmpty) '👥 الأعوان المرافقون: ${companionNames.join("، ")}',
+                  '🛡️ التكليف الرقابي: $targetSummary',
+                  '🚗 وسيلة التنقل: $transportMode',
+                  if (focusCtrl.text.trim().isNotEmpty) '🎯 المحاور الرقابية: ${focusCtrl.text.trim()}',
+                ].join('\n');
 
                 final auth = context.read<AuthService>();
                 final messenger = ScaffoldMessenger.of(context);
                 try {
                   await auth.api.createProgram(
                     title: fullTitle,
+                    description: fullDescription,
                     type: programDuration,
                     targetArea: areaCtrl.text.trim(),
                     targetType: targetActivity,
@@ -1822,6 +2236,22 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            if ((p['Description'] ?? p['description'] ?? '').toString().trim().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E0B26),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white10),
+                                ),
+                                child: Text(
+                                  (p['Description'] ?? p['description']).toString().trim(),
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Colors.white70, height: 1.4),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1989,6 +2419,56 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
     return Column(
       children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF240D2D),
+            border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'تعداد مفتشي المصلحة (${_departmentInspectors.length} مفتش)',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    Text(
+                      _departmentName,
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Color(0xFFD4AF37)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.person_add_alt_1, size: 15),
+                label: const Text(
+                  '+ إلحاق عون بالمصلحة',
+                  style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+                onPressed: _showAttachEmployeeDialog,
+              ),
+            ],
+          ),
+        ),
         Container(
           padding: const EdgeInsets.all(12),
           color: const Color(0xFF1E0B26),
