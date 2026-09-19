@@ -163,10 +163,14 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final present = _mapData
-        .where((e) => e['hasCheckedIn'] == true && e['isCheckedOut'] != true)
+    final inField = _mapData
+        .where((e) => e['hasCheckedIn'] == true && e['isCheckedOut'] != true && (e['locationType'] == 'in_field' || (((e['visitsCount'] as num?)?.toInt() ?? 0) > 0)))
         .toList();
-    final absent = _mapData.where((e) => e['hasCheckedIn'] != true).toList();
+    final atHQ = _mapData
+        .where((e) => e['hasCheckedIn'] == true && e['isCheckedOut'] != true && e['locationType'] != 'in_field' && (((e['visitsCount'] as num?)?.toInt() ?? 0) == 0))
+        .toList();
+    final checkedOut = _mapData.where((e) => e['isCheckedOut'] == true).toList();
+    final notRegistered = _mapData.where((e) => e['hasCheckedIn'] != true).toList();
 
     // Collect all visits markers
     final List<Marker> visitMarkers = [];
@@ -436,7 +440,14 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                         const SizedBox(width: 8),
                         _hqSelectorDropdown(isCompact: false),
                         const Spacer(),
-                        _statsCapsuleContent(loc, present.length, visitMarkers.length, absent.length),
+                        _statsCapsuleContent(
+                          loc,
+                          inFieldCount: inField.length,
+                          atHQCount: atHQ.length,
+                          visitsCount: visitMarkers.length,
+                          notRegisteredCount: notRegistered.length,
+                          checkedOutCount: checkedOut.length,
+                        ),
                         const Spacer(),
                         _mapStyleSwitcher(isCompact: false),
                       ],
@@ -467,7 +478,14 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                           BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 3)),
                         ],
                       ),
-                      child: _statsCapsuleContent(loc, present.length, visitMarkers.length, absent.length),
+                      child: _statsCapsuleContent(
+                        loc,
+                        inFieldCount: inField.length,
+                        atHQCount: atHQ.length,
+                        visitsCount: visitMarkers.length,
+                        notRegisteredCount: notRegistered.length,
+                        checkedOutCount: checkedOut.length,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -669,8 +687,11 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       statusText = loc.isArabic ? 'انصرف' : 'Sorti';
       statusColor = const Color(0xFF64748B);
     } else if (isPresent) {
-      if (visits.isNotEmpty) {
-        statusText = loc.isArabic ? 'نشط في الميدان (${visits.length} معاينات)' : 'En mission (${visits.length} visites)';
+      final bool isInField = emp['locationType'] == 'in_field' || visits.isNotEmpty;
+      if (isInField) {
+        statusText = loc.isArabic
+            ? (visits.isNotEmpty ? 'نشط في الميدان (${visits.length} معاينات)' : 'في مهمة تفتيشية ميدانية')
+            : (visits.isNotEmpty ? 'En mission (${visits.length} visites)' : 'En mission terrain');
         statusColor = const Color(0xFF38BDF8);
       } else {
         statusText = loc.isArabic ? 'حاضر بالمقر (مسجل حضور)' : 'Présent au siège';
@@ -735,6 +756,47 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 ),
               ],
             ),
+            if (emp['activeProgram'] != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.assignment, color: Color(0xFF38BDF8), size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            loc.isArabic ? 'أمر المهمة الرقابية المعين:' : 'Ordre de mission assigné :',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      emp['activeProgram']['title']?.toString() ?? '',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    if (emp['activeProgram']['targetArea'] != null && emp['activeProgram']['targetArea'].toString().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '📍 الإقليم: ${emp['activeProgram']['targetArea']}',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             const Divider(color: AppTheme.BorderColor),
             const SizedBox(height: 8),
@@ -1548,7 +1610,14 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     );
   }
 
-  Widget _statsCapsuleContent(AppLocalizations loc, int inFieldCount, int visitsCount, int absentCount) {
+  Widget _statsCapsuleContent(
+    AppLocalizations loc, {
+    required int inFieldCount,
+    required int atHQCount,
+    required int visitsCount,
+    required int notRegisteredCount,
+    required int checkedOutCount,
+  }) {
     if (_isLoading) {
       return const SizedBox(
         height: 18,
@@ -1559,16 +1628,30 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
         ),
       );
     }
+    final isWeekend = DateTime.now().weekday == DateTime.friday || DateTime.now().weekday == DateTime.saturday;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _legend(loc.inField, inFieldCount, AppTheme.SuccessColor),
-          const SizedBox(width: 12),
-          _legend(loc.isArabic ? 'معاينات اليوم' : 'Visites du jour', visitsCount, const Color(0xFF38BDF8)),
-          const SizedBox(width: 12),
-          _legend(loc.absent, absentCount, AppTheme.DangerColor),
+          _legend(loc.isArabic ? 'في الميدان' : 'Terrain', inFieldCount, const Color(0xFF38BDF8)),
+          const SizedBox(width: 10),
+          _legend(loc.isArabic ? 'بالمقر' : 'Au siège', atHQCount, AppTheme.SuccessColor),
+          const SizedBox(width: 10),
+          _legend(loc.isArabic ? 'معاينات اليوم' : 'Visites', visitsCount, const Color(0xFFF59E0B)),
+          if (checkedOutCount > 0) ...[
+            const SizedBox(width: 10),
+            _legend(loc.isArabic ? 'انصرف' : 'Sortis', checkedOutCount, const Color(0xFF94A3B8)),
+          ],
+          const SizedBox(width: 10),
+          _legend(
+            isWeekend
+                ? (loc.isArabic ? 'لم يسجل (عطلة رسمية)' : 'Non pointé (W-E)')
+                : (loc.isArabic ? 'لم يسجل' : 'Non pointé'),
+            notRegisteredCount,
+            isWeekend ? const Color(0xFF64748B) : AppTheme.DangerColor,
+          ),
           const SizedBox(width: 10),
           GestureDetector(
             onTap: _loadData,

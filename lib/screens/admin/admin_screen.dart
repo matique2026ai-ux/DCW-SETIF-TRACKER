@@ -1618,49 +1618,104 @@ class _AdminScreenState extends State<AdminScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'معاينة الشاشات بمختلف الأدوار والصلاحيات:',
-            style: TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+          const Row(
+            children: [
+              Icon(Icons.preview, color: Color(0xFFD4AF37), size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'معاينة الشاشات بمختلف الأدوار والصلاحيات (Role Previews):',
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           const Text(
-            'تتيح لك هذه الميزة معاينة وتجربة أي واجهة في التطبيق كأنك سجلت الدخول بذلك الدور مباشرة:',
+            'تتيح لك هذه الميزة تجربة أي واجهة في المنظومة بكل صلاحياتها الحقيقية لمعاينة تسلسل وسير العمل (Workflow):',
             style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
+          // Hierarchy & Workflow Info Banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E0B26),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.account_tree, color: Color(0xFFD4AF37), size: 22),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'تسلسل الأدوار الإدارية: المفتش الميداني يوثق المهمة والمعاينة ⬅️ رئيس المصلحة المعني يؤشر ويصادق ⬅️ رئيس مصلحة الإدارة والوسائل يتابع تعداد الموظفين واللوجستيك ⬅️ المدير الولائي يشرف على كامل الولاية ويعتمد الخصومات كآمر بالصرف الوحيد.',
+                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // 1. Director
           _buildPreviewCard(
-            title: 'شاشة المدير الولائي (Director View)',
-            desc: 'الخريطة الجغرافية الحية، تقارير الحضور والغياب، وجداول الخصم.',
+            title: '1. شاشة المدير الولائي (Director View)',
+            desc: 'القيادة الإشرافية العامة، الخريطة الحية للمفتشين، إحصائيات المعاينات، وجداول الخصم المالي (الآمر بالصرف الوحيد).',
             icon: Icons.shield_outlined,
             color: const Color(0xFFD4AF37),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DirectorScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
+          // 2. Head of Administration & Means
           _buildPreviewCard(
-            title: 'شاشة رئيس المصلحة (Head of Service View)',
-            desc: 'أوامر المهمة، تأشير ومصادقة المعاينات الميدانية، ومتابعة فرق التفتيش.',
-            icon: Icons.admin_panel_settings,
-            color: const Color(0xFF3B82F6),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen())),
-          ),
-          const SizedBox(height: 12),
-
-          _buildPreviewCard(
-            title: 'شاشة رئيس مكتب المستخدمين (Bureau Chief View)',
-            desc: 'تسيير الـ 267 موظفاً، متابعة الغيابات والتبريرات، واستيراد وتحديث القوائم.',
-            icon: Icons.badge,
+            title: '2. شاشة رئيس مصلحة الإدارة والوسائل (Administration & Moyens)',
+            desc: 'تسيير وتعداد الـ 267 موظفاً، الانضباط والحضور، حظيرة السيارات (12 مركبة)، المقرات الثمانية، والرواتب طبقا للأمر 06-03.',
+            icon: Icons.badge_outlined,
             color: const Color(0xFF10B981),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة الإدارة والوسائل'))),
+          ),
+          const SizedBox(height: 10),
+
+          // 3. Head of Consumer Protection & Fraud
+          _buildPreviewCard(
+            title: '3. شاشة رئيس مصلحة قمع الغش وحماية المستهلك (Fraude & Consommation)',
+            desc: 'إصدار أوامر المهمة الرقابية، تأشير ومصادقة محاضر المعاينة والحجوزات وسحب العينات، ومتابعة فرق الرقابة الصحية.',
+            icon: Icons.health_and_safety_outlined,
+            color: const Color(0xFFE11D48),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة حماية المستهلك وقمع الغش'))),
+          ),
+          const SizedBox(height: 10),
+
+          // 4. Head of Competition & Economic Inquiries
+          _buildPreviewCard(
+            title: '4. شاشة رئيس مصلحة المنافسة والتحقيقات (Concurrence & Enquêtes)',
+            desc: 'برامج مراقبة الأسعار المقننة، تتبع سلاسل التوزيع، فواتير التوزيع والبيع، ومكافحة المضاربة غير المشروعة وتفريغ المخازن.',
+            icon: Icons.query_stats,
+            color: const Color(0xFF3B82F6),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة المنافسة والتحقيقات الاقتصادية'))),
+          ),
+          const SizedBox(height: 10),
+
+          // 5. Bureau Chief
+          _buildPreviewCard(
+            title: '5. شاشة رئيس مكتب المستخدمين (Bureau du Personnel)',
+            desc: 'السجلات الإدارية للموظفين الـ 267، متابعة الغيابات وتبريرات العطل، وحساب ساعات التأخرات التراكمية.',
+            icon: Icons.folder_shared_outlined,
+            color: const Color(0xFF8B5CF6),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BureauScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
+          // 6. Field Inspector
           _buildPreviewCard(
-            title: 'شاشة المفتش الميداني (Inspector View)',
-            desc: 'تسجيل الحضور بالكاميرا والـ GPS، توثيق الزيارات الميدانية، وتوليد بطاقات الـ QR.',
+            title: '6. شاشة المفتش الميداني (Field Inspector View)',
+            desc: 'تسجيل الحضور الصباحي بالبصمة الجغرافية GPS والصورة، توثيق المعاينات الميدانية مع التجار بالصور، وبطاقات الـ QR.',
             icon: Icons.explore,
-            color: const Color(0xFFE11D48),
+            color: const Color(0xFFF59E0B),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InspectorScreen())),
           ),
           const SizedBox(height: 24),

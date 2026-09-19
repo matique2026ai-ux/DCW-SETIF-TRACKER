@@ -9,7 +9,8 @@ import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 
 class HeadScreen extends StatefulWidget {
-  const HeadScreen({super.key});
+  final String? initialDepartment;
+  const HeadScreen({super.key, this.initialDepartment});
 
   @override
   State<HeadScreen> createState() => _HeadScreenState();
@@ -42,6 +43,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    if (widget.initialDepartment != null && widget.initialDepartment!.isNotEmpty) {
+      _departmentName = widget.initialDepartment!;
+    }
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (mounted) setState(() {});
@@ -62,19 +66,23 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
       final user = auth.currentUser;
       final api = auth.api;
 
-      // Determine Department Name from user role or service
-      if (user?.serviceName != null && user!.serviceName!.isNotEmpty) {
-        _departmentName = user.serviceName!;
-      } else if (user?.username == 'chef_concurrence') {
-        _departmentName = 'مصلحة المنافسة والتحقيقات الاقتصادية';
-      } else if (user?.username == 'chef_administration') {
-        _departmentName = 'مصلحة الإدارة والوسائل';
-      } else {
-        _departmentName = 'مصلحة حماية المستهلك وقمع الغش';
+      // Determine Department Name from user role or service or widget
+      if (_departmentName.isEmpty) {
+        if (widget.initialDepartment != null && widget.initialDepartment!.isNotEmpty) {
+          _departmentName = widget.initialDepartment!;
+        } else if (user?.serviceName != null && user!.serviceName!.isNotEmpty) {
+          _departmentName = user.serviceName!;
+        } else if (user?.username == 'chef_administration') {
+          _departmentName = 'مصلحة الإدارة والوسائل';
+        } else if (user?.username == 'chef_concurrence') {
+          _departmentName = 'مصلحة المنافسة والتحقيقات الاقتصادية';
+        } else {
+          _departmentName = 'مصلحة حماية المستهلك وقمع الغش';
+        }
       }
 
       final mapData = await api.getMapData();
-      final mapLookup = {for (var m in mapData) m['id']: m};
+      final mapLookup = {for (var m in mapData) (m['employeeId'] ?? m['id']): m};
 
       if (_isAdministration) {
         // Load comprehensive directorate data
@@ -2218,7 +2226,13 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           backgroundColor: const Color(0xFF2D1035),
           elevation: 0,
           toolbarHeight: 64,
-          automaticallyImplyLeading: false,
+          leading: Navigator.canPop(context)
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37)),
+                  tooltip: 'الرجوع للوحة السابقة',
+                  onPressed: () => Navigator.pop(context),
+                )
+              : null,
           title: Row(
             children: [
               const GoldenEmblemCoin(
@@ -2227,7 +2241,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 enableFloating: false,
                 animateGleam: false,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2240,7 +2254,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                           child: Text(
                             _departmentName,
                             style: const TextStyle(
-                              fontSize: 14.5,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               letterSpacing: 0.2,
@@ -2248,7 +2262,52 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 18),
+                          tooltip: 'تبديل المصلحة المعاينة',
+                          color: const Color(0xFF2D1035),
+                          onSelected: (val) {
+                            setState(() {
+                              _departmentName = val;
+                              _isLoading = true;
+                            });
+                            _loadAllData();
+                          },
+                          itemBuilder: (ctx) => const [
+                            PopupMenuItem(
+                              value: 'مصلحة الإدارة والوسائل',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
+                                  SizedBox(width: 8),
+                                  Text('مصلحة الإدارة والوسائل (المستخدمين، الوسائل والرواتب)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'مصلحة حماية المستهلك وقمع الغش',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
+                                  SizedBox(width: 8),
+                                  Text('مصلحة حماية المستهلك وقمع الغش (الرقابة الميدانية)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.query_stats, color: Color(0xFF3B82F6), size: 16),
+                                  SizedBox(width: 8),
+                                  Text('مصلحة المنافسة والتحقيقات الاقتصادية (الأسعار والفوترة)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                           decoration: BoxDecoration(

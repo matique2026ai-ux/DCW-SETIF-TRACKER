@@ -305,13 +305,12 @@ class ApiService {
 
       if (response.statusCode == 200) {
         return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل إعادة تعيين كلمة المرور'));
       }
-    } catch (_) {}
-
-    return {
-      'success': true,
-      'message': 'تمت إعادة تعيين كلمة المرور بنجاح ✅',
-    };
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إعادة تعيين كلمة المرور');
+    }
   }
 
   Future<Map<String, dynamic>> generateAllEmployeeAccounts({
@@ -326,16 +325,12 @@ class ApiService {
 
       if (response.statusCode == 200) {
         return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل توليد الحسابات'));
       }
-    } catch (_) {}
-
-    return {
-      'success': true,
-      'createdCount': 267,
-      'totalEmployees': 267,
-      'defaultPassword': defaultPassword,
-      'message': 'تم توليد واعتماد حسابات جميع الـ 267 موظفاً بنجاح بكلمة سر افتراضية: ($defaultPassword) ✅',
-    };
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل توليد الحسابات');
+    }
   }
 
   Future<Map<String, dynamic>> deleteSystemUser(int id) async {
@@ -364,13 +359,12 @@ class ApiService {
 
       if (response.statusCode == 200) {
         return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل تصفير سجلات الاختبار'));
       }
-    } catch (_) {}
-
-    return {
-      'success': true,
-      'message': 'تم تصفير وتجهيز سجلات الحضور والمعاينات الميدانية السابقة بنجاح لبدء التشغيل الفعلي ✅',
-    };
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تصفير سجلات الاختبار');
+    }
   }
 
   Future<List<Map<String, dynamic>>> getEmployees({
