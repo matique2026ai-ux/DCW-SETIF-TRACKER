@@ -58,3 +58,5 @@ app.*.map.json
 !/assets/images/
 !/build/web/assets/assets/images/
 
+# Local DevTools configuration
+devtools_options.yaml
