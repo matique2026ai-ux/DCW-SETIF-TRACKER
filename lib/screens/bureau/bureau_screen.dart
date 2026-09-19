@@ -278,7 +278,7 @@ class _BureauScreenState extends State<BureauScreen>
         ? _departments.first
         : 'مصلحة حماية المستهلك وقمع الغش';
 
-    final deptOptions = <String>{
+    final defaultDepts = [
       'مصلحة حماية المستهلك وقمع الغش',
       'مصلحة ملاحظة السوق ومراقبة الممارسات التجارية والمنافسة',
       'مصلحة الإدارة والوسائل',
@@ -286,8 +286,13 @@ class _BureauScreenState extends State<BureauScreen>
       'المفتشية الإقليمية للتجارة - عين ولمان',
       'المفتشية الإقليمية للتجارة - بوقاعة',
       'المفتشية الإقليمية للتجارة - عين الكبيرة',
-      if (!_departments.contains('مصلحة حماية المستهلك وقمع الغش')) ..._departments,
-    }.toList();
+    ];
+
+    final deptOptions = [
+      ...defaultDepts,
+      for (final d in _departments)
+        if (!defaultDepts.contains(d)) d,
+    ];
 
     if (!deptOptions.contains(selectedDept)) {
       selectedDept = deptOptions.first;
@@ -323,7 +328,7 @@ class _BureauScreenState extends State<BureauScreen>
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDlgState) => AlertDialog(
+        builder: (dlgContext, setDlgState) => AlertDialog(
           backgroundColor: const Color(0xFF1E102F),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
@@ -606,8 +611,20 @@ class _BureauScreenState extends State<BureauScreen>
               icon: const Icon(Icons.check, size: 18),
               label: const Text('إدراج في السجل الإداري', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
               onPressed: () async {
+                final authApi = context.read<AuthService>().api;
                 final messenger = ScaffoldMessenger.of(context);
-                if (nomArCtrl.text.trim().isEmpty && nomFrCtrl.text.trim().isEmpty) {
+                final matricule = matriculeCtrl.text.trim();
+                final nomAr = nomArCtrl.text.trim();
+                final prenomAr = prenomArCtrl.text.trim();
+                final nomFr = nomFrCtrl.text.trim().isNotEmpty ? nomFrCtrl.text.trim() : null;
+                final prenomFr = prenomFrCtrl.text.trim().isNotEmpty ? prenomFrCtrl.text.trim() : null;
+                final dept = selectedDept;
+                final grade = selectedGrade;
+                final position = selectedPosition;
+                final brigade = brigadeCtrl.text.trim().isNotEmpty ? brigadeCtrl.text.trim() : null;
+                final leader = isBrigadeLeader;
+
+                if (nomAr.isEmpty && (nomFr == null || nomFr.isEmpty)) {
                   messenger.showSnackBar(
                     const SnackBar(
                       content: Text('يرجى إدخال لقب الموظف'),
@@ -616,7 +633,7 @@ class _BureauScreenState extends State<BureauScreen>
                   );
                   return;
                 }
-                if (prenomArCtrl.text.trim().isEmpty && prenomFrCtrl.text.trim().isEmpty) {
+                if (prenomAr.isEmpty && (prenomFr == null || prenomFr.isEmpty)) {
                   messenger.showSnackBar(
                     const SnackBar(
                       content: Text('يرجى إدخال اسم الموظف'),
@@ -630,41 +647,38 @@ class _BureauScreenState extends State<BureauScreen>
                 setState(() => _isLoading = true);
 
                 try {
-                  final api = context.read<AuthService>().api;
-                  final res = await api.createEmployee(
-                    numeroMatricule: matriculeCtrl.text.trim(),
-                    nomAr: nomArCtrl.text.trim(),
-                    prenomAr: prenomArCtrl.text.trim(),
-                    nom: nomFrCtrl.text.trim().isNotEmpty ? nomFrCtrl.text.trim() : null,
-                    prenom: prenomFrCtrl.text.trim().isNotEmpty ? prenomFrCtrl.text.trim() : null,
-                    service: selectedDept,
-                    grade: selectedGrade,
-                    fonctionExercee: selectedPosition,
-                    brigadeName: brigadeCtrl.text.trim().isNotEmpty ? brigadeCtrl.text.trim() : null,
-                    isBrigadeLeader: isBrigadeLeader,
+                  final res = await authApi.createEmployee(
+                    numeroMatricule: matricule,
+                    nomAr: nomAr,
+                    prenomAr: prenomAr,
+                    nom: nomFr,
+                    prenom: prenomFr,
+                    service: dept,
+                    grade: grade,
+                    fonctionExercee: position,
+                    brigadeName: brigade,
+                    isBrigadeLeader: leader,
                   );
 
                   await _loadAll();
 
-                  if (mounted) {
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(res['message']?.toString() ?? '✅ تم إدراج الموظف في السجل الإداري بنجاح'),
-                        backgroundColor: AppTheme.SuccessColor,
-                        duration: const Duration(seconds: 4),
-                      ),
-                    );
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(res['message']?.toString() ?? '✅ تم إدراج الموظف في السجل الإداري بنجاح'),
+                      backgroundColor: AppTheme.SuccessColor,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    setState(() => _isLoading = false);
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text('خطأ أثناء إدراج الموظف: $e'),
-                        backgroundColor: AppTheme.DangerColor,
-                      ),
-                    );
-                  }
+                  if (!mounted) return;
+                  setState(() => _isLoading = false);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('خطأ أثناء إدراج الموظف: $e'),
+                      backgroundColor: AppTheme.DangerColor,
+                    ),
+                  );
                 }
               },
             ),
