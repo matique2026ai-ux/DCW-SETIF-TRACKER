@@ -264,6 +264,416 @@ class _BureauScreenState extends State<BureauScreen>
     );
   }
 
+  void _showAddEmployeeDialog() {
+    final matriculeCtrl = TextEditingController(
+      text: 'MAT-${DateTime.now().year}-${(100 + _employees.length + 1)}',
+    );
+    final nomArCtrl = TextEditingController();
+    final prenomArCtrl = TextEditingController();
+    final nomFrCtrl = TextEditingController();
+    final prenomFrCtrl = TextEditingController();
+    final brigadeCtrl = TextEditingController();
+
+    String selectedDept = _departments.isNotEmpty
+        ? _departments.first
+        : 'مصلحة حماية المستهلك وقمع الغش';
+
+    final deptOptions = <String>{
+      'مصلحة حماية المستهلك وقمع الغش',
+      'مصلحة ملاحظة السوق ومراقبة الممارسات التجارية والمنافسة',
+      'مصلحة الإدارة والوسائل',
+      'المفتشية الإقليمية للتجارة - العلمة',
+      'المفتشية الإقليمية للتجارة - عين ولمان',
+      'المفتشية الإقليمية للتجارة - بوقاعة',
+      'المفتشية الإقليمية للتجارة - عين الكبيرة',
+      if (!_departments.contains('مصلحة حماية المستهلك وقمع الغش')) ..._departments,
+    }.toList();
+
+    if (!deptOptions.contains(selectedDept)) {
+      selectedDept = deptOptions.first;
+    }
+
+    final gradeOptions = [
+      'مفتش رئيسي لقمع الغش',
+      'محقق رئيسي للمنافسة والتحقيقات الاقتصادية',
+      'مفتش رئيسي للنوعية وقمع الغش',
+      'محقق رئيسي للمنافسة',
+      'مفتش قمع الغش',
+      'محقق اقتصادي',
+      'عون مراقبة الجودة وقمع الغش',
+      'عون معاينة الممارسات التجارية',
+      'متصرف رئيسي',
+      'متصرف',
+      'مهندس دولة',
+      'ملحق رئيسي للإدارة',
+    ];
+    String selectedGrade = gradeOptions.first;
+
+    final positionOptions = [
+      'مفتش ميداني',
+      'رئيس فرقة رقابية',
+      'عون مراقبة وتفتيش',
+      'عضو فرقة تحقيق',
+      'إداري / تسيير',
+    ];
+    String selectedPosition = positionOptions.first;
+
+    bool isBrigadeLeader = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E102F),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person_add_alt_1, color: Color(0xFFD4AF37), size: 22),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'إدراج عون / موظف في السجل الإداري',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                    Text(
+                      'صلاحيات رئيس مكتب المستخدمين • السجل الرسمي',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.2)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Color(0xFFD4AF37), size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'يقوم مكتب المستخدمين بتسجيل المعطيات الإدارية، الرتبة والمصلحة. إنشاء حساب الدخول وتعيين كلمة المرور هو من صلاحية مدير النظام (الآدمن) حصراً.',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.35),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Matricule
+                  TextField(
+                    controller: matriculeCtrl,
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      labelText: 'رقم التسجيل / الماتريكول (Matricule)',
+                      labelStyle: const TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Tajawal', fontSize: 12),
+                      prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Nom & Prenom (Arabic)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: nomArCtrl,
+                          textDirection: TextDirection.rtl,
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                          decoration: InputDecoration(
+                            labelText: 'اللقب (بالعربية) *',
+                            labelStyle: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 12),
+                            filled: true,
+                            fillColor: Colors.black26,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: prenomArCtrl,
+                          textDirection: TextDirection.rtl,
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                          decoration: InputDecoration(
+                            labelText: 'الاسم (بالعربية) *',
+                            labelStyle: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 12),
+                            filled: true,
+                            fillColor: Colors.black26,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Nom & Prenom (Latin - Optional)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: nomFrCtrl,
+                          textDirection: TextDirection.ltr,
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                          decoration: InputDecoration(
+                            labelText: 'Nom (Français)',
+                            labelStyle: const TextStyle(color: Colors.white54, fontFamily: 'Tajawal', fontSize: 11),
+                            filled: true,
+                            fillColor: Colors.black26,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: prenomFrCtrl,
+                          textDirection: TextDirection.ltr,
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                          decoration: InputDecoration(
+                            labelText: 'Prénom (Français)',
+                            labelStyle: const TextStyle(color: Colors.white54, fontFamily: 'Tajawal', fontSize: 11),
+                            filled: true,
+                            fillColor: Colors.black26,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Department Dropdown
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedDept,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF26123A),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'المصلحة أو المفتشية التابع لها *',
+                      labelStyle: const TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Tajawal', fontSize: 12),
+                      prefixIcon: const Icon(Icons.apartment, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: deptOptions.map((d) => DropdownMenuItem(
+                      value: d,
+                      child: Text(d, overflow: TextOverflow.ellipsis),
+                    )).toList(),
+                    onChanged: (v) {
+                      if (v != null) setDlgState(() => selectedDept = v);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Grade Dropdown
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedGrade,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF26123A),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'الرتبة الإدارية *',
+                      labelStyle: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 12),
+                      prefixIcon: const Icon(Icons.military_tech_outlined, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: gradeOptions.map((g) => DropdownMenuItem(
+                      value: g,
+                      child: Text(g, overflow: TextOverflow.ellipsis),
+                    )).toList(),
+                    onChanged: (v) {
+                      if (v != null) setDlgState(() => selectedGrade = v);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Position Dropdown
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedPosition,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF26123A),
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'الوظيفة أو الصفة الممارسة',
+                      labelStyle: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 12),
+                      prefixIcon: const Icon(Icons.work_outline, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: positionOptions.map((p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(p, overflow: TextOverflow.ellipsis),
+                    )).toList(),
+                    onChanged: (v) {
+                      if (v != null) setDlgState(() => selectedPosition = v);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Brigade Name
+                  TextField(
+                    controller: brigadeCtrl,
+                    textDirection: TextDirection.rtl,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                    decoration: InputDecoration(
+                      labelText: 'اسم الفرقة التابع لها (مثال: فرقة قمع الغش 01)',
+                      labelStyle: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 12),
+                      prefixIcon: const Icon(Icons.groups_outlined, color: Color(0xFFD4AF37)),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Switch IsBrigadeLeader
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'الموظف رئيس فرقة رقابية (Chef de Brigade)',
+                      style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
+                    ),
+                    subtitle: const Text(
+                      'يمنح صلاحية إدارة وتوزيع المهام الميدانية لأعضاء فرقته',
+                      style: TextStyle(fontFamily: 'Tajawal', color: Colors.white54, fontSize: 11),
+                    ),
+                    value: isBrigadeLeader,
+                    activeThumbColor: const Color(0xFFD4AF37),
+                    onChanged: (val) => setDlgState(() => isBrigadeLeader = val),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('إدراج في السجل الإداري', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                if (nomArCtrl.text.trim().isEmpty && nomFrCtrl.text.trim().isEmpty) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('يرجى إدخال لقب الموظف'),
+                      backgroundColor: AppTheme.DangerColor,
+                    ),
+                  );
+                  return;
+                }
+                if (prenomArCtrl.text.trim().isEmpty && prenomFrCtrl.text.trim().isEmpty) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('يرجى إدخال اسم الموظف'),
+                      backgroundColor: AppTheme.DangerColor,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.pop(ctx);
+                setState(() => _isLoading = true);
+
+                try {
+                  final api = context.read<AuthService>().api;
+                  final res = await api.createEmployee(
+                    numeroMatricule: matriculeCtrl.text.trim(),
+                    nomAr: nomArCtrl.text.trim(),
+                    prenomAr: prenomArCtrl.text.trim(),
+                    nom: nomFrCtrl.text.trim().isNotEmpty ? nomFrCtrl.text.trim() : null,
+                    prenom: prenomFrCtrl.text.trim().isNotEmpty ? prenomFrCtrl.text.trim() : null,
+                    service: selectedDept,
+                    grade: selectedGrade,
+                    fonctionExercee: selectedPosition,
+                    brigadeName: brigadeCtrl.text.trim().isNotEmpty ? brigadeCtrl.text.trim() : null,
+                    isBrigadeLeader: isBrigadeLeader,
+                  );
+
+                  await _loadAll();
+
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(res['message']?.toString() ?? '✅ تم إدراج الموظف في السجل الإداري بنجاح'),
+                        backgroundColor: AppTheme.SuccessColor,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() => _isLoading = false);
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('خطأ أثناء إدراج الموظف: $e'),
+                        backgroundColor: AppTheme.DangerColor,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _openEditEmployeeModal(Map<String, dynamic> emp) {
     showModalBottomSheet(
       context: context,
@@ -419,8 +829,27 @@ class _BureauScreenState extends State<BureauScreen>
             ],
           ),
           actions: [
+            ElevatedButton.icon(
+              onPressed: _showAddEmployeeDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
+              label: const Text(
+                'إدراج موظف',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+              ),
+            ),
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
               padding: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 color: Colors.black38,
@@ -558,9 +987,50 @@ class _BureauScreenState extends State<BureauScreen>
           ),
         ),
 
+        // Section Header & Add Employee Action
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+          child: Row(
+            children: [
+              const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'سجل موظفي وأعوان الرقابة الإداري',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _showAddEmployeeDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 2,
+                ),
+                icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
+                label: const Text(
+                  'إدراج موظف / عون جديد',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Search Bar & Filter Chips
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
           child: TextField(
             onChanged: (v) => setState(() => _searchQuery = v),
             style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white),
@@ -616,18 +1086,55 @@ class _BureauScreenState extends State<BureauScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.person_search,
+                        _employees.isEmpty ? Icons.person_add_outlined : Icons.person_search,
                         size: 56,
                         color: Colors.white.withValues(alpha: 0.3),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'لا توجد نتائج مطابقة للبحث',
-                        style: TextStyle(
+                      Text(
+                        _employees.isEmpty
+                            ? 'لم يتم إدراج أي موظف بعد في السجل الإداري'
+                            : 'لا توجد نتائج مطابقة للبحث',
+                        style: const TextStyle(
                           fontFamily: 'Tajawal',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
                           color: AppTheme.TextSecondary,
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _employees.isEmpty
+                            ? 'بصفتك رئيس مكتب المستخدمين، قم بإدراج الأعوان وتعيين رتبهم ومصالحهم'
+                            : 'جرّب تغيير كلمات البحث أو المرشح أعلاه',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12,
+                          color: Colors.white38,
+                        ),
+                      ),
+                      if (_employees.isEmpty) ...[
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: _showAddEmployeeDialog,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD4AF37),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.person_add_alt_1, size: 18, color: Colors.black),
+                          label: const Text(
+                            'إدراج أول عون في السجل الإداري',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 )

@@ -453,6 +453,46 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> createEmployee({
+    required String numeroMatricule,
+    required String nomAr,
+    required String prenomAr,
+    String? nom,
+    String? prenom,
+    required String service,
+    required String grade,
+    String? fonctionExercee,
+    String? brigadeName,
+    bool isBrigadeLeader = false,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/employees'),
+        headers: _headers,
+        body: jsonEncode({
+          'numeroMatricule': numeroMatricule,
+          'nomAr': nomAr,
+          'prenomAr': prenomAr,
+          'nom': nom,
+          'prenom': prenom,
+          'service': service,
+          'grade': grade,
+          'fonctionExercee': fonctionExercee,
+          'brigadeName': brigadeName,
+          'isBrigadeLeader': isBrigadeLeader,
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل إدراج الموظف في السجل الإداري'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إدراج الموظف في السجل الإداري');
+    }
+  }
+
   Future<Map<String, dynamic>> getDashboardStats() async {
     try {
       final response = await http.get(

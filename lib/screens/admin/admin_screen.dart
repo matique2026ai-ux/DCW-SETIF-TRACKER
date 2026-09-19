@@ -253,14 +253,27 @@ class _AdminScreenState extends State<AdminScreen>
                       fillColor: Color(0xFF1E0B26),
                     ),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('بدون ربط (حساب إداري عام)')),
+                      const DropdownMenuItem<int?>(value: null, child: Text('بدون ربط (حساب إداري عام)')),
                       ..._employees.map((e) {
-                        final id = e['Id'] as int;
-                        final name = '${e['Nom'] ?? ''} ${e['Prenom'] ?? ''}'.trim();
-                        final service = e['Service'] ?? '';
-                        return DropdownMenuItem(
+                        final rawId = e['Id'] ?? e['id'];
+                        final id = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
+                        final nomAr = (e['NomAr'] ?? '').toString().trim();
+                        final prenomAr = (e['PrenomAr'] ?? '').toString().trim();
+                        final fullNameAr = '$nomAr $prenomAr'.trim();
+                        final nomFr = (e['Nom'] ?? '').toString().trim();
+                        final prenomFr = (e['Prenom'] ?? '').toString().trim();
+                        final fullNameFr = '$nomFr $prenomFr'.trim();
+                        final displayName = fullNameAr.isNotEmpty
+                            ? fullNameAr
+                            : (fullNameFr.isNotEmpty ? fullNameFr : 'موظف #$id');
+                        final service = (e['Service'] ?? '').toString();
+                        final matricule = (e['NumeroMatricule'] ?? '').toString();
+                        final label = matricule.isNotEmpty
+                            ? '$displayName [$matricule] - $service'
+                            : '$displayName - $service';
+                        return DropdownMenuItem<int?>(
                           value: id,
-                          child: Text('$name ($service)', overflow: TextOverflow.ellipsis),
+                          child: Text(label, overflow: TextOverflow.ellipsis),
                         );
                       }),
                     ],
@@ -268,9 +281,39 @@ class _AdminScreenState extends State<AdminScreen>
                       setDialogState(() {
                         selectedEmpId = val;
                         if (val != null) {
-                          final emp = _employees.firstWhere((e) => e['Id'] == val, orElse: () => {});
-                          if (emp.isNotEmpty && fullNameCtrl.text.isEmpty) {
-                            fullNameCtrl.text = '${emp['Nom'] ?? ''} ${emp['Prenom'] ?? ''}'.trim();
+                          final emp = _employees.firstWhere(
+                            (e) => (e['Id'] ?? e['id']) == val,
+                            orElse: () => {},
+                          );
+                          if (emp.isNotEmpty) {
+                            final nomAr = (emp['NomAr'] ?? '').toString().trim();
+                            final prenomAr = (emp['PrenomAr'] ?? '').toString().trim();
+                            final fullNameAr = '$nomAr $prenomAr'.trim();
+                            final nomFr = (emp['Nom'] ?? '').toString().trim();
+                            final prenomFr = (emp['Prenom'] ?? '').toString().trim();
+                            final fullNameFr = '$nomFr $prenomFr'.trim();
+                            fullNameCtrl.text = fullNameAr.isNotEmpty ? fullNameAr : fullNameFr;
+
+                            if (usernameCtrl.text.isEmpty) {
+                              final cleanNom = nomFr.isNotEmpty ? nomFr.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '') : '';
+                              final cleanPrenom = prenomFr.isNotEmpty ? prenomFr.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '') : '';
+                              if (cleanPrenom.isNotEmpty && cleanNom.isNotEmpty) {
+                                usernameCtrl.text = '$cleanPrenom.$cleanNom';
+                              } else {
+                                usernameCtrl.text = 'emp.$val';
+                              }
+                            }
+
+                            final fonction = (emp['FonctionExercee'] ?? '').toString();
+                            if (fonction.contains('رئيس مصلحة')) {
+                              selectedRole = 'head_of_department';
+                            } else if (fonction.contains('رئيس مكتب')) {
+                              selectedRole = 'bureau_chief';
+                            } else if (fonction.contains('مدير')) {
+                              selectedRole = 'director';
+                            } else {
+                              selectedRole = 'inspector';
+                            }
                           }
                         }
                       });
@@ -647,111 +690,6 @@ class _AdminScreenState extends State<AdminScreen>
     );
   }
 
-  void _showBulkGenerateDialog() {
-    final passCtrl = TextEditingController(text: 'Setif@2025');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF240D2D),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFD4AF37)),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.auto_awesome, color: Color(0xFFD4AF37)),
-            SizedBox(width: 10),
-            Text(
-              'توليد حسابات لجميع الموظفين الـ 267',
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'تقوم هذه الميزة بالتحقق من جميع الموظفين في قاعدة البيانات وإنشاء اسم مستخدم وكلمة مرور تلقائية لكل موظف ليس لديه حساب بعد.',
-              style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 13, height: 1.4),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passCtrl,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
-              decoration: const InputDecoration(
-                labelText: 'كلمة المرور الافتراضية الموحدة',
-                labelStyle: TextStyle(color: Colors.white70),
-                prefixIcon: Icon(Icons.password, color: Color(0xFFD4AF37)),
-                filled: true,
-                fillColor: Color(0xFF1E0B26),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal')),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD4AF37),
-              foregroundColor: const Color(0xFF1A0A1F),
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              setState(() => _isLoading = true);
-              try {
-                final api = context.read<AuthService>().api;
-                final res = await api.generateAllEmployeeAccounts(defaultPassword: passCtrl.text.trim());
-                await _loadData();
-                if (mounted) {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      backgroundColor: const Color(0xFF240D2D),
-                      title: const Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Color(0xFF10B981)),
-                          SizedBox(width: 8),
-                          Text('تمت العملية بنجاح', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
-                        ],
-                      ),
-                      content: Text(
-                        res['message']?.toString() ?? 'تم إنشاء الحسابات بنجاح',
-                        style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('حسناً', style: TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37))),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                  );
-                }
-              }
-            },
-            child: const Text('بدء التوليد التلقائي', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showCleanDataDialog() {
     showDialog(
       context: context,
@@ -1043,36 +981,59 @@ class _AdminScreenState extends State<AdminScreen>
             Wrap(
               spacing: 8,
               runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                ElevatedButton.icon(
-                  onPressed: _showBulkGenerateDialog,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
-                    foregroundColor: const Color(0xFF1A0A1F),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.auto_awesome, size: 16),
-                  label: const Text(
-                    'توليد حسابات لجميع الـ 267 موظفاً',
-                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
                 ElevatedButton.icon(
                   onPressed: _showAddUserDialog,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF881337),
-                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: const Color(0xFF1A0A1F),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 2,
+                  ),
+                  icon: const Icon(Icons.person_add, size: 18, color: Color(0xFF1A0A1F)),
+                  label: const Text(
+                    'إضافة وتفعيل مستخدم جديد',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A0A1F)),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _loadData,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFD4AF37),
+                    side: const BorderSide(color: Color(0x66D4AF37)),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  icon: const Icon(Icons.add, size: 16),
+                  icon: const Icon(Icons.refresh, size: 16),
                   label: const Text(
-                    'إضافة مستخدم جديد',
+                    'تحديث القائمة',
                     style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.2)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.shield_outlined, color: Color(0xFFD4AF37), size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'صلاحية إنشاء الحسابات وتعيين كلمات المرور محصورة بمدير النظام (الآدمن) حصراً، بربط الحساب بالموظف المسجل إدارياً.',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 14),
 
