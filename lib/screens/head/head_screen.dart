@@ -7,6 +7,7 @@ import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
+import 'package:drh_setif_tracker/utils/constants.dart';
 
 class HeadScreen extends StatefulWidget {
   final String? initialDepartment;
@@ -34,7 +35,6 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   List<Map<String, dynamic>> _deductions = [];
   String _adminPersonnelSearch = '';
   String _adminServiceFilter = 'الكل';
-  String _adminMeansSubTab = 'vehicles'; // 'vehicles', 'hqs', 'equipment'
 
   bool get _isAdministration =>
       _departmentName.contains('الإدارة') ||
@@ -522,323 +522,241 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
   Widget _buildAdministrationMeansTab() {
     final isAr = context.watch<LanguageProvider>().isArabic;
+    const officialHQs = AppConstants.defaultInspectorates;
 
-    final vehiclesList = [
-      {'matricule': '00452-124-19', 'model': 'Dacia Duster 4x4 (البيضاء)', 'status': 'جاهزة وفي الخدمة', 'statusColor': const Color(0xFF10B981), 'driver': 'فرقة التدخل السريع وقمع الغش', 'fuel': '90%'},
-      {'matricule': '01892-123-19', 'model': 'Dacia Duster 4x4 (الرمادية)', 'status': 'في مهمة تفتيشية (العلمة)', 'statusColor': const Color(0xFF3B82F6), 'driver': 'مصلحة المنافسة والتحقيقات', 'fuel': '75%'},
-      {'matricule': '03410-122-19', 'model': 'Peugeot Partner', 'status': 'جاهزة وفي الخدمة', 'statusColor': const Color(0xFF10B981), 'driver': 'فرقة مراقبة الأسعار والفوترة', 'fuel': '85%'},
-      {'matricule': '04120-121-19', 'model': 'Peugeot Partner', 'status': 'في الخدمة (عين ولمان)', 'statusColor': const Color(0xFF10B981), 'driver': 'المفتشية الإقليمية بعين ولمان', 'fuel': '60%'},
-      {'matricule': '07650-120-19', 'model': 'Renault Symbol', 'status': 'جاهزة للمهام الإدارية', 'statusColor': const Color(0xFF10B981), 'driver': 'مصلحة الإدارة والوسائل', 'fuel': '95%'},
-      {'matricule': '08910-119-19', 'model': 'Renault Symbol', 'status': 'في الخدمة (بوقاعة)', 'statusColor': const Color(0xFF10B981), 'driver': 'المفتشية الإقليمية ببوقاعة', 'fuel': '70%'},
-      {'matricule': '10230-118-19', 'model': 'Hyundai Accent', 'status': 'مخصصة لمطار 8 ماي', 'statusColor': const Color(0xFF10B981), 'driver': 'المفتشية الحدودية لمراقبة الجودة', 'fuel': '80%'},
-      {'matricule': '11540-117-19', 'model': 'Peugeot 301', 'status': 'صيانة دورية (تغيير الزيت)', 'statusColor': const Color(0xFFF59E0B), 'driver': 'ورشة الصيانة المعتمدة', 'fuel': '50%'},
-      {'matricule': '01200-125-19', 'model': 'Toyota Hilux 4x4', 'status': 'في مهمة (سحب عينات CACQE)', 'statusColor': const Color(0xFF3B82F6), 'driver': 'فرقة التحاليل والمطابقة المخبرية', 'fuel': '80%'},
-      {'matricule': '05430-120-19', 'model': 'Dacia Logan', 'status': 'جاهزة (عين آزال)', 'statusColor': const Color(0xFF10B981), 'driver': 'الملحقة التجارية بعين آزال', 'fuel': '65%'},
-      {'matricule': '06780-122-19', 'model': 'Peugeot Partner', 'status': 'جاهزة (عين الكبيرة)', 'statusColor': const Color(0xFF10B981), 'driver': 'الملحقة التجارية بعين الكبيرة', 'fuel': '80%'},
-      {'matricule': '09450-123-19', 'model': 'Renault Express', 'status': 'جاهزة (عين أرنات)', 'statusColor': const Color(0xFF10B981), 'driver': 'الملحقة التجارية بعين أرنات', 'fuel': '75%'},
-    ];
-
-    final hqList = [
-      {'name': 'المقر الرئيسي لمديرية سطيف (حي المعبودة)', 'address': 'حي المعبودة، سطيف', 'staff': '145 موظفاً', 'gps': '36.1912, 5.4137', 'status': 'نشط ومجهز 100%'},
-      {'name': 'المفتشية الحدودية لمراقبة الجودة بمطار 8 ماي 1945', 'address': 'مطار 8 ماي 1945 الدولي، عين أرنات', 'staff': '18 موظفاً', 'gps': '36.1780, 5.3250', 'status': 'مداومة مستمرة 24/7'},
-      {'name': 'المفتشية الإقليمية للتجارة بالعلمة', 'address': 'وسط مدينة العلمة (قرب حي دبي)', 'staff': '32 موظفاً', 'gps': '36.1528, 5.6908', 'status': 'تغطية سوق الجملة وتجارة التجزئة'},
-      {'name': 'المفتشية الإقليمية للتجارة بعين ولمان', 'address': 'عين ولمان، القطاع الجنوبي', 'staff': '24 موظفاً', 'gps': '35.9189, 5.2975', 'status': 'مراقبة الأسواق الأسبوعية والمطاحن'},
-      {'name': 'المفتشية الإقليمية للتجارة ببوقاعة', 'address': 'بوقاعة، القطاع الشمالي والغربي', 'staff': '18 موظفاً', 'gps': '36.3325, 5.0886', 'status': 'تغطية الدوائر الجبلية والمذابح'},
-      {'name': 'الملحقة التجارية بعين آزال', 'address': 'عين آزال، جنوب الولاية', 'staff': '10 موظفين', 'gps': '35.8450, 5.4622', 'status': 'مراقبة المنتجات الفلاحية والغذائية'},
-      {'name': 'الملحقة التجارية بعين الكبيرة', 'address': 'عين الكبيرة، شمال الولاية', 'staff': '12 موظفاً', 'gps': '36.3650, 5.4980', 'status': 'مراقبة وحدات الإنتاج والأنشطة'},
-      {'name': 'الملحقة التجارية بعين أرنات', 'address': 'عين أرنات، غرب الولاية', 'staff': '8 موظفين', 'gps': '36.1850, 5.3120', 'status': 'مراقبة المنطقة الحضرية والخدمات'},
-    ];
+    // Count attendance at each HQ dynamically from real employee records
+    int totalHqAttendance = 0;
+    for (final emp in _allEmployees) {
+      if (emp['hasCheckedIn'] == true) {
+        totalHqAttendance++;
+      }
+    }
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Sub-Tab Switcher
+          // Official Geofence Registry Header
           Container(
-            color: const Color(0xFF1E0B26),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF2D1035), Color(0xFF1E0B26)],
+              ),
+              border: Border(bottom: BorderSide(color: Color(0xFFD4AF37), width: 1)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildMeansSubTabButton(
-                  id: 'vehicles',
-                  title: isAr ? 'حظيرة السيارات (12 مركبة)' : 'Parc Auto (12 véh.)',
-                  icon: Icons.directions_car,
+                Row(
+                  children: [
+                    const Icon(Icons.apartment, color: Color(0xFFD4AF37), size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isAr ? 'شبكة المقرات والمفتشيات الثمانية المعتمدة (8)' : 'Réseau des 8 Sièges & Inspections Régionales',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isAr
+                                ? 'منظومة القفل الجغرافي الصارم (Strict GPS Geofence) • حظر التسجيل خارج النطاق'
+                                : 'Geofencing GPS Strict • Interdiction de pointage hors zone',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFFD4AF37)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                _buildMeansSubTabButton(
-                  id: 'hqs',
-                  title: isAr ? 'المقرات والملحقات الثمانية (8)' : '8 Sièges & Inspections',
-                  icon: Icons.apartment,
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Text(
+                    isAr
+                        ? '🏛️ الضوابط الإدارية للمقرات الرسمية:\n• يلزم كافة موظفي ومفتشي المديرية بتسجيل الحضور الصباحي حصراً ضمن النطاق الجغرافي لأحد هذه المقرات الثمانية.\n• يتم رفض أي محاولة لتسجيل الحضور من المنزل أو خارج النطاق تلقائياً، ما لم تكن هناك مهمة رقابية مبرمجة سارية.'
+                        : '🏛️ Directives Administratives des Sièges:\n• Pointage matinal obligatoire dans le rayon géographique de ces 8 sièges.\n• Rejet automatique de tout pointage hors zone sans ordre de mission.',
+                    style: const TextStyle(fontSize: 11, color: Colors.white70, height: 1.4),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                _buildMeansSubTabButton(
-                  id: 'equipment',
-                  title: isAr ? 'العتاد والتجهيزات' : 'Équipements & Matériel',
-                  icon: Icons.inventory_2,
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildAdminStatCard(
+                      title: isAr ? 'المقرات المعتمدة' : 'Sièges Agréés',
+                      value: '${officialHQs.length}',
+                      icon: Icons.business,
+                      color: const Color(0xFFD4AF37),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildAdminStatCard(
+                      title: isAr ? 'الحضور بالبصمة اليوم' : 'Présents Aujourd\'hui',
+                      value: '$totalHqAttendance',
+                      icon: Icons.how_to_reg,
+                      color: const Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildAdminStatCard(
+                      title: isAr ? 'القفل الجغرافي' : 'Geofence GPS',
+                      value: '100% نشط',
+                      icon: Icons.lock_clock,
+                      color: const Color(0xFF3B82F6),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          if (_adminMeansSubTab == 'vehicles') ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.directions_car_filled, color: Color(0xFFD4AF37), size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    isAr ? 'تسيير حظيرة السيارات وأوامر التنقل الميداني' : 'Gestion du Parc Automobile & Ordres de Mission',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
-                  ),
-                  const Spacer(),
-                  ElevatedButton.icon(
-                    onPressed: () => _showNewVehicleMissionDialog(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    ),
-                    icon: const Icon(Icons.add, size: 14),
-                    label: Text(isAr ? 'أمر تنقل بالسيارة' : 'Ordre de mission', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
+          // Official HQs List
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                const Icon(Icons.pin_drop, color: Color(0xFFD4AF37), size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  isAr ? 'بيانات المقرات والمفتشيات وإحداثيات البصمة الرسمية' : 'Détails des Sièges & Coordonnées GPS Officielles',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                ),
+              ],
             ),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: vehiclesList.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (ctx, i) {
-                final v = vehiclesList[i];
-                final vModel = v['model'] as String;
-                final vMatricule = v['matricule'] as String;
-                final vDriver = v['driver'] as String;
-                final vStatus = v['status'] as String;
-                final vFuel = v['fuel'] as String;
-                final vColor = v['statusColor'] as Color;
+          ),
 
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF240D2D),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF4A2050)),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: officialHQs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (ctx, i) {
+              final hq = officialHQs[i];
+              final isMain = hq.isMainDirectorate;
+
+              // Check live attendance assigned or reported at this location
+              final attendeesCount = _allEmployees.where((e) {
+                if (e['hasCheckedIn'] != true) return false;
+                final loc = (e['location'] ?? '').toString();
+                if (isMain && (loc.contains('المعبودة') || loc.contains('الرئيسي') || loc.contains('سطيف'))) return true;
+                if (hq.id.contains('airport') && (loc.contains('مطار') || loc.contains('8 ماي'))) return true;
+                if (hq.id.contains('eulma') && loc.contains('العلمة')) return true;
+                if (hq.id.contains('oulmene') && loc.contains('ولمان')) return true;
+                if (hq.id.contains('bougaa') && loc.contains('بوقاعة')) return true;
+                if (hq.id.contains('azel') && loc.contains('آزال')) return true;
+                if (hq.id.contains('kebira') && loc.contains('الكبيرة')) return true;
+                if (hq.id.contains('arnat') && loc.contains('أرنات')) return true;
+                return false;
+              }).length;
+
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF240D2D),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isMain ? const Color(0xFFD4AF37) : const Color(0xFF4A2050),
+                    width: isMain ? 1.2 : 1,
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: vColor.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.directions_car, color: vColor, size: 20),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isMain ? const Color(0xFFD4AF37).withValues(alpha: 0.15) : const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  vModel,
+                      child: Icon(
+                        isMain ? Icons.account_balance : Icons.location_city,
+                        color: isMain ? const Color(0xFFD4AF37) : const Color(0xFF60A5FA),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  isAr ? hq.nameAr : hq.nameFr,
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
                                 ),
-                                const SizedBox(width: 8),
+                              ),
+                              if (isMain)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.black38,
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(color: const Color(0xFFD4AF37), width: 0.5),
                                   ),
                                   child: Text(
-                                    vMatricule,
-                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                                    isAr ? 'المقر الرئيسي' : 'Siège Principal',
+                                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'الجهة المعينة: $vDriver',
-                              style: const TextStyle(fontSize: 11, color: Colors.white70),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'مستوى الوقود: $vFuel • الحالة: $vStatus',
-                              style: TextStyle(fontSize: 10, color: vColor, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isAr
+                                ? 'الإحداثيات: ${hq.latitude.toStringAsFixed(6)}, ${hq.longitude.toStringAsFixed(6)} • نصف القطر: ${hq.radiusMeters.toInt()} متر'
+                                : 'GPS: ${hq.latitude.toStringAsFixed(6)}, ${hq.longitude.toStringAsFixed(6)} • Rayon: ${hq.radiusMeters.toInt()} m',
+                            style: const TextStyle(fontSize: 11, color: Colors.white70),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFF10B981), width: 0.5),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.check_circle, size: 11, color: Color(0xFF10B981)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isAr ? 'الحاضرون اليوم: $attendeesCount' : 'Présents: $attendeesCount',
+                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                isAr ? '• نطاق بصمة نشط 100%' : '• Zone active 100%',
+                                style: const TextStyle(fontSize: 10, color: Colors.white54),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ] else if (_adminMeansSubTab == 'hqs') ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    isAr ? 'شبكة المقرات والمفتشيات الثمانية لولاية سطيف' : 'Réseau des 8 Sièges & Inspections Régionales',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: hqList.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (ctx, i) {
-                final hq = hqList[i];
-                final hqName = hq['name']!;
-                final hqAddress = hq['address']!;
-                final hqStaff = hq['staff']!;
-                final hqGps = hq['gps']!;
-                final hqStatus = hq['status']!;
-
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF240D2D),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF4A2050)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.apartment, color: Color(0xFFD4AF37), size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              hqName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'العنوان: $hqAddress • التعداد: $hqStaff',
-                              style: const TextStyle(fontSize: 11, color: Colors.white70),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'الإحداثيات: $hqGps • $hqStatus',
-                              style: const TextStyle(fontSize: 10, color: Color(0xFF10B981)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ] else ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.inventory_2, color: Color(0xFFD4AF37), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'جرد العتاد الرقابي والتجهيزات الميدانية',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildEquipmentRow('حقائب التفتيش الميداني وقمع الغش (Mallettes de contrôle)', '42 حقيبة', 'جاهزة ومطابقة 100%'),
-                  _buildEquipmentRow('أجهزة القياس الحراري بالأشعة تحت الحمراء (Thermomètres laser)', '58 جهازاً', 'معايرة ومحدثة'),
-                  _buildEquipmentRow('أجهزة قياس الحموضة والزيوت (Testeurs d\'huile & pH-mètres)', '35 جهازاً', 'في الخدمة'),
-                  _buildEquipmentRow('الأجهزة اللوحية وبصمات الـ GPS المتنقلة', '267 جهازاً', 'مرتبطة بالمنصة السحابية'),
-                  _buildEquipmentRow('أختام الضبطية القضائية والشمع الأحمر للغلق الإداري', '120 ختماً', 'عهدة رؤساء الفرق'),
-                ],
-              ),
-            ),
-          ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
 
           const SizedBox(height: 20),
           const AppFooter(showDivider: false),
           const SizedBox(height: 14),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMeansSubTabButton({required String id, required String title, required IconData icon}) {
-    final isSelected = _adminMeansSubTab == id;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _adminMeansSubTab = id),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF240D2D),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF4A2050)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 14, color: isSelected ? Colors.black : Colors.white70),
-              const SizedBox(width: 4),
-              Text(
-                title,
-                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: isSelected ? Colors.black : Colors.white70),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEquipmentRow(String title, String count, String status) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF240D2D),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF4A2050)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.check_box, color: Color(0xFF10B981), size: 16),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Colors.white)),
-                Text('الكمية الإجمالية: $count • الحالة: $status', style: const TextStyle(fontSize: 10.5, color: Colors.white70)),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -1008,102 +926,6 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           const AppFooter(showDivider: false),
           const SizedBox(height: 14),
         ],
-      ),
-    );
-  }
-
-  void _showNewVehicleMissionDialog() {
-    final destCtrl = TextEditingController(text: 'بلديات سطيف، العلمة، وعين ولمان');
-    final driverCtrl = TextEditingController();
-    String selectedCar = 'Dacia Duster 4x4 (00452-124-19)';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          backgroundColor: const Color(0xFF240D2D),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.directions_car, color: Color(0xFFD4AF37)),
-              SizedBox(width: 8),
-              Text(
-                'إصدار أمر تنقل بالسيارة (Ordre de mission)',
-                style: TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('اختيار مركبة المصلحة:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                const SizedBox(height: 4),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedCar,
-                  dropdownColor: const Color(0xFF1E0B26),
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    filled: true,
-                    fillColor: const Color(0xFF1E0B26),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'Dacia Duster 4x4 (00452-124-19)', child: Text('Dacia Duster 4x4 (00452-124-19)', style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: 'Peugeot Partner (03410-122-19)', child: Text('Peugeot Partner (03410-122-19)', style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: 'Renault Symbol (07650-120-19)', child: Text('Renault Symbol (07650-120-19)', style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: 'Toyota Hilux 4x4 (01200-125-19)', child: Text('Toyota Hilux 4x4 (01200-125-19)', style: TextStyle(fontSize: 12))),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) setModalState(() => selectedCar = val);
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: driverCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  decoration: InputDecoration(
-                    labelText: 'السائق والموظف المكلف بالمركبة',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    filled: true,
-                    fillColor: const Color(0xFF1E0B26),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: destCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  decoration: InputDecoration(
-                    labelText: 'خط السير والوجهة المستهدفة',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    filled: true,
-                    fillColor: const Color(0xFF1E0B26),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.white60)),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('✅ تم إصدار أمر التنقل وتخصيص المركبة ($selectedCar) بنجاح'),
-                    backgroundColor: const Color(0xFF10B981),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.check, size: 16),
-              label: const Text('اعتماد أمر التنقل', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -2887,7 +2709,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
             tabs: _isAdministration
                 ? const [
                     Tab(icon: Icon(Icons.badge_outlined), text: 'المستخدمين والانضباط'),
-                    Tab(icon: Icon(Icons.apartment_outlined), text: 'الوسائل والمقرات الثمانية'),
+                    Tab(icon: Icon(Icons.apartment_outlined), text: 'المقرات والبصمة الجغرافية'),
                     Tab(icon: Icon(Icons.account_balance_wallet_outlined), text: 'المحاسبة والرواتب'),
                   ]
                 : const [
@@ -2898,15 +2720,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           ),
         ),
         floatingActionButton: _isAdministration
-            ? (_tabController.index == 1
-                ? FloatingActionButton.extended(
-                    onPressed: () => _showNewVehicleMissionDialog(),
-                    backgroundColor: AppTheme.AccentColor,
-                    foregroundColor: Colors.black,
-                    icon: const Icon(Icons.directions_car),
-                    label: const Text('أمر تنقل بالسيارة', style: TextStyle(fontWeight: FontWeight.bold)),
-                  )
-                : null)
+            ? null
             : (_tabController.index == 0
                 ? FloatingActionButton.extended(
                     onPressed: _showNewMissionDialog,
