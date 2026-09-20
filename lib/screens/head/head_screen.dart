@@ -3514,6 +3514,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           backgroundColor: const Color(0xFF2D1035),
           elevation: 0,
           toolbarHeight: 64,
+          centerTitle: true,
           leading: Navigator.canPop(context)
               ? IconButton(
                   icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37)),
@@ -3522,6 +3523,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 )
               : null,
           title: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               const GoldenEmblemCoin(
                 size: 36,
@@ -3530,105 +3532,104 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 animateGleam: false,
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            _departmentName,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _departmentName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 4),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 18),
-                          tooltip: 'تبديل المصلحة المعاينة',
-                          color: const Color(0xFF2D1035),
-                          onSelected: (val) {
-                            setState(() {
-                              _departmentName = val;
-                              _isLoading = true;
-                            });
-                            _loadAllData();
-                          },
-                          itemBuilder: (ctx) => const [
-                            PopupMenuItem(
-                              value: 'مصلحة الإدارة والوسائل',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
-                                  SizedBox(width: 8),
-                                  Text('مصلحة الإدارة والوسائل (المستخدمين، الوسائل والرواتب)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'مصلحة حماية المستهلك وقمع الغش',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
-                                  SizedBox(width: 8),
-                                  Text('مصلحة حماية المستهلك وقمع الغش (الرقابة الميدانية)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.query_stats, color: Color(0xFF3B82F6), size: 16),
-                                  SizedBox(width: 8),
-                                  Text('مصلحة المنافسة والتحقيقات الاقتصادية (الأسعار والفوترة)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: const Text(
-                            'رئيس مصلحة',
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFD4AF37),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        color: Color(0xFFD4AF37),
-                        fontWeight: FontWeight.w500,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 4),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 18),
+                        tooltip: 'تبديل المصلحة المعاينة',
+                        color: const Color(0xFF2D1035),
+                        onSelected: (val) {
+                          setState(() {
+                            _departmentName = val;
+                            _isLoading = true;
+                          });
+                          _loadAllData();
+                        },
+                        itemBuilder: (ctx) => const [
+                          PopupMenuItem(
+                            value: 'مصلحة الإدارة والوسائل',
+                            child: Row(
+                              children: [
+                                Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
+                                SizedBox(width: 8),
+                                Text('مصلحة الإدارة والوسائل (المستخدمين، الوسائل والرواتب)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'مصلحة حماية المستهلك وقمع الغش',
+                            child: Row(
+                              children: [
+                                Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
+                                SizedBox(width: 8),
+                                Text('مصلحة حماية المستهلك وقمع الغش (الرقابة الميدانية)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
+                            child: Row(
+                              children: [
+                                Icon(Icons.query_stats, color: Color(0xFF3B82F6), size: 16),
+                                SizedBox(width: 8),
+                                Text('مصلحة المنافسة والتحقيقات الاقتصادية (الأسعار والفوترة)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Text(
+                          'رئيس مصلحة',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),
@@ -3687,22 +3688,31 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
               ),
             ),
           ],
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: const Color(0xFFD4AF37),
-            labelColor: const Color(0xFFD4AF37),
-            unselectedLabelColor: Colors.white60,
-            tabs: _isAdministration
-                ? const [
-                    Tab(icon: Icon(Icons.badge_outlined), text: 'المستخدمين والانضباط'),
-                    Tab(icon: Icon(Icons.apartment_outlined), text: 'المقرات والبصمة الجغرافية'),
-                    Tab(icon: Icon(Icons.account_balance_wallet_outlined), text: 'المحاسبة والرواتب'),
-                  ]
-                : const [
-                    Tab(icon: Icon(Icons.assignment), text: 'أوامر المهمة والبرامج'),
-                    Tab(icon: Icon(Icons.fact_check), text: 'تأشير المعاينات'),
-                    Tab(icon: Icon(Icons.people_alt), text: 'مفتشو المصلحة'),
-                  ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: const Color(0xFFD4AF37),
+                  labelColor: const Color(0xFFD4AF37),
+                  unselectedLabelColor: Colors.white60,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  tabs: _isAdministration
+                      ? const [
+                          Tab(icon: Icon(Icons.badge_outlined), text: 'المستخدمين والانضباط'),
+                          Tab(icon: Icon(Icons.apartment_outlined), text: 'المقرات والبصمة الجغرافية'),
+                          Tab(icon: Icon(Icons.account_balance_wallet_outlined), text: 'المحاسبة والرواتب'),
+                        ]
+                      : const [
+                          Tab(icon: Icon(Icons.assignment), text: 'أوامر المهمة والبرامج'),
+                          Tab(icon: Icon(Icons.fact_check), text: 'تأشير المعاينات'),
+                          Tab(icon: Icon(Icons.people_alt), text: 'مفتشو المصلحة'),
+                        ],
+                ),
+              ),
+            ),
           ),
         ),
         floatingActionButton: _isAdministration

@@ -770,6 +770,7 @@ class _AdminScreenState extends State<AdminScreen>
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           automaticallyImplyLeading: false,
           flexibleSpace: Container(
             decoration: BoxDecoration(
@@ -804,63 +805,62 @@ class _AdminScreenState extends State<AdminScreen>
                 animateGleam: false,
               ),
               const SizedBox(width: 10),
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Flexible(
-                          child: Text(
-                            'الإدارة التقنية للمنظومة',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Flexible(
+                        child: Text(
+                          'الإدارة التقنية للمنظومة',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: const Text(
-                            'Admin',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFD4AF37),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 1),
-                    const Text(
-                      'التحكم في الخوادم وقواعد البيانات والمستخدمين',
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 10,
-                        color: Color(0xFFD4AF37),
-                        fontWeight: FontWeight.w500,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Text(
+                          'Admin',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  const Text(
+                    'التحكم في الخوادم وقواعد البيانات والمستخدمين',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 10,
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),
@@ -913,22 +913,31 @@ class _AdminScreenState extends State<AdminScreen>
               ),
             ),
           ],
-          bottom: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            indicatorColor: const Color(0xFFD4AF37),
-            indicatorWeight: 3,
-            labelColor: const Color(0xFFD4AF37),
-            unselectedLabelColor: Colors.white60,
-            labelStyle: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
-            unselectedLabelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
-            tabs: const [
-              Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
-              Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
-              Tab(icon: Icon(Icons.dns, size: 18), text: 'حالة النظام والسيرفر'),
-              Tab(icon: Icon(Icons.preview, size: 18), text: 'معاينة شاشات الأدوار'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.center,
+                  indicatorColor: const Color(0xFFD4AF37),
+                  indicatorWeight: 3,
+                  labelColor: const Color(0xFFD4AF37),
+                  unselectedLabelColor: Colors.white60,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelStyle: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
+                  unselectedLabelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                  tabs: const [
+                    Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
+                    Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
+                    Tab(icon: Icon(Icons.dns, size: 18), text: 'حالة النظام والسيرفر'),
+                    Tab(icon: Icon(Icons.preview, size: 18), text: 'معاينة شاشات الأدوار'),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
         body: TabBarView(

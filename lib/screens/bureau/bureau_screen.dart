@@ -748,6 +748,7 @@ class _BureauScreenState extends State<BureauScreen>
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           automaticallyImplyLeading: false,
           flexibleSpace: Container(
             decoration: BoxDecoration(
@@ -782,63 +783,62 @@ class _BureauScreenState extends State<BureauScreen>
                 animateGleam: false,
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            loc.roleBureau,
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          loc.roleBureau,
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: const Text(
-                            'الموارد البشرية والرواتب',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFD4AF37),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 1),
-                    const Text(
-                      'تسيير الموظفين والمسار المهني • مديرية التجارة سطيف',
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 10.5,
-                        color: Color(0xFFD4AF37),
-                        fontWeight: FontWeight.w500,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Text(
+                          'الموارد البشرية والرواتب',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  const Text(
+                    'تسيير الموظفين والمسار المهني • مديرية التجارة سطيف',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 10.5,
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),
@@ -910,35 +910,44 @@ class _BureauScreenState extends State<BureauScreen>
               ),
             ),
           ],
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: const Color(0xFFD4AF37),
-            indicatorWeight: 3,
-            labelColor: const Color(0xFFD4AF37),
-            unselectedLabelColor: Colors.white60,
-            labelStyle: const TextStyle(
-              fontFamily: 'Tajawal',
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.people_alt, size: 20),
-                text: 'الموظفون (${_employees.length})',
-              ),
-              Tab(
-                icon: Badge(
-                  isLabelVisible: _inquiries.any((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent'),
-                  label: Text('${_inquiries.where((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent').length}'),
-                  child: const Icon(Icons.gavel, size: 20),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: const Color(0xFFD4AF37),
+                  indicatorWeight: 3,
+                  labelColor: const Color(0xFFD4AF37),
+                  unselectedLabelColor: Colors.white60,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelStyle: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  tabs: [
+                    Tab(
+                      icon: const Icon(Icons.people_alt, size: 20),
+                      text: 'الموظفون (${_employees.length})',
+                    ),
+                    Tab(
+                      icon: Badge(
+                        isLabelVisible: _inquiries.any((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent'),
+                        label: Text('${_inquiries.where((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent').length}'),
+                        child: const Icon(Icons.gavel, size: 20),
+                      ),
+                      text: 'الانضباط والاستفسارات (${_inquiries.length})',
+                    ),
+                    const Tab(
+                      icon: Icon(Icons.assignment_turned_in, size: 20),
+                      text: 'التبريرات والشهادات',
+                    ),
+                  ],
                 ),
-                text: 'الانضباط والاستفسارات (${_inquiries.length})',
               ),
-              const Tab(
-                icon: Icon(Icons.assignment_turned_in, size: 20),
-                text: 'التبريرات والشهادات',
-              ),
-            ],
+            ),
           ),
         ),
         body: _isLoading

@@ -1598,6 +1598,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           automaticallyImplyLeading: false,
           flexibleSpace: Container(
             decoration: BoxDecoration(
@@ -1632,65 +1633,64 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 animateGleam: false,
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: const Text(
-                            'مفتش ميداني',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFD4AF37),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      (user?.fullName != null && user!.fullName!.isNotEmpty)
-                          ? '${user.fullName} • ${user.serviceName ?? "مديرية التجارة - سطيف"}'
-                          : 'مديرية التجارة وضبط السوق — ولاية سطيف',
-                      style: const TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 10.5,
-                        color: Color(0xFFD4AF37),
-                        fontWeight: FontWeight.w500,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Text(
+                          'مفتش ميداني',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    (user?.fullName != null && user!.fullName!.isNotEmpty)
+                        ? '${user.fullName} • ${user.serviceName ?? "مديرية التجارة - سطيف"}'
+                        : 'مديرية التجارة وضبط السوق — ولاية سطيف',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 10.5,
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),

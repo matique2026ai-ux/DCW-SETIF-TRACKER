@@ -47,9 +47,11 @@ class _DirectorScreenState extends State<DirectorScreen>
           backgroundColor: const Color(0xFF260D2E),
           elevation: 4,
           automaticallyImplyLeading: false,
+          centerTitle: true,
           titleSpacing: 16,
           title: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Official Golden 3D Medallion Avatar
               const GoldenEmblemCoin(
@@ -59,63 +61,58 @@ class _DirectorScreenState extends State<DirectorScreen>
                 animateGleam: false,
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            loc.roleDirector,
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        loc.roleDirector,
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: Text(
-                            loc.isArabic ? 'الآمر بالصرف' : 'Ordonnateur',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFD4AF37),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      loc.isArabic ? 'مديرية التجارة — ولاية سطيف' : 'Direction du Commerce — Wilaya de Sétif',
-                      style: const TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 10.5,
-                        color: Color(0xFFD4AF37),
-                        fontWeight: FontWeight.w500,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          loc.isArabic ? 'الآمر بالصرف' : 'Ordonnateur',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    loc.isArabic ? 'مديرية التجارة — ولاية سطيف' : 'Direction du Commerce — Wilaya de Sétif',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 10.5,
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -155,36 +152,45 @@ class _DirectorScreenState extends State<DirectorScreen>
               ),
             ),
           ],
-          bottom: TabBar(
-            controller: _tabController,
-            isScrollable: false,
-            indicatorColor: const Color(0xFFD4AF37),
-            indicatorWeight: 3.0,
-            labelColor: const Color(0xFFD4AF37),
-            unselectedLabelColor: Colors.white60,
-            labelStyle: const TextStyle(
-              fontFamily: 'Tajawal',
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: false,
+                  indicatorColor: const Color(0xFFD4AF37),
+                  indicatorWeight: 3.0,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelColor: const Color(0xFFD4AF37),
+                  unselectedLabelColor: Colors.white60,
+                  labelStyle: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 12,
+                  ),
+                  tabs: [
+                    Tab(
+                      icon: const Icon(Icons.map_outlined, size: 20),
+                      text: loc.navMap,
+                    ),
+                    Tab(
+                      icon: const Icon(Icons.assessment_outlined, size: 20),
+                      text: loc.navReports,
+                    ),
+                    Tab(
+                      icon: const Icon(Icons.gavel_outlined, size: 20),
+                      text: loc.navDeductions,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            unselectedLabelStyle: const TextStyle(
-              fontFamily: 'Tajawal',
-              fontSize: 12,
-            ),
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.map_outlined, size: 20),
-                text: loc.navMap,
-              ),
-              Tab(
-                icon: const Icon(Icons.assessment_outlined, size: 20),
-                text: loc.navReports,
-              ),
-              Tab(
-                icon: const Icon(Icons.gavel_outlined, size: 20),
-                text: loc.navDeductions,
-              ),
-            ],
           ),
         ),
         body: TabBarView(
