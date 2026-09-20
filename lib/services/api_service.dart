@@ -246,6 +246,37 @@ class ApiService {
     };
   }
 
+  Future<Map<String, dynamic>> changeMasterPin({
+    required String newMasterPin,
+    String? currentPassword,
+    String? currentPin,
+  }) async {
+    final body = {
+      'newMasterPin': newMasterPin,
+      if (currentPassword != null && currentPassword.isNotEmpty) 'currentPassword': currentPassword,
+      if (currentPin != null && currentPin.isNotEmpty) 'currentPin': currentPin,
+    };
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/auth/change-master-pin'),
+          headers: _headers,
+          body: jsonEncode(body),
+        )
+        .timeout(defaultTimeout);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final resBody = response.body.trim();
+      if (resBody.isNotEmpty && !resBody.startsWith('<')) {
+        try {
+          final data = jsonDecode(resBody);
+          if (data is Map<String, dynamic>) return data;
+        } catch (_) {}
+      }
+      return {'success': true, 'message': 'تم تحديث وحفظ رمز الأمان بنجاح ✅'};
+    }
+    throw Exception(_parseError(response, 'فشل تحديث رمز الأمان السري (Master PIN)'));
+  }
+
   Future<List<Map<String, dynamic>>> getSystemUsers() async {
     try {
       final response = await http.get(

@@ -24,6 +24,7 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
   final ValueChanged<int> onTabSelected;
   final VoidCallback? onRefresh;
   final VoidCallback? onPasswordChange;
+  final VoidCallback? onMasterPinChange;
   final VoidCallback? onLogout;
   final bool showBackButton;
   final VoidCallback? onBack;
@@ -40,6 +41,7 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
     required this.onTabSelected,
     this.onRefresh,
     this.onPasswordChange,
+    this.onMasterPinChange,
     this.onLogout,
     this.showBackButton = false,
     this.onBack,
@@ -293,6 +295,15 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
                         icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 17),
                         tooltip: isAr ? 'تغيير كلمة المرور' : 'Changer mot de passe',
                         onPressed: onPasswordChange,
+                      ),
+                      Container(width: 1, height: 16, color: Colors.white12),
+                    ],
+                    if (onMasterPinChange != null) ...[
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.shield, color: Color(0xFFD4AF37), size: 17),
+                        tooltip: isAr ? 'تغيير رمز الأمان السري (Master PIN)' : 'Changer Master PIN',
+                        onPressed: onMasterPinChange,
                       ),
                       Container(width: 1, height: 16, color: Colors.white12),
                     ],

@@ -9,6 +9,7 @@ import 'package:drh_setif_tracker/screens/head/head_screen.dart';
 import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/change_master_pin_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:drh_setif_tracker/services/inspectorate_service.dart';
@@ -789,6 +790,7 @@ class _AdminScreenState extends State<AdminScreen>
           ],
           onRefresh: _loadData,
           onPasswordChange: () => ChangePasswordDialog.show(context),
+          onMasterPinChange: () => ChangeMasterPinDialog.show(context),
           onLogout: () {
             context.read<AuthService>().logout();
             Navigator.pushReplacement(
@@ -896,6 +898,69 @@ class _AdminScreenState extends State<AdminScreen>
                     child: Text(
                       'صلاحية إنشاء الحسابات وتعيين كلمات المرور محصورة بمدير النظام (الآدمن) حصراً، بربط الحساب بالموظف المسجل إدارياً.',
                       style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Master PIN Management Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2E1236), Color(0xFF1F0926)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.shield, color: Color(0xFFD4AF37), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'منظومة الدرع المزدوج: رمز الأمان السري للمتصفح (Master PIN)',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'يمكنك في أي وقت تخصيص وتغيير رمز الأمان السري للدخول إلى حسابك من أي حاسوب أو متصفح ويب.',
+                          style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => ChangeMasterPinDialog.show(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: const Color(0xFF1A0A1F),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 2,
+                    ),
+                    icon: const Icon(Icons.key, size: 15, color: Color(0xFF1A0A1F)),
+                    label: const Text(
+                      'تغيير الرمز الآن',
+                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A0A1F)),
                     ),
                   ),
                 ],
