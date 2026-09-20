@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -104,12 +105,24 @@ class ApiService {
     return {};
   }
 
-  Future<Map<String, dynamic>> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(
+    String username,
+    String password, {
+    String? deviceId,
+    String? deviceName,
+    String? adminOverrideCode,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
+        body: jsonEncode({
+          'username': username,
+          'password': password,
+          if (deviceId != null) 'deviceId': deviceId,
+          if (deviceName != null) 'deviceName': deviceName,
+          if (adminOverrideCode != null) 'adminOverrideCode': adminOverrideCode,
+        }),
       ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
@@ -121,6 +134,21 @@ class ApiService {
       }
     } catch (e) {
       throw _handleNetworkException(e, 'خطأ في تسجيل الدخول');
+    }
+  }
+
+  Future<void> resetUserDevice(int userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/users/$userId/reset-device'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response, 'فشل في إلغاء ربط الجهاز'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في إلغاء ربط الجهاز');
     }
   }
 
@@ -532,6 +560,7 @@ class ApiService {
     String? photo,
     String? location,
     String? notes,
+    String? deviceId,
   }) async {
     try {
       final response = await http.post(
@@ -544,6 +573,7 @@ class ApiService {
           'photo': photo,
           'location': location,
           'notes': notes,
+          if (deviceId != null) 'deviceId': deviceId,
         }),
       ).timeout(defaultTimeout);
 
@@ -561,6 +591,9 @@ class ApiService {
     double? longitude,
     String? location,
     String? notes,
+    String? earlyReason,
+    String? shortShiftReason,
+    int? visitsCount,
   }) async {
     try {
       final response = await http.post(
@@ -572,6 +605,9 @@ class ApiService {
           'longitude': longitude,
           'location': location,
           'notes': notes,
+          if (earlyReason != null) 'earlyReason': earlyReason,
+          if (shortShiftReason != null) 'shortShiftReason': shortShiftReason,
+          if (visitsCount != null) 'visitsCount': visitsCount,
         }),
       ).timeout(defaultTimeout);
 
@@ -1024,8 +1060,6 @@ class ApiService {
   }
 
   // Administrative Inquiries (Demandes d'Explications) API
-  static final List<Map<String, dynamic>> _inquiriesCache = [];
-
   Future<List<Map<String, dynamic>>> getInquiries({String? status, int? employeeId}) async {
     try {
       final params = <String, String>{};
@@ -1036,16 +1070,13 @@ class ApiService {
       final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
 
       if (response.statusCode == 200) {
-        final list = _safeDecodeList(response.body);
-        if (list.isNotEmpty) return list;
+        return _safeDecodeList(response.body);
       }
-    } catch (_) {}
-
-    return _inquiriesCache.where((inq) {
-      if (status != null && inq['Status'] != status) return false;
-      if (employeeId != null && inq['EmployeeId'] != employeeId) return false;
-      return true;
-    }).toList();
+      return [];
+    } catch (e) {
+      debugPrint('Error getting inquiries: $e');
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>> createInquiry(Map<String, dynamic> data) async {
@@ -1057,17 +1088,12 @@ class ApiService {
       ).timeout(defaultTimeout);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final res = _safeDecodeMap(response.body);
-        if (res.isNotEmpty) return res;
+        return _safeDecodeMap(response.body);
       }
-    } catch (_) {}
-
-    final localInq = Map<String, dynamic>.from(data);
-    localInq['Id'] = DateTime.now().millisecondsSinceEpoch;
-    localInq['Status'] = 'sent';
-    localInq['CreatedAt'] = DateTime.now().toIso8601String();
-    _inquiriesCache.insert(0, localInq);
-    return localInq;
+      throw Exception(_parseError(response, 'فشل في إنشاء الاستفسار الإداري'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في إنشاء الاستفسار الإداري');
+    }
   }
 
   Future<void> replyToInquiry(int id, String reply, {String? attachment}) async {
@@ -1079,15 +1105,9 @@ class ApiService {
       ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) return;
-    } catch (_) {}
-
-    for (final inq in _inquiriesCache) {
-      if (inq['Id'] == id) {
-        inq['Status'] = 'answered';
-        inq['EmployeeReply'] = reply;
-        inq['EmployeeReplyAt'] = DateTime.now().toIso8601String();
-        break;
-      }
+      throw Exception(_parseError(response, 'فشل في إرسال التبرير'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في إرسال التبرير');
     }
   }
 
@@ -1104,21 +1124,9 @@ class ApiService {
       ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) return;
-    } catch (_) {}
-
-    for (final inq in _inquiriesCache) {
-      if (inq['Id'] == id) {
-        if (decision == 'deduction') {
-          inq['Status'] = 'deduction_ordered';
-          inq['DeductionDays'] = deductionDays ?? 1.0;
-        } else {
-          inq['Status'] = decision;
-        }
-        inq['DirectorDecision'] = decision;
-        inq['DirectorNotes'] = notes;
-        inq['DirectorDecisionAt'] = DateTime.now().toIso8601String();
-        break;
-      }
+      throw Exception(_parseError(response, 'فشل في حفظ قرار المدير الولائي'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في حفظ قرار المدير الولائي');
     }
   }
 
@@ -1134,16 +1142,9 @@ class ApiService {
       ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) return;
-    } catch (_) {}
-
-    for (final inq in _inquiriesCache) {
-      if (inq['Id'] == id) {
-        inq['Status'] = 'executed';
-        inq['ExecutedBy'] = executedBy;
-        inq['ExecutionNotes'] = executionNotes;
-        inq['ExecutedAt'] = DateTime.now().toIso8601String();
-        break;
-      }
+      throw Exception(_parseError(response, 'فشل في التأشير بتنفيذ الخصم على الراتب'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في التأشير بتنفيذ الخصم على الراتب');
     }
   }
 
@@ -1155,7 +1156,9 @@ class ApiService {
       ).timeout(defaultTimeout);
 
       if (response.statusCode == 200) return;
-    } catch (_) {}
-    _inquiriesCache.removeWhere((i) => i['Id'] == id);
+      throw Exception(_parseError(response, 'فشل في إلغاء الاستفسار'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في إلغاء الاستفسار');
+    }
   }
 }

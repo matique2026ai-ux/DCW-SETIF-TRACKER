@@ -6,6 +6,7 @@ class User {
   final int? employeeId;
   final String? fullName;
   final String? serviceName;
+  final String? deviceId;
 
   User({
     this.id,
@@ -15,6 +16,7 @@ class User {
     this.employeeId,
     this.fullName,
     this.serviceName,
+    this.deviceId,
   });
 
   Map<String, dynamic> toMap() {
@@ -25,6 +27,7 @@ class User {
       'employee_id': employeeId,
       'full_name': fullName,
       'service_name': serviceName,
+      'device_id': deviceId,
     };
   }
 
@@ -37,6 +40,7 @@ class User {
       employeeId: map['employee_id'] as int?,
       fullName: map['full_name'] as String?,
       serviceName: map['service_name'] as String? ?? map['service'] as String?,
+      deviceId: map['deviceId'] as String? ?? map['device_id'] as String?,
     );
   }
 }

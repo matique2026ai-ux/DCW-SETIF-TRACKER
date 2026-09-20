@@ -77,13 +77,26 @@ class _InspectorScreenState extends State<InspectorScreen> {
       final empName = user?.fullName ?? '';
       final progs = await api.getPrograms(service: deptName.isNotEmpty ? deptName : null);
       if (progs.isNotEmpty && mounted) {
-        // Match by inspector name first, then fallback to latest department mission
+        // Match by inspector name first in Title, Description (where mission members are listed), or FocusPoints
         Map<String, dynamic>? matchingProg;
         for (final p in progs) {
           final t = (p['Title'] ?? p['title'] ?? '').toString();
-          if (empName.isNotEmpty && t.contains(empName)) {
+          final d = (p['Description'] ?? p['description'] ?? '').toString();
+          final fp = (p['FocusPoints'] ?? p['focuspoints'] ?? '').toString();
+          if (empName.isNotEmpty && (t.contains(empName) || d.contains(empName) || fp.contains(empName))) {
             matchingProg = p;
             break;
+          }
+        }
+        // If not explicitly assigned, check for general department-wide missions
+        if (matchingProg == null) {
+          for (final p in progs) {
+            final t = (p['Title'] ?? p['title'] ?? '').toString();
+            final d = (p['Description'] ?? p['description'] ?? '').toString();
+            if (t.contains('تعميم') || d.contains('تعميم شامل') || d.contains('المصلحة بالكامل')) {
+              matchingProg = p;
+              break;
+            }
           }
         }
         matchingProg ??= progs.first;
@@ -410,26 +423,75 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final int empId = user?.employeeId ?? user?.id ?? 1;
     final nowStr = DateTime.now().toString().substring(11, 16);
 
+    final devId = await AuthService.getOrCreateDeviceId();
     final payload = {
       'employeeId': empId,
       'latitude': pos.latitude,
       'longitude': pos.longitude,
       'location': locationName,
       'notes': missionReason,
+      'deviceId': devId,
     };
 
     bool isOfflineMode = false;
 
     try {
-      final api = context.read<AuthService>().api;
+      final api = auth.api;
       await api.checkIn(
         empId,
         latitude: pos.latitude,
         longitude: pos.longitude,
         location: locationName,
         notes: missionReason,
+        deviceId: devId,
       );
     } catch (e) {
+      final errMsg = e.toString().replaceAll('Exception:', '').trim();
+      // If it's a security rule rejection from the server (geofence, time window, device mismatch)
+      if (errMsg.contains('النطاق الجغرافي') ||
+          errMsg.contains('نافذة تسجيل الحضور') ||
+          errMsg.contains('غير مطابق للجهاز') ||
+          errMsg.contains('تنبيه أمني') ||
+          errMsg.contains('خارج الأوقات') ||
+          errMsg.contains('أقرب مقر')) {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF200B1A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: AppTheme.DangerColor, width: 1.5),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.gpp_bad, color: AppTheme.DangerColor, size: 26),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'رفض البصمة — ضوابط أمنية',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              errMsg,
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70, height: 1.5),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.DangerColor),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('حسناً، مفهوم', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
       isOfflineMode = true;
       await OfflineSyncService.queueCheckIn(payload);
     }
@@ -615,7 +677,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
     }
   }
 
-  void _showEarlyCheckOutDialog() {
+  void _showEarlyCheckOutDialog({String? customNotice}) {
     final reasonCtrl = TextEditingController();
     String selectedReason = 'مهمة تفتيشية خارجية مسائية';
 
@@ -629,9 +691,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
             children: [
               Icon(Icons.schedule, color: AppTheme.WarningColor, size: 24),
               SizedBox(width: 8),
-              Text(
-                'تنبيه الانصراف قبل الوقت',
-                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+              Expanded(
+                child: Text(
+                  'تنبيه الانصراف وضوابط الدوام',
+                  style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
             ],
           ),
@@ -646,14 +710,15 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.3)),
                 ),
-                child: const Text(
-                  '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر توثيق المبرر الإداري أو المهمة المكلف بها.',
-                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D)),
+                child: Text(
+                  customNotice ??
+                      '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر توثيق المبرر الإداري أو المهمة المكلف بها.',
+                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D), height: 1.4),
                 ),
               ),
               const SizedBox(height: 14),
               const Text(
-                'نوع المبرر الإداري:',
+                'نوع المبرر الإداري / الاستعجالي:',
                 style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const SizedBox(height: 6),
@@ -679,7 +744,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
               TextField(
                 controller: reasonCtrl,
                 decoration: InputDecoration(
-                  labelText: 'تفاصيل وملاحظات إضافية (اختياري)',
+                  labelText: 'تفاصيل وملاحظات إضافية (مطلوبة للتوثيق)',
                   labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -693,13 +758,17 @@ class _InspectorScreenState extends State<InspectorScreen> {
             ),
             ElevatedButton.icon(
               onPressed: () {
-                final fullReason = '$selectedReason ${reasonCtrl.text.trim().isNotEmpty ? "— ${reasonCtrl.text.trim()}" : ""}';
+                final noteExtra = reasonCtrl.text.trim();
+                final fullReason = noteExtra.isNotEmpty ? '$selectedReason — $noteExtra' : selectedReason;
                 Navigator.pop(ctx);
-                _executeCheckOut(notes: fullReason);
+                _executeCheckOut(notes: fullReason, earlyReason: fullReason);
               },
               icon: const Icon(Icons.check, size: 16),
               label: const Text('تأكيد الانصراف بالمبرر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.WarningColor),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.WarningColor,
+                foregroundColor: Colors.black,
+              ),
             ),
           ],
         ),
@@ -707,7 +776,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
     );
   }
 
-  Future<void> _executeCheckOut({String? notes}) async {
+  Future<void> _executeCheckOut({String? notes, String? earlyReason}) async {
     setState(() => _isLoading = true);
     Position? pos = await _getPosition();
     pos ??= Position(
@@ -725,7 +794,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
     if (!mounted) return;
 
-    final user = context.read<AuthService>().currentUser;
+    final auth = context.read<AuthService>();
+    final user = auth.currentUser;
     final int empId = user?.employeeId ?? user?.id ?? 1;
     final isAtHQ = AppConstants.isWithinHQ(pos.latitude, pos.longitude);
 
@@ -735,19 +805,78 @@ class _InspectorScreenState extends State<InspectorScreen> {
       'longitude': pos.longitude,
       'location': isAtHQ ? 'HQ' : 'Field',
       'notes': notes,
+      'earlyReason': earlyReason,
+      'visitsCount': _visitCount,
     };
 
     bool isOfflineMode = false;
 
     try {
-      final api = context.read<AuthService>().api;
+      final api = auth.api;
       await api.checkOut(
         empId,
         latitude: pos.latitude,
         longitude: pos.longitude,
+        location: isAtHQ ? 'HQ' : 'Field',
         notes: notes,
+        earlyReason: earlyReason,
+        visitsCount: _visitCount,
       );
     } catch (e) {
+      final errMsg = e.toString().replaceAll('Exception:', '').trim();
+      if (errMsg.contains('تنبيه أمني') ||
+          errMsg.contains('تنبيه إداري') ||
+          errMsg.contains('الانصراف الفوري') ||
+          errMsg.contains('يُمنع الانصراف') ||
+          errMsg.contains('تبرير رسمي') ||
+          errMsg.contains('نصف الدوام') ||
+          errMsg.contains('دقيقة فقط')) {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF200B1A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: AppTheme.WarningColor, width: 1.5),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: AppTheme.WarningColor, size: 26),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'ضوابط الانصراف الإداري',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              errMsg,
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('إلغاء والتراجع', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.WarningColor, foregroundColor: Colors.black),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _showEarlyCheckOutDialog(customNotice: errMsg);
+                },
+                icon: const Icon(Icons.edit_note, size: 18),
+                label: const Text('تقديم تبرير الخروج الاستعجالي', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
       isOfflineMode = true;
       await OfflineSyncService.queueCheckOut(payload);
     }

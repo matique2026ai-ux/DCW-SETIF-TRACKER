@@ -146,6 +146,7 @@ class OfflineSyncService {
             photo: payload['photo'] as String?,
             location: payload['location'] as String?,
             notes: payload['notes'] as String?,
+            deviceId: payload['deviceId'] as String?,
           );
           syncedCount++;
         } else if (type == 'checkout') {
@@ -156,6 +157,8 @@ class OfflineSyncService {
             longitude: (payload['longitude'] as num?)?.toDouble(),
             location: payload['location'] as String?,
             notes: payload['notes'] as String?,
+            earlyReason: payload['earlyReason'] as String?,
+            visitsCount: (payload['visitsCount'] as num?)?.toInt(),
           );
           syncedCount++;
         } else if (type == 'visit') {
