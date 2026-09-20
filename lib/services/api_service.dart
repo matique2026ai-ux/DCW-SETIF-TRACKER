@@ -640,6 +640,32 @@ class ApiService {
     }
   }
 
+  /// Fetch full archival inspection statistics report for a date range.
+  /// Returns: summary totals, per-inspector GPS traces, per-department breakdown,
+  /// daily trend, attendance GPS archive, and all raw visits.
+  Future<Map<String, dynamic>> getInspectionSummaryReport({
+    required String startDate,
+    required String endDate,
+    String? service,
+  }) async {
+    try {
+      final params = <String, String>{
+        'startDate': startDate,
+        'endDate': endDate,
+        if (service != null && service.isNotEmpty) 'service': service,
+      };
+      final uri = Uri.parse('$baseUrl/reports/inspection-summary').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في توليد التقرير الإحصائي'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في توليد التقرير الإحصائي');
+    }
+  }
+
   Future<void> checkIn(
     int employeeId, {
     double? latitude,
@@ -947,6 +973,71 @@ class ApiService {
       throw Exception(_parseError(response, 'خطأ في تأشير واعتماد المعاينة'));
     } catch (e) {
       throw _handleNetworkException(e, 'خطأ في تأشير واعتماد المعاينة');
+    }
+  }
+
+  /// Update a visit record — used for toggling isApproved, seizureValue, notes, etc.
+  Future<Map<String, dynamic>> updateVisit(int visitId, Map<String, dynamic> data) async {
+    // Attempt 1: PUT /visits/:id
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/visits/$visitId'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      }
+      if (response.statusCode == 404) {
+        // fall through to next attempt
+        throw Exception('404');
+      }
+      throw Exception(_parseError(response, 'خطأ في تحديث المعاينة'));
+    } catch (e) {
+      if (!e.toString().contains('404')) {
+        throw _handleNetworkException(e, 'خطأ في تحديث المعاينة');
+      }
+    }
+
+    // Attempt 2: POST /visits/:id/update (fallback for older server configs)
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/visits/$visitId/update'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في تحديث المعاينة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في تحديث المعاينة');
+    }
+  }
+
+  /// Delete a visit record from TrackerVisits
+  Future<void> deleteVisit(int visitId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/visits/$visitId'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        // fallback: POST /visits/:id/delete
+        final fallback = await http.post(
+          Uri.parse('$baseUrl/visits/$visitId/delete'),
+          headers: _headers,
+        ).timeout(defaultTimeout);
+
+        if (fallback.statusCode != 200 && fallback.statusCode != 204) {
+          throw Exception(_parseError(response, 'خطأ في حذف المعاينة'));
+        }
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في حذف المعاينة');
     }
   }
 
@@ -1331,20 +1422,6 @@ class ApiService {
       throw Exception(_parseError(response, 'فشل تسجيل العتاد'));
     } catch (e) {
       throw _handleNetworkException(e, 'فشل تسجيل العتاد');
-    }
-  }
-
-  Future<void> deleteVisit(int id) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/visits/$id'),
-        headers: _headers,
-      ).timeout(defaultTimeout);
-
-      if (response.statusCode == 200) return;
-      throw Exception(_parseError(response, 'فشل في حذف المعاينة'));
-    } catch (e) {
-      throw _handleNetworkException(e, 'فشل في حذف المعاينة');
     }
   }
 

@@ -614,4 +614,389 @@ class PdfReportService {
       ),
     );
   }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // STRATEGIC INSPECTION SUMMARY REPORT — for Director's Decision Making
+  // ──────────────────────────────────────────────────────────────────────────
+  static Future<void> generateAndPrintInspectionSummaryReport({
+    required Map<String, dynamic> reportData,
+    required String directorName,
+  }) async {
+    final pdf = pw.Document();
+
+    final meta = reportData['meta'] as Map<String, dynamic>? ?? {};
+    final summary = reportData['summary'] as Map<String, dynamic>? ?? {};
+    final inspectorList = (reportData['inspectorBreakdown'] as List?)
+        ?.map((e) => Map<String, dynamic>.from(e as Map))
+        .toList() ?? [];
+    final deptList = (reportData['departmentBreakdown'] as List?)
+        ?.map((e) => Map<String, dynamic>.from(e as Map))
+        .toList() ?? [];
+    final dailyTrend = (reportData['dailyTrend'] as List?)
+        ?.map((e) => Map<String, dynamic>.from(e as Map))
+        .toList() ?? [];
+    final attendanceGPS = (reportData['attendanceGPSArchive'] as List?)
+        ?.map((e) => Map<String, dynamic>.from(e as Map))
+        .toList() ?? [];
+
+    final periodStart = meta['periodStart']?.toString() ?? '';
+    final periodEnd = meta['periodEnd']?.toString() ?? '';
+    final daysCount = meta['daysCount']?.toString() ?? '1';
+    final dateStr = DateFormat('yyyy/MM/dd').format(DateTime.now());
+
+    final totalVisits = summary['totalVisits'] ?? 0;
+    final totalViolations = summary['totalViolations'] ?? 0;
+    final violationRate = summary['violationRate'] ?? 0;
+    final totalSeizure = summary['totalSeizureValueDZD'] ?? 0;
+    final totalApproved = summary['totalApproved'] ?? 0;
+    final approvalRate = summary['approvalRate'] ?? 0;
+    final totalInspectors = summary['totalInspectors'] ?? 0;
+
+    // Load Arabic font
+    pw.Font? arabicFont;
+    try {
+      final fontData = await rootBundle.load('assets/fonts/Cairo.ttf');
+      arabicFont = pw.Font.ttf(fontData);
+    } catch (_) {
+      try {
+        final fontData = await rootBundle.load('assets/fonts/Tajawal-Regular.ttf');
+        arabicFont = pw.Font.ttf(fontData);
+      } catch (_) {}
+    }
+    final theme = pw.ThemeData.withFont(base: arabicFont, bold: arabicFont);
+
+    // Helper: build a header cell
+    pw.Widget hCell(String text) => pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      color: PdfColors.brown800,
+      child: pw.Text(text,
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.white),
+          textAlign: pw.TextAlign.center),
+    );
+
+    // Helper: build a data cell
+    pw.Widget dCell(String text, {PdfColor? bg}) => pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+      color: bg ?? PdfColors.white,
+      child: pw.Text(text, style: const pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.center),
+    );
+
+    // ── Page 1: Cover + Summary KPIs
+    pdf.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      theme: theme,
+      textDirection: pw.TextDirection.rtl,
+      margin: const pw.EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      build: (context) => [
+        // Official header
+        pw.Center(
+          child: pw.Column(children: [
+            pw.Text('الجمهورية الجزائرية الديمقراطية الشعبية',
+                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 2),
+            pw.Text('وزارة التجارة الداخلية وضبط السوق الوطنية',
+                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 2),
+            pw.Text('مديرية التجارة الداخلية وضبط السوق الوطنية — ولاية سطيف',
+                style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+            pw.SizedBox(height: 6),
+            pw.Container(height: 1.5, width: 300, color: PdfColors.amber800),
+          ]),
+        ),
+        pw.SizedBox(height: 14),
+
+        // Report Title
+        pw.Center(
+          child: pw.Container(
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.brown50,
+              border: pw.Border.all(color: PdfColors.amber800, width: 1),
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Column(children: [
+              pw.Text('تقرير الإحصائيات الرقابية الشامل',
+                  style: const pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 4),
+              pw.Text('الفترة: من $periodStart إلى $periodEnd ($daysCount يوم)',
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.brown700)),
+              pw.SizedBox(height: 2),
+              pw.Text('صادر بتاريخ: $dateStr | المدير الولائي: $directorName',
+                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+            ]),
+          ),
+        ),
+        pw.SizedBox(height: 16),
+
+        // KPI summary grid
+        pw.Text('أولاً — المؤشرات العامة للرقابة الميدانية',
+            style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 8),
+        pw.GridView(
+          crossAxisCount: 4,
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 6,
+          childAspectRatio: 2.2,
+          children: [
+            _buildKpiCard('إجمالي المعاينات', '$totalVisits', PdfColors.blue800),
+            _buildKpiCard('المخالفات المحررة', '$totalViolations', PdfColors.red800),
+            _buildKpiCard('نسبة المخالفات', '$violationRate%', PdfColors.orange800),
+            _buildKpiCard('قيمة الحجز (دج)', '${NumberFormat('#,###').format(totalSeizure)}', PdfColors.purple800),
+            _buildKpiCard('معاينات مؤشرة', '$totalApproved', PdfColors.green800),
+            _buildKpiCard('نسبة التأشير', '$approvalRate%', PdfColors.teal700),
+            _buildKpiCard('عدد المفتشين', '$totalInspectors', PdfColors.brown700),
+            _buildKpiCard('أيام الفترة', '$daysCount', PdfColors.grey700),
+          ],
+        ),
+        pw.SizedBox(height: 16),
+
+        // Department breakdown table
+        if (deptList.isNotEmpty) ...[
+          pw.Text('ثانياً — التوزيع حسب المصلحة الرقابية',
+              style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+            columnWidths: {
+              0: const pw.FlexColumnWidth(3),
+              1: const pw.FlexColumnWidth(1),
+              2: const pw.FlexColumnWidth(1),
+              3: const pw.FlexColumnWidth(1.5),
+              4: const pw.FlexColumnWidth(1),
+              5: const pw.FlexColumnWidth(1),
+            },
+            children: [
+              pw.TableRow(children: [
+                hCell('المصلحة'),
+                hCell('المعاينات'),
+                hCell('المخالفات'),
+                hCell('قيمة الحجز (دج)'),
+                hCell('مؤشر'),
+                hCell('المفتشون'),
+              ]),
+              ...deptList.map((d) {
+                final dept = d['service']?.toString() ?? '';
+                final shortDept = dept.length > 30 ? '${dept.substring(0, 28)}...' : dept;
+                return pw.TableRow(children: [
+                  dCell(shortDept, bg: PdfColors.grey100),
+                  dCell('${d['visitsCount'] ?? 0}'),
+                  dCell('${d['violationsCount'] ?? 0}'),
+                  dCell(NumberFormat('#,###').format(d['seizureValue'] ?? 0)),
+                  dCell('${d['approvedCount'] ?? 0}'),
+                  dCell('${d['inspectorCount'] ?? 0}'),
+                ]);
+              }),
+            ],
+          ),
+          pw.SizedBox(height: 14),
+        ],
+
+        // Daily trend table
+        if (dailyTrend.isNotEmpty) ...[
+          pw.Text('ثالثاً — التطور اليومي للمعاينات الميدانية',
+              style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+            columnWidths: {
+              0: const pw.FlexColumnWidth(1.5),
+              1: const pw.FlexColumnWidth(1),
+              2: const pw.FlexColumnWidth(1),
+              3: const pw.FlexColumnWidth(1.5),
+              4: const pw.FlexColumnWidth(1),
+            },
+            children: [
+              pw.TableRow(children: [
+                hCell('التاريخ'),
+                hCell('المعاينات'),
+                hCell('المخالفات'),
+                hCell('قيمة الحجز (دج)'),
+                hCell('مؤشر'),
+              ]),
+              ...dailyTrend.map((d) => pw.TableRow(children: [
+                dCell(d['date']?.toString() ?? '', bg: PdfColors.grey100),
+                dCell('${d['visits'] ?? 0}'),
+                dCell('${d['violations'] ?? 0}'),
+                dCell(NumberFormat('#,###').format(d['seizureValue'] ?? 0)),
+                dCell('${d['approved'] ?? 0}'),
+              ])),
+            ],
+          ),
+        ],
+      ],
+    ));
+
+    // ── Page 2: Inspector Ranking + GPS Archive
+    if (inspectorList.isNotEmpty || attendanceGPS.isNotEmpty) {
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        theme: theme,
+        textDirection: pw.TextDirection.rtl,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        header: (ctx) => pw.Container(
+          margin: const pw.EdgeInsets.only(bottom: 8),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('تقرير الإحصاء الرقابي — مديرية التجارة سطيف',
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+              pw.Text('الفترة: $periodStart → $periodEnd',
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+            ],
+          ),
+        ),
+        build: (context) => [
+          // Inspector performance ranking
+          if (inspectorList.isNotEmpty) ...[
+            pw.Text('رابعاً — ترتيب أداء المفتشين الميدانيين',
+                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(0.5),
+                1: const pw.FlexColumnWidth(2.5),
+                2: const pw.FlexColumnWidth(1.5),
+                3: const pw.FlexColumnWidth(1),
+                4: const pw.FlexColumnWidth(1),
+                5: const pw.FlexColumnWidth(1.5),
+                6: const pw.FlexColumnWidth(1),
+              },
+              children: [
+                pw.TableRow(children: [
+                  hCell('#'),
+                  hCell('اسم المفتش'),
+                  hCell('المصلحة'),
+                  hCell('معاينات'),
+                  hCell('مخالفات'),
+                  hCell('قيمة الحجز (دج)'),
+                  hCell('مؤشر'),
+                ]),
+                ...inspectorList.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final insp = entry.value;
+                  final service_ = (insp['service']?.toString() ?? '');
+                  final shortSvc = service_.contains('المستهلك') ? 'ق. الغش' :
+                      service_.contains('المنافسة') ? 'المنافسة' :
+                      service_.contains('الإدارة') ? 'الإدارة' : service_.length > 15 ? '${service_.substring(0, 12)}...' : service_;
+                  return pw.TableRow(
+                    decoration: pw.BoxDecoration(color: i % 2 == 0 ? PdfColors.white : PdfColors.grey50),
+                    children: [
+                      dCell('${i + 1}'),
+                      dCell(insp['name']?.toString() ?? ''),
+                      dCell(shortSvc),
+                      dCell('${insp['visitsCount'] ?? 0}'),
+                      dCell('${insp['violationsCount'] ?? 0}'),
+                      dCell(NumberFormat('#,###').format(insp['totalSeizureValue'] ?? 0)),
+                      dCell('${insp['approvedVisits'] ?? 0}'),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            pw.SizedBox(height: 14),
+          ],
+
+          // GPS Attendance Archive
+          if (attendanceGPS.isNotEmpty) ...[
+            pw.Text('خامساً — أرشيف البصمة الجغرافية للحضور (GPS)',
+                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              'يوضح هذا الجدول توثيق الحضور بالإحداثيات الجغرافية الدقيقة لكل موظف في الفترة المحددة.',
+              style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(2),
+                1: const pw.FlexColumnWidth(1),
+                2: const pw.FlexColumnWidth(1),
+                3: const pw.FlexColumnWidth(1.5),
+                4: const pw.FlexColumnWidth(1.5),
+                5: const pw.FlexColumnWidth(1),
+              },
+              children: [
+                pw.TableRow(children: [
+                  hCell('الموظف'),
+                  hCell('التاريخ'),
+                  hCell('وقت الدخول'),
+                  hCell('خط العرض (GPS)'),
+                  hCell('خط الطول (GPS)'),
+                  hCell('داخل النطاق'),
+                ]),
+                ...attendanceGPS.take(50).map((a) {
+                  final lat = a['checkInLatitude'];
+                  final lng = a['checkInLongitude'];
+                  final inGeo = a['isWithinGeofence'] == true ? '✓' : '✗';
+                  final checkIn = a['checkInTime']?.toString() ?? '';
+                  final shortTime = checkIn.length >= 16 ? checkIn.substring(11, 16) : checkIn;
+                  return pw.TableRow(children: [
+                    dCell(a['name']?.toString() ?? '', bg: PdfColors.grey50),
+                    dCell(a['date']?.toString() ?? ''),
+                    dCell(shortTime),
+                    dCell(lat != null ? (lat as num).toStringAsFixed(5) : 'غير مسجل'),
+                    dCell(lng != null ? (lng as num).toStringAsFixed(5) : 'غير مسجل'),
+                    dCell(inGeo),
+                  ]);
+                }),
+              ],
+            ),
+          ],
+
+          // Signature block
+          pw.SizedBox(height: 20),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text('ختم المصلحة', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                pw.SizedBox(height: 30),
+                pw.Container(width: 100, height: 0.5, color: PdfColors.grey400),
+              ]),
+              pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+                pw.Text('سطيف في: $dateStr', style: const pw.TextStyle(fontSize: 9)),
+                pw.SizedBox(height: 6),
+                pw.Text('المدير الولائي للتجارة', style: const pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 2),
+                pw.Text(directorName, style: pw.TextStyle(fontSize: 9, color: PdfColors.brown800)),
+                pw.SizedBox(height: 24),
+                pw.Container(width: 120, height: 0.5, color: PdfColors.grey400),
+                pw.Text('التوقيع والختم', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+              ]),
+            ],
+          ),
+        ],
+      ));
+    }
+
+    await Printing.layoutPdf(
+      onLayout: (_) async => pdf.save(),
+      name: 'Rapport_Statistiques_DCW_Setif_${periodStart}_to_${periodEnd}.pdf',
+    );
+  }
+
+  static pw.Widget _buildKpiCard(String label, String value, PdfColor color) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: color, width: 1),
+        borderRadius: pw.BorderRadius.circular(4),
+        color: PdfColor(color.red, color.green, color.blue, 0.08),
+      ),
+      child: pw.Column(
+        mainAxisAlignment: pw.MainAxisAlignment.center,
+        children: [
+          pw.Text(value,
+              style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: color)),
+          pw.SizedBox(height: 3),
+          pw.Text(label,
+              style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
+              textAlign: pw.TextAlign.center),
+        ],
+      ),
+    );
+  }
 }
+

@@ -3123,11 +3123,22 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                     final location = (v['LocationName'] ?? v['locationName'] ?? 'ولاية سطيف').toString();
                     final bool hasViolation = v['ViolationFound'] == true || v['violationFound'] == true;
                     final String notes = (v['Notes'] ?? v['notes'] ?? '').toString();
+                    final bool isApproved = v['IsApproved'] == true || v['isApproved'] == true;
+                    final int visitId = int.tryParse('${v['Id'] ?? v['id'] ?? 0}') ?? 0;
+                    final double seizureVal = double.tryParse('${v['SeizureValue'] ?? v['seizureValue'] ?? 0}') ?? 0.0;
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
                       color: AppTheme.CardColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(
+                          color: isApproved
+                              ? const Color(0xFFD4AF37).withValues(alpha: 0.6)
+                              : AppTheme.BorderColor.withValues(alpha: 0.3),
+                          width: isApproved ? 1.2 : 0.8,
+                        ),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
@@ -3163,6 +3174,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                     ],
                                   ),
                                 ),
+                                // Violation badge
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
@@ -3170,7 +3182,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    hasViolation ? 'مخالفة محررة' : 'مطابق للشروط',
+                                    hasViolation ? 'مخالفة محررة' : 'مطابق',
                                     style: TextStyle(
                                       fontFamily: 'Tajawal',
                                       fontSize: 10,
@@ -3179,7 +3191,42 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
+                                // Visa / Approval badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isApproved
+                                        ? const Color(0xFFD4AF37).withValues(alpha: 0.15)
+                                        : Colors.grey.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isApproved ? const Color(0xFFD4AF37) : Colors.grey,
+                                      width: 0.6,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        isApproved ? Icons.verified : Icons.pending_outlined,
+                                        size: 11,
+                                        color: isApproved ? const Color(0xFFD4AF37) : Colors.grey,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        isApproved ? 'مؤشر' : 'في الانتظار',
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: isApproved ? const Color(0xFFD4AF37) : Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
                                   tooltip: 'حذف المعاينة',
@@ -3189,6 +3236,29 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                 ),
                               ],
                             ),
+                            // Seizure value if present
+                            if (seizureVal > 0) ...[
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.inventory_2, size: 13, color: Color(0xFFF59E0B)),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      'قيمة الحجز: ${seizureVal.toStringAsFixed(0)} دج',
+                                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             if (notes.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Container(
@@ -3203,11 +3273,99 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                 ),
                               ),
                             ],
+                            // ── VISA / APPROVE ROW ──────────────────────────────
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                if (!isApproved)
+                                  ElevatedButton.icon(
+                                    onPressed: visitId == 0
+                                        ? null
+                                        : () async {
+                                            try {
+                                              final api = context.read<AuthService>().api;
+                                              await api.updateVisit(visitId, {'isApproved': true});
+                                              _loadAllData();
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      '✅ تم التأشير على معاينة: $shopName بنجاح',
+                                                      style: const TextStyle(fontFamily: 'Tajawal'),
+                                                    ),
+                                                    backgroundColor: const Color(0xFFD4AF37),
+                                                    behavior: SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('خطأ في التأشير: $e', style: const TextStyle(fontFamily: 'Tajawal')),
+                                                    backgroundColor: Colors.redAccent,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                    icon: const Icon(Icons.verified, size: 15),
+                                    label: const Text(
+                                      'تأشير رسمي ✓',
+                                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFD4AF37),
+                                      foregroundColor: Colors.black,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  )
+                                else ...[
+                                  const Icon(Icons.verified, size: 14, color: Color(0xFFD4AF37)),
+                                  const SizedBox(width: 5),
+                                  const Text(
+                                    'تم التأشير من رئيس المصلحة',
+                                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 11.5, color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                                  ),
+                                  const Spacer(),
+                                  TextButton.icon(
+                                    onPressed: visitId == 0
+                                        ? null
+                                        : () async {
+                                            try {
+                                              final api = context.read<AuthService>().api;
+                                              await api.updateVisit(visitId, {'isApproved': false});
+                                              _loadAllData();
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text('تم سحب التأشير — المعاينة معلقة مجدداً', style: TextStyle(fontFamily: 'Tajawal')),
+                                                    backgroundColor: Colors.orange,
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.redAccent),
+                                                );
+                                              }
+                                            }
+                                          },
+                                    icon: const Icon(Icons.undo, size: 14, color: Colors.grey),
+                                    label: const Text('سحب التأشير', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey)),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ],
                         ),
                       ),
                     );
                   },
+
                 ),
         ),
       ],
