@@ -307,19 +307,42 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final loc = AppLocalizations.of(context);
     setState(() => _isLoading = true);
 
-    Position? pos = await _getPosition();
-    pos ??= Position(
-      latitude: AppConstants.hqLatitude,
-      longitude: AppConstants.hqLongitude,
-      timestamp: DateTime.now(),
-      accuracy: 5.0,
-      altitude: 0.0,
-      altitudeAccuracy: 0.0,
-      heading: 0.0,
-      headingAccuracy: 0.0,
-      speed: 0.0,
-      speedAccuracy: 0.0,
-    );
+    final Position? pos = await _getPosition();
+    if (pos == null) {
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.location_off, color: AppTheme.DangerColor, size: 26),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'تعذر تحديد موقع GPS',
+                  style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            '⚠️ تنبيه أمني إلزامي:\nلم يتمكن التطبيق من قراءة إحداثيات موقعك الجغرافي الفعلي (GPS).\n\n• يرجى تفعيل خدمة الموقع (GPS) في الهاتف أو المتصفح.\n• التأكد من منح التطبيق صلاحية الموقع الجغرافي الدقيق.\n• يُمنع قانوناً تسجيل الحضور الصباحي دون بصمة جغرافية حقيقية وموثقة.',
+            style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70, height: 1.5),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('حسناً، مفهوم', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
 
@@ -332,27 +355,69 @@ class _InspectorScreenState extends State<InspectorScreen> {
     );
     final bool isAtHQ = distance <= nearestHQ.radiusMeters;
 
-    String locationName = isAtHQ ? nearestHQ.nameAr : 'مهمة ميدانية خارج المقرات (${nearestHQ.nameAr} - ${distance.round()}م)';
+    String locationName = isAtHQ ? nearestHQ.nameAr : 'مهمة ميدانية خارجية (${nearestHQ.nameAr} - ${distance.round()}م)';
     String? missionReason;
 
-    // If outside all official inspectorates/HQ, allow choosing field mission mode or scanning QR
+    // Strict Enforcement: If outside all official inspectorates/HQ
     if (!isAtHQ) {
       setState(() => _isLoading = false);
+
+      // If no official active program is assigned to this inspector in the system
+      if (_activeProgram == null) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF200B1A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: AppTheme.DangerColor, width: 1.5),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.gpp_bad, color: AppTheme.DangerColor, size: 26),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'رفض البصمة — خارج المقرات الرسمية',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              '📍 أنت الآن خارج النطاق الجغرافي المعتمد للمقرات الرسمية (${nearestHQ.nameAr} يبعد عنك ${distance.round()}م).\n\n⛔ يُمنع قانوناً تسجيل الحضور الصباحي من خارج المقر أو من المنزل إلا بوجود أمر بمهمة رقابية خارجية مسطرة ومسندة لك مسبقاً في النظام من طرف الإدارة.\n\nيرجى التوجه إلى المقر الرسمي للبصمة، أو مراجعة رئيس المصلحة لتأشير أمر المهمة.',
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70, height: 1.5),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.DangerColor),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('حسناً، مفهوم', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // If the inspector has a legitimate authorized mission program in the system
+      final String programTitle = (_activeProgram?['title'] ?? 'مهمة رقابية ميدانية معتمدة').toString();
       final fieldChoice = await showDialog<String>(
         context: context,
         barrierDismissible: false,
         builder: (ctx) {
-          final reasonCtrl = TextEditingController(text: 'انطلاق مباشر في مهمة رقابية ميدانية');
+          final reasonCtrl = TextEditingController(text: programTitle);
           return AlertDialog(
             backgroundColor: AppTheme.CardColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             title: const Row(
               children: [
-                Icon(Icons.location_on, color: AppTheme.WarningColor, size: 24),
+                Icon(Icons.assignment_turned_in, color: AppTheme.AccentColor, size: 24),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'تسجيل الحضور الميداني',
+                    'حضور بموجب أمر مهمة خارجية',
                     style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
@@ -365,18 +430,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.WarningColor.withValues(alpha: 0.12),
+                    color: AppTheme.AccentColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.3)),
+                    border: Border.all(color: AppTheme.AccentColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    '📍 أنت الآن خارج المقرات الرسمية (${nearestHQ.nameAr} على بعد ${distance.round()}م).\nيمكنك تأكيد الانطلاق المباشر في مهمة رقابية (سوق جملة، مداومة، بلدية نائية).',
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D)),
+                    '📍 برنامج المهمة الميدانية المسجل لك اليوم:\n$programTitle\n(${nearestHQ.nameAr} على بعد ${distance.round()}م)',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D), height: 1.4),
                   ),
                 ),
                 const SizedBox(height: 14),
                 const Text(
-                  'سبب الانطلاق المباشر / أمر المهمة:',
+                  'تفاصيل نقطة الانطلاق الميدانية:',
                   style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
@@ -384,7 +449,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   controller: reasonCtrl,
                   style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'مثال: مراقبة سوق الجملة / أمر بمهمة رقم...',
+                    hintText: 'أدخل تفاصيل الانطلاق الميداني...',
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -412,7 +477,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
       if (fieldChoice == null) return;
       if (!mounted) return;
-      missionReason = fieldChoice.isNotEmpty ? fieldChoice : 'مهمة رقابية ميدانية مباشرة';
+      missionReason = fieldChoice.isNotEmpty ? fieldChoice : programTitle;
       locationName = '$missionReason ($locationName)';
       setState(() => _isLoading = true);
     }
@@ -505,8 +570,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
         _isCheckedIn = true;
         _checkInTime = nowStr;
         _checkInPhoto = null;
-        _checkInLat = pos?.latitude;
-        _checkInLng = pos?.longitude;
+        _checkInLat = pos.latitude;
+        _checkInLng = pos.longitude;
         _isLoading = false;
         _pendingSyncCount = pending;
       });
