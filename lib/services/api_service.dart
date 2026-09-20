@@ -363,10 +363,24 @@ class ApiService {
 
   Future<Map<String, dynamic>> deleteSystemUser(int id) async {
     try {
-      final response = await http.delete(
+      var response = await http.delete(
         Uri.parse('$baseUrl/auth/users/$id'),
         headers: _headers,
       ).timeout(defaultTimeout);
+
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        response = await http.delete(
+          Uri.parse('$baseUrl/users/$id'),
+          headers: _headers,
+        ).timeout(defaultTimeout);
+      }
+
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        response = await http.post(
+          Uri.parse('$baseUrl/auth/users/$id/delete'),
+          headers: _headers,
+        ).timeout(defaultTimeout);
+      }
 
       if (response.statusCode == 200) {
         return _safeDecodeMap(response.body);
