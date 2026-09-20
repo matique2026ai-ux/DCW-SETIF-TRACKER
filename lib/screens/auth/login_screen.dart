@@ -280,6 +280,13 @@ class _LoginScreenState extends State<LoginScreen>
                                       labelStyle: TextStyle(
                                         fontFamily: fontFam,
                                         fontSize: 13,
+                                        color: Colors.white70,
+                                      ),
+                                      floatingLabelStyle: TextStyle(
+                                        fontFamily: fontFam,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFD4AF37),
                                       ),
                                       prefixIcon: const Icon(
                                         Icons.person_outline,
@@ -329,6 +336,13 @@ class _LoginScreenState extends State<LoginScreen>
                                 labelStyle: TextStyle(
                                   fontFamily: fontFam,
                                   fontSize: 13,
+                                  color: Colors.white70,
+                                ),
+                                floatingLabelStyle: TextStyle(
+                                  fontFamily: fontFam,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFD4AF37),
                                 ),
                                 prefixIcon: const Icon(
                                   Icons.lock_outline,
