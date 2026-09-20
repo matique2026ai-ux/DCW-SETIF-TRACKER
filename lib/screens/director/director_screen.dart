@@ -5,6 +5,7 @@ import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/director/director_map_tab.dart';
+import 'package:drh_setif_tracker/screens/director/director_analytics_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_reports_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_deductions_tab.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
@@ -25,7 +26,7 @@ class _DirectorScreenState extends State<DirectorScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -60,6 +61,10 @@ class _DirectorScreenState extends State<DirectorScreen>
               label: loc.navMap,
             ),
             ModernNavTabItem(
+              icon: Icons.analytics_outlined,
+              label: loc.isArabic ? 'الإحصائيات الرقابية' : 'Statistiques de Contrôle',
+            ),
+            ModernNavTabItem(
               icon: Icons.assessment_outlined,
               label: loc.navReports,
             ),
@@ -75,6 +80,7 @@ class _DirectorScreenState extends State<DirectorScreen>
           controller: _tabController,
           children: const [
             DirectorMapTab(),
+            DirectorAnalyticsTab(),
             DirectorReportsTab(),
             DirectorDeductionsTab(),
           ],

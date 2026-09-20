@@ -537,6 +537,29 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getDirectorAnalytics({
+    String? date,
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      final params = <String, String>{};
+      if (date != null) params['date'] = date;
+      if (startDate != null) params['startDate'] = startDate;
+      if (endDate != null) params['endDate'] = endDate;
+
+      final uri = Uri.parse('$baseUrl/dashboard/analytics').replace(queryParameters: params.isNotEmpty ? params : null);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'خطأ في جلب التحليلات الرقابية'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'خطأ في جلب التحليلات الرقابية');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getRecentActivity() async {
     try {
       final response = await http.get(
