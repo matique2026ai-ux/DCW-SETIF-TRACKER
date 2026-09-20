@@ -1331,22 +1331,29 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                       icon: Icons.timer_off_outlined,
                       title: loc.isArabic ? 'تسجيل الحضور اليومي' : 'Pointage quotidien',
                       status: loc.isArabic ? 'لم يسجل الحضور اليوم عبر التطبيق ❌' : 'Non pointé aujourd\'hui via l\'application ❌',
+                      color: AppTheme.DangerColor,
                     ),
                     const SizedBox(height: 8),
                     _proofTile(
                       icon: Icons.storefront_outlined,
                       title: loc.isArabic ? 'المهام والمعاينات الميدانية' : 'Missions et visites sur le terrain',
-                      status: loc.isArabic ? '0 زيارات تجارية مسجلة اليوم' : '0 visites de contrôle enregistrées aujourd\'hui',
+                      status: loc.isArabic ? '0 زيارات تجارية مسجلة اليوم (لا يوجد نشاط ميداني)' : '0 visites de contrôle enregistrées aujourd\'hui',
+                      color: const Color(0xFFF59E0B),
                     ),
                     const SizedBox(height: 8),
                     _proofTile(
-                      icon: Icons.history_edu_outlined,
+                      icon: _deductions.where((d) => d['EmployeeId'] == emp['Id']).isEmpty
+                          ? Icons.check_circle_outline
+                          : Icons.warning_amber_rounded,
                       title: loc.isArabic ? 'السوابق الإدارية والخصومات' : 'Antécédents administratifs et retenues',
                       status: _deductions.where((d) => d['EmployeeId'] == emp['Id']).isEmpty
                           ? (loc.isArabic ? 'السجل الإداري نظيف (0 سوابق خصم) ✔️' : 'Dossier administratif vierge (0 antécédents) ✔️')
                           : (loc.isArabic
                               ? 'يوجد ${_deductions.where((d) => d['EmployeeId'] == emp['Id']).length} طلبات خصم سابقة في النظام ⚠️'
                               : '${_deductions.where((d) => d['EmployeeId'] == emp['Id']).length} ordres de retenue antérieurs ⚠️'),
+                      color: _deductions.where((d) => d['EmployeeId'] == emp['Id']).isEmpty
+                          ? const Color(0xFF10B981)
+                          : AppTheme.DangerColor,
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -1383,17 +1390,23 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
     );
   }
 
-  Widget _proofTile({required IconData icon, required String title, required String status}) {
+  Widget _proofTile({
+    required IconData icon,
+    required String title,
+    required String status,
+    Color? color,
+  }) {
+    final statusColor = color ?? AppTheme.DangerColor;
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.black12,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: statusColor.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppTheme.DangerColor, size: 20),
+          Icon(icon, color: statusColor, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1405,7 +1418,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                 ),
                 Text(
                   status,
-                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.DangerColor),
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: statusColor, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
