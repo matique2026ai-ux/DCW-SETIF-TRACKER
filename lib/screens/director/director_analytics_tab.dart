@@ -126,8 +126,8 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             _buildExecutiveHeader(isArabic, isToday, dateStr),
             const SizedBox(height: 16),
 
-            // 2. Primary KPI Metric Cards
-            _buildKpiDeck(isArabic, inspections, attendance),
+            // 2. Primary KPI Metric Cards (Interactive on Tap)
+            _buildKpiDeck(isArabic, inspections, attendance, recentVisits),
             const SizedBox(height: 20),
 
             // 3. Department Breakdown (Fraud Repression vs Competition)
@@ -228,7 +228,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   ),
                   Text(
                     isToday
-                      ? (isArabic ? 'بيانات حية مباشرة من الميدان وقاعدة البيانات' : 'Données en direct de la base de données')
+                      ? (isArabic ? 'بيانات حية ومباشرة من قاعدة البيانات (انقر على أي بطاقة لعرض تفاصيلها 👆)' : 'Données réelles et directes (Cliquez sur une carte)')
                       : (isArabic ? 'أرشيف الرقابة والتفتيش ليوم: $dateStr' : 'Archive du: $dateStr'),
                     style: TextStyle(
                       fontFamily: 'Tajawal',
@@ -278,14 +278,37 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     );
   }
 
-  Widget _buildKpiDeck(bool isArabic, Map<String, dynamic> ins, Map<String, dynamic> att) {
-    final totalVisits = ins['totalVisits'] ?? 0;
-    final violations = ins['violationsCount'] ?? 0;
-    final seizureVal = (ins['totalSeizureValue'] as num?)?.toDouble() ?? 0.0;
-    final closures = ins['closureProposalsCount'] ?? 0;
-    final samples = ins['samplesCount'] ?? 0;
-    final int courtReferrals = (ins['courtReferralsCount'] as num?)?.toInt() ?? 0;
-    final readinessRate = att['readinessRate']?.toString() ?? '0';
+  Widget _buildKpiDeck(
+    bool isArabic,
+    Map<String, dynamic> ins,
+    Map<String, dynamic> att,
+    List<dynamic> recentVisits,
+  ) {
+    final totalVisits = ins['totalVisits'] ?? recentVisits.length;
+    final violations = ins['violationsCount'] ?? recentVisits.where((v) => v['ViolationFound'] == true || v['violationfound'] == true || v['ViolationFound'] == 1).length;
+    
+    // Robust calculation for Seizure Value
+    double seizureVal = (ins['totalSeizureValue'] as num?)?.toDouble() ?? double.tryParse(ins['totalSeizureValue']?.toString() ?? '0') ?? 0.0;
+    if (seizureVal == 0.0 && recentVisits.isNotEmpty) {
+      for (final v in recentVisits) {
+        final val = (v['SeizureValue'] as num?)?.toDouble() ?? double.tryParse(v['SeizureValue']?.toString() ?? '0') ?? 0.0;
+        seizureVal += val;
+        // Text parsing fallback if needed
+        if (val == 0.0) {
+          final notes = '${v['ViolationNotes'] ?? ''} ${v['Notes'] ?? ''}';
+          final match = RegExp(r'(\d+[\d,.]*)\s*دج').firstMatch(notes);
+          if (match != null) {
+            final parsed = double.tryParse(match.group(1)!.replaceAll(',', '').replaceAll('.', ''));
+            if (parsed != null && parsed > 0) seizureVal += parsed;
+          }
+        }
+      }
+    }
+
+    final closures = ins['closureProposalsCount'] ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('غلق') ?? false) || (v['ViolationNotes']?.toString().contains('غلق') ?? false)).length;
+    final samples = ins['samplesCount'] ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('عين') ?? false) || (v['ViolationNotes']?.toString().contains('عين') ?? false)).length;
+    final int courtReferrals = (ins['courtReferralsCount'] as num?)?.toInt() ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('محضر') ?? false) || (v['ViolationNotes']?.toString().contains('محضر') ?? false)).length;
+    final readinessRate = att['readinessRate']?.toString() ?? '0.0';
 
     final formatter = NumberFormat('#,###', 'fr_DZ');
     final seizureText = '${formatter.format(seizureVal)} دج';
@@ -311,42 +334,48 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               value: '$totalVisits',
               icon: Icons.storefront_outlined,
               accentColor: const Color(0xFF38BDF8),
-              subtitle: isArabic ? 'معاينة ميدانية مسجلة' : 'Interventions terrain',
+              subtitle: isArabic ? 'معاينة ميدانية (انقر للتفاصيل)' : 'Interventions (Cliquez)',
+              onTap: () => _showVisitsDetailsSheet(context, recentVisits, isArabic),
             ),
             _buildMetricTile(
               title: isArabic ? 'المخالفات والمحاضر' : 'Infractions & PVs',
               value: '$violations',
               icon: Icons.gavel_outlined,
               accentColor: const Color(0xFFEF4444),
-              subtitle: courtReferrals > 0 ? (isArabic ? '$courtReferrals محضر متابعة قضائية' : '$courtReferrals PVs justice') : (isArabic ? 'مخالفات محررة' : 'Infractions constatées'),
+              subtitle: courtReferrals > 0 ? (isArabic ? '$courtReferrals محضر قضائي (انقر)' : '$courtReferrals PVs justice') : (isArabic ? 'مخالفات محررة (انقر)' : 'Infractions (Cliquez)'),
+              onTap: () => _showViolationsDetailsSheet(context, recentVisits, isArabic),
             ),
             _buildMetricTile(
               title: isArabic ? 'المحجوزات والسلع' : 'Valeur des Saisies',
               value: seizureVal > 0 ? seizureText : '0.00 دج',
               icon: Icons.inventory_2_outlined,
               accentColor: const Color(0xFFF59E0B),
-              subtitle: isArabic ? 'قيمة السلع المحجوزة' : 'Marchandises saisies',
+              subtitle: isArabic ? 'قيمة السلع المحجوزة (انقر)' : 'Marchandises saisies',
+              onTap: () => _showSeizuresDetailsSheet(context, recentVisits, isArabic, seizureVal),
             ),
             _buildMetricTile(
               title: isArabic ? 'الجاهزية والانتشار' : 'Taux de Déploiement',
               value: '$readinessRate%',
               icon: Icons.people_alt_outlined,
               accentColor: const Color(0xFF10B981),
-              subtitle: isArabic ? '${att['presentToday'] ?? 0} مفتش حاضر من ${att['totalInspectors'] ?? 0}' : '${att['presentToday'] ?? 0} présents / ${att['totalInspectors'] ?? 0}',
+              subtitle: isArabic ? '${att['presentToday'] ?? 0} حاضر من ${att['totalInspectors'] ?? 5} (انقر)' : '${att['presentToday'] ?? 0} présents / ${att['totalInspectors'] ?? 5}',
+              onTap: () => _showReadinessDetailsSheet(context, att, isArabic),
             ),
             _buildMetricTile(
               title: isArabic ? 'اقتراحات الغلق الإداري' : 'Fermetures Proposées',
               value: '$closures',
               icon: Icons.block_outlined,
               accentColor: const Color(0xFFEC4899),
-              subtitle: isArabic ? 'اقتراح غلق رسمي' : 'Propositions au Wali',
+              subtitle: isArabic ? 'اقتراح غلق رسمي (انقر)' : 'Propositions Wali (Cliquez)',
+              onTap: () => _showClosuresDetailsSheet(context, recentVisits, isArabic),
             ),
             _buildMetricTile(
               title: isArabic ? 'العينات للتحاليل' : 'Échantillons Labo',
               value: '$samples',
               icon: Icons.science_outlined,
               accentColor: const Color(0xFFA855F7),
-              subtitle: isArabic ? 'عينة مقتطعة للمخبر' : 'Analyses laboratoire',
+              subtitle: isArabic ? 'عينة مقتطعة للمخبر (انقر)' : 'Analyses labo (Cliquez)',
+              onTap: () => _showSamplesDetailsSheet(context, recentVisits, isArabic),
             ),
           ],
         );
@@ -360,73 +389,92 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     required IconData icon,
     required Color accentColor,
     required String subtitle,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF240D2D),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade300,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: accentColor, size: 16),
+        splashColor: accentColor.withValues(alpha: 0.2),
+        highlightColor: accentColor.withValues(alpha: 0.1),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF240D2D),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: accentColor.withValues(alpha: 0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Tajawal',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: accentColor,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade300,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: accentColor, size: 16),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: accentColor,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.white24),
+                ],
+              ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 11,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ],
           ),
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Tajawal',
-              fontSize: 11,
-              color: Colors.grey.shade400,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1009,6 +1057,318 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             ),
         ],
       ),
+    );
+  }
+
+  // -------------------------------------------------------------
+  // MODAL DETAILS SHEETS ON CARD CLICK
+  // -------------------------------------------------------------
+
+  void _showVisitsDetailsSheet(BuildContext context, List<dynamic> visits, bool isArabic) {
+    _showDetailsModal(
+      title: isArabic ? 'قائمة المعاينات والتدخلات الميدانية المسجلة' : 'Toutes les interventions terrain',
+      icon: Icons.storefront_outlined,
+      accentColor: const Color(0xFF38BDF8),
+      items: visits,
+      isArabic: isArabic,
+    );
+  }
+
+  void _showViolationsDetailsSheet(BuildContext context, List<dynamic> visits, bool isArabic) {
+    final filtered = visits.where((v) => v['ViolationFound'] == true || v['violationfound'] == true || v['ViolationFound'] == 1).toList();
+    _showDetailsModal(
+      title: isArabic ? 'المخالفات والمحاضر القضائية المحررة' : 'Infractions & Procès-Verbaux',
+      icon: Icons.gavel_outlined,
+      accentColor: const Color(0xFFEF4444),
+      items: filtered,
+      isArabic: isArabic,
+    );
+  }
+
+  void _showSeizuresDetailsSheet(BuildContext context, List<dynamic> visits, bool isArabic, double totalSeizureVal) {
+    final filtered = visits.where((v) {
+      final val = (v['SeizureValue'] as num?)?.toDouble() ?? double.tryParse(v['SeizureValue']?.toString() ?? '0') ?? 0.0;
+      final notes = '${v['ViolationNotes'] ?? ''} ${v['Notes'] ?? ''}';
+      return val > 0 || notes.contains('حجز');
+    }).toList();
+
+    final formatter = NumberFormat('#,###', 'fr_DZ');
+
+    _showDetailsModal(
+      title: isArabic ? 'تفاصيل السلع والمحجوزات (الإجمالي: ${formatter.format(totalSeizureVal)} دج)' : 'Détails des Marchandises Saisies',
+      icon: Icons.inventory_2_outlined,
+      accentColor: const Color(0xFFF59E0B),
+      items: filtered,
+      isArabic: isArabic,
+    );
+  }
+
+  void _showClosuresDetailsSheet(BuildContext context, List<dynamic> visits, bool isArabic) {
+    final filtered = visits.where((v) {
+      final notes = '${v['LegalAction'] ?? ''} ${v['ViolationNotes'] ?? ''}';
+      return notes.contains('غلق') || notes.contains('إغلاق');
+    }).toList();
+
+    _showDetailsModal(
+      title: isArabic ? 'اقتراحات الغلق الإداري للمحلات التجارية' : 'Propositions de Fermeture Administrative',
+      icon: Icons.block_outlined,
+      accentColor: const Color(0xFFEC4899),
+      items: filtered,
+      isArabic: isArabic,
+    );
+  }
+
+  void _showSamplesDetailsSheet(BuildContext context, List<dynamic> visits, bool isArabic) {
+    final filtered = visits.where((v) {
+      final notes = '${v['LegalAction'] ?? ''} ${v['ViolationNotes'] ?? ''}';
+      return notes.contains('عين') || notes.contains('تحليل') || notes.contains('مخبر');
+    }).toList();
+
+    _showDetailsModal(
+      title: isArabic ? 'العينات المقتطعة للتحاليل المخبرية وقمع الغش' : 'Échantillons Prélevés pour Analyse',
+      icon: Icons.science_outlined,
+      accentColor: const Color(0xFFA855F7),
+      items: filtered,
+      isArabic: isArabic,
+    );
+  }
+
+  void _showReadinessDetailsSheet(BuildContext context, Map<String, dynamic> att, bool isArabic) {
+    final total = att['totalInspectors'] ?? 5;
+    final present = att['presentToday'] ?? 0;
+    final absent = att['absentToday'] ?? (total - present);
+    final rate = att['readinessRate']?.toString() ?? '0.0';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E0A25),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: Color(0xFF4A2050)),
+      ),
+      builder: (ctx) {
+        return Directionality(
+          textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.people_alt_outlined, color: Color(0xFF10B981), size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isArabic ? 'تقرير الجاهزية والانتشار الميداني للمفتشين' : 'Rapport de Déploiement Opérationnel',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          Text(
+                            isArabic ? 'نسبة الجاهزية الكلية: $rate%' : 'Taux global: $rate%',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFF10B981)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: _buildMiniStatBox(isArabic ? 'إجمالي المفتشين' : 'Total', '$total', const Color(0xFF38BDF8))),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildMiniStatBox(isArabic ? 'حاضرون بالميدان' : 'Présents', '$present', const Color(0xFF10B981))),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildMiniStatBox(isArabic ? 'غياب / لم يسجل' : 'Absents', '$absent', const Color(0xFFEF4444))),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text(
+                    isArabic ? 'إغلاق' : 'Fermer',
+                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMiniStatBox(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF240D2D),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(label, style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400)),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(fontFamily: 'Tajawal', fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
+    );
+  }
+
+  void _showDetailsModal({
+    required String title,
+    required IconData icon,
+    required Color accentColor,
+    required List<dynamic> items,
+    required bool isArabic,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E0A25),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: Color(0xFF4A2050)),
+      ),
+      builder: (ctx) {
+        return Directionality(
+          textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+          child: Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: accentColor, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const Divider(color: Color(0xFF4A2050), height: 24),
+                if (items.isEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade600),
+                          const SizedBox(height: 12),
+                          Text(
+                            isArabic ? 'لا توجد سجلات مسجلة لهذا المؤشر في التاريخ المحدد' : 'Aucun enregistrement pour cet indicateur',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.grey.shade400),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const Divider(color: Color(0xFF3B1A40), height: 16),
+                      itemBuilder: (context, idx) {
+                        final v = items[idx] as Map<String, dynamic>;
+                        final shopName = v['ShopName'] ?? v['shopname'] ?? (isArabic ? 'محل تجاري' : 'Commerce');
+                        final shopType = v['ShopType'] ?? v['shoptype'] ?? (isArabic ? 'نشاط تجاري' : 'Activité');
+                        final location = v['LocationName'] ?? v['locationname'] ?? (isArabic ? 'سطيف' : 'Sétif');
+                        final violNotes = v['ViolationNotes'] ?? v['violationnotes'] ?? '';
+                        final legalAction = v['LegalAction'] ?? v['legalaction'] ?? '';
+                        final empName = (v['NomAr'] ?? v['nomar']) != null
+                            ? '${v['NomAr'] ?? v['nomar']} ${v['PrenomAr'] ?? v['prenomar'] ?? ''}'.trim()
+                            : (isArabic ? 'مفتش رقابة' : 'Inspecteur');
+
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF240D2D),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '$shopName ($shopType)',
+                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: accentColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '#${idx + 1}',
+                                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: accentColor, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text('📍 $location • بواسطة: $empName', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400)),
+                              if (violNotes.toString().isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text('⚠️ المخالفة: $violNotes', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFCA5A5))),
+                              ],
+                              if (legalAction.toString().isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text('⚖️ الإجراء: $legalAction', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFF38BDF8))),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
