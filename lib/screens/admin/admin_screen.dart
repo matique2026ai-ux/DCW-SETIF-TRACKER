@@ -466,21 +466,23 @@ class _AdminScreenState extends State<AdminScreen>
                     ],
                     onChanged: (val) => setDialogState(() => selectedEmpId = val),
                   ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    title: Text(
-                      isActive ? 'الحساب نشط (Active)' : 'الحساب موقوف / مجمّد (Suspended)',
-                      style: TextStyle(
-                         fontFamily: 'Tajawal',
-                        color: isActive ? const Color(0xFF10B981) : AppTheme.DangerColor,
-                        fontWeight: FontWeight.bold,
+                  if (user['username'] != 'tracker_admin') ...[
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      title: Text(
+                        isActive ? 'الحساب نشط (Active)' : 'الحساب موقوف / مجمّد (Suspended)',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          color: isActive ? const Color(0xFF10B981) : AppTheme.DangerColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      value: isActive,
+                      activeThumbColor: const Color(0xFF10B981),
+                      inactiveThumbColor: AppTheme.DangerColor,
+                      onChanged: (val) => setDialogState(() => isActive = val),
                     ),
-                    value: isActive,
-                    activeThumbColor: const Color(0xFF10B981),
-                    inactiveThumbColor: AppTheme.DangerColor,
-                    onChanged: (val) => setDialogState(() => isActive = val),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -1207,37 +1209,37 @@ class _AdminScreenState extends State<AdminScreen>
                             tooltip: 'إعادة تعيين كلمة المرور',
                             onPressed: () => _showResetPasswordDialog(u),
                           ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.all(4),
-                            constraints: const BoxConstraints(),
-                            icon: Icon(
-                              isActive ? Icons.block_outlined : Icons.check_circle_outline,
-                              color: isActive ? Colors.orangeAccent : const Color(0xFF10B981),
-                              size: 18,
-                            ),
-                            tooltip: isActive ? 'تجميد / إيقاف الحساب' : 'تفعيل الحساب',
-                            onPressed: () async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              try {
-                                final api = context.read<AuthService>().api;
-                                await api.updateSystemUser(
-                                  id: u['id'] as int,
-                                  fullName: u['fullName']?.toString() ?? u['username']?.toString() ?? '',
-                                  role: u['role']?.toString() ?? 'inspector',
-                                  isActive: !isActive,
-                                  employeeId: u['employeeId'] is int ? u['employeeId'] as int : null,
-                                );
-                                _loadData();
-                              } catch (e) {
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                                );
-                              }
-                            },
-                          ),
                           if (u['username'] != 'tracker_admin') ...[
+                            const SizedBox(width: 4),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              icon: Icon(
+                                isActive ? Icons.block_outlined : Icons.check_circle_outline,
+                                color: isActive ? Colors.orangeAccent : const Color(0xFF10B981),
+                                size: 18,
+                              ),
+                              tooltip: isActive ? 'تجميد / إيقاف الحساب' : 'تفعيل الحساب',
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                try {
+                                  final api = context.read<AuthService>().api;
+                                  await api.updateSystemUser(
+                                    id: u['id'] as int,
+                                    fullName: u['fullName']?.toString() ?? u['username']?.toString() ?? '',
+                                    role: u['role']?.toString() ?? 'inspector',
+                                    isActive: !isActive,
+                                    employeeId: u['employeeId'] is int ? u['employeeId'] as int : null,
+                                  );
+                                  _loadData();
+                                } catch (e) {
+                                  messenger.showSnackBar(
+                                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                                  );
+                                }
+                              },
+                            ),
                             const SizedBox(width: 4),
                             IconButton(
                               visualDensity: VisualDensity.compact,
