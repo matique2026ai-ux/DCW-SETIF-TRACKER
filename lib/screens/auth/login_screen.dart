@@ -269,6 +269,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   child: TextField(
                                     controller: _usernameCtrl,
+                                    cursorColor: const Color(0xFFD4AF37),
                                     textDirection: TextDirection.ltr,
                                     style: TextStyle(
                                       fontFamily: fontFam,
@@ -323,6 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
                             // Password field
                             TextField(
                               controller: _passwordCtrl,
+                              cursorColor: const Color(0xFFD4AF37),
                               obscureText: _obscure,
                               textDirection: TextDirection.ltr,
                               style: TextStyle(

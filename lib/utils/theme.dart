@@ -84,10 +84,20 @@ class AppTheme {
           borderSide: const BorderSide(color: AccentColor, width: 2),
         ),
         labelStyle: TextStyle(fontFamily: font, color: TextSecondary),
+        floatingLabelStyle: TextStyle(
+          fontFamily: font,
+          fontWeight: FontWeight.bold,
+          color: AccentColor,
+        ),
         hintStyle: TextStyle(
           fontFamily: font,
           color: TextSecondary.withValues(alpha: 0.6),
         ),
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: AccentColor,
+        selectionColor: Color(0x66D4AF37),
+        selectionHandleColor: AccentColor,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Color(0xFF2D1035),
