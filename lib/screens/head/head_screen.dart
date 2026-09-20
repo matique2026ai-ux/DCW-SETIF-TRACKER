@@ -33,6 +33,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   // Administration & Means Specific State
   List<Map<String, dynamic>> _allEmployees = [];
   List<Map<String, dynamic>> _deductions = [];
+  List<Map<String, dynamic>> _vehicles = [];
+  List<Map<String, dynamic>> _equipments = [];
+  int _meansSubTab = 0; // 0: vehicles, 1: equipments, 2: hqs
   String _adminPersonnelSearch = '';
   String _adminServiceFilter = 'الكل';
 
@@ -93,6 +96,16 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           deds = await api.getDeductions();
         } catch (_) {}
 
+        List<Map<String, dynamic>> veList = [];
+        try {
+          veList = await api.getVehicles();
+        } catch (_) {}
+
+        List<Map<String, dynamic>> eqList = [];
+        try {
+          eqList = await api.getEquipments();
+        } catch (_) {}
+
         final List<Map<String, dynamic>> fullList = [];
         for (final emp in allEmps) {
           final id = int.tryParse('${emp['Id'] ?? emp['id'] ?? 0}') ?? 0;
@@ -121,6 +134,8 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           setState(() {
             _allEmployees = fullList;
             _deductions = deds;
+            _vehicles = veList;
+            _equipments = eqList;
             _isLoading = false;
           });
         }
@@ -524,137 +539,203 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     final isAr = context.watch<LanguageProvider>().isArabic;
     const officialHQs = AppConstants.defaultInspectorates;
 
-    // Count attendance at each HQ dynamically from real employee records
-    int totalHqAttendance = 0;
-    for (final emp in _allEmployees) {
-      if (emp['hasCheckedIn'] == true) {
-        totalHqAttendance++;
-      }
-    }
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Official Geofence Registry Header
+          // Sub-tabs navigation header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF2D1035), Color(0xFF1E0B26)],
+              color: Color(0xFF1E0B26),
+              border: Border(bottom: BorderSide(color: Color(0xFF4A2050), width: 1)),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    avatar: const Icon(Icons.directions_car, size: 16),
+                    label: Text(
+                      isAr ? 'حظيرة السيارات والوقود (${_vehicles.length})' : 'Parc Auto (${_vehicles.length})',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11.5, fontWeight: FontWeight.bold),
+                    ),
+                    selected: _meansSubTab == 0,
+                    selectedColor: const Color(0xFFD4AF37),
+                    backgroundColor: const Color(0xFF2D1035),
+                    onSelected: (sel) {
+                      if (sel) setState(() => _meansSubTab = 0);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    avatar: const Icon(Icons.medical_services, size: 16),
+                    label: Text(
+                      isAr ? 'حقائب وأجهزة التفتيش (${_equipments.length})' : 'Mallettes & Équipements (${_equipments.length})',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11.5, fontWeight: FontWeight.bold),
+                    ),
+                    selected: _meansSubTab == 1,
+                    selectedColor: const Color(0xFFD4AF37),
+                    backgroundColor: const Color(0xFF2D1035),
+                    onSelected: (sel) {
+                      if (sel) setState(() => _meansSubTab = 1);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    avatar: const Icon(Icons.apartment, size: 16),
+                    label: Text(
+                      isAr ? 'المقرات والبصمة الجغرافية (8)' : '8 Sièges & Geofence',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11.5, fontWeight: FontWeight.bold),
+                    ),
+                    selected: _meansSubTab == 2,
+                    selectedColor: const Color(0xFFD4AF37),
+                    backgroundColor: const Color(0xFF2D1035),
+                    onSelected: (sel) {
+                      if (sel) setState(() => _meansSubTab = 2);
+                    },
+                  ),
+                ],
               ),
-              border: Border(bottom: BorderSide(color: Color(0xFFD4AF37), width: 1)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.apartment, color: Color(0xFFD4AF37), size: 22),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isAr ? 'شبكة المقرات والمفتشيات الثمانية المعتمدة (8)' : 'Réseau des 8 Sièges & Inspections Régionales',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isAr
-                                ? 'منظومة القفل الجغرافي الصارم (Strict GPS Geofence) • حظر التسجيل خارج النطاق'
-                                : 'Geofencing GPS Strict • Interdiction de pointage hors zone',
-                            style: const TextStyle(fontSize: 11, color: Color(0xFFD4AF37)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Text(
-                    isAr
-                        ? '🏛️ الضوابط الإدارية للمقرات الرسمية:\n• يلزم كافة موظفي ومفتشي المديرية بتسجيل الحضور الصباحي حصراً ضمن النطاق الجغرافي لأحد هذه المقرات الثمانية.\n• يتم رفض أي محاولة لتسجيل الحضور من المنزل أو خارج النطاق تلقائياً، ما لم تكن هناك مهمة رقابية مبرمجة سارية.'
-                        : '🏛️ Directives Administratives des Sièges:\n• Pointage matinal obligatoire dans le rayon géographique de ces 8 sièges.\n• Rejet automatique de tout pointage hors zone sans ordre de mission.',
-                    style: const TextStyle(fontSize: 11, color: Colors.white70, height: 1.4),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _buildAdminStatCard(
-                      title: isAr ? 'المقرات المعتمدة' : 'Sièges Agréés',
-                      value: '${officialHQs.length}',
-                      icon: Icons.business,
-                      color: const Color(0xFFD4AF37),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildAdminStatCard(
-                      title: isAr ? 'الحضور بالبصمة اليوم' : 'Présents Aujourd\'hui',
-                      value: '$totalHqAttendance',
-                      icon: Icons.how_to_reg,
-                      color: const Color(0xFF10B981),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildAdminStatCard(
-                      title: isAr ? 'القفل الجغرافي' : 'Geofence GPS',
-                      value: '100% نشط',
-                      icon: Icons.lock_clock,
-                      color: const Color(0xFF3B82F6),
-                    ),
-                  ],
-                ),
-              ],
             ),
           ),
 
-          // Official HQs List
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                const Icon(Icons.pin_drop, color: Color(0xFFD4AF37), size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  isAr ? 'بيانات المقرات والمفتشيات وإحداثيات البصمة الرسمية' : 'Détails des Sièges & Coordonnées GPS Officielles',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
+          if (_meansSubTab == 0) ...[
+            _buildVehiclesSubTab(isAr),
+          ] else if (_meansSubTab == 1) ...[
+            _buildEquipmentsSubTab(isAr),
+          ] else ...[
+            _buildHQsSubTab(isAr, officialHQs),
+          ],
 
+          const SizedBox(height: 20),
+          const AppFooter(showDivider: false),
+          const SizedBox(height: 14),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehiclesSubTab(bool isAr) {
+    final onMissionCount = _vehicles.where((v) => (v['Status'] ?? v['status']) == 'en_mission').length;
+    final availableCount = _vehicles.where((v) => (v['Status'] ?? v['status']) == 'disponible').length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Summary Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF2D1035), Color(0xFF1E0B26)]),
+            border: Border(bottom: BorderSide(color: Color(0xFFD4AF37), width: 1)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.local_shipping, color: Color(0xFFD4AF37), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isAr ? 'حظيرة سيارات المديرية ومتابعة الوقود الحية' : 'Parc Automobile & Suivi Carburant',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isAr
+                            ? 'إصدار أوامر التنقل الرسمية • جرد عداد الكيلومترات ومستويات الوقود'
+                            : 'Ordres de mission officiels • Kilométrage et jauges de carburant',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFFD4AF37)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildAdminStatCard(
+                    title: isAr ? 'إجمالي الأسطول' : 'Total Flotte',
+                    value: '${_vehicles.length}',
+                    icon: Icons.directions_car,
+                    color: const Color(0xFFD4AF37),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildAdminStatCard(
+                    title: isAr ? 'في مهمات ميدانية' : 'En Mission',
+                    value: '$onMissionCount',
+                    icon: Icons.alt_route,
+                    color: const Color(0xFFF59E0B),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildAdminStatCard(
+                    title: isAr ? 'جاهزة بالمقر' : 'Disponibles',
+                    value: '$availableCount',
+                    icon: Icons.check_circle_outline,
+                    color: const Color(0xFF10B981),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Vehicles List
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            isAr ? 'بيانات المركبات وأوامر التنقل المفتوحة' : 'Véhicules & Ordres de Mission Ouverts',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+          ),
+        ),
+
+        if (_vehicles.isEmpty)
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF240D2D),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF4A2050)),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              isAr ? 'جاري تحميل بيانات حظيرة السيارات من الخادم...' : 'Chargement des véhicules...',
+              style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+            ),
+          )
+        else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: officialHQs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemCount: _vehicles.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (ctx, i) {
-              final hq = officialHQs[i];
-              final isMain = hq.isMainDirectorate;
+              final v = _vehicles[i];
+              final status = (v['Status'] ?? v['status'] ?? 'disponible').toString();
+              final isEnMission = status == 'en_mission';
+              final matricule = (v['Matricule'] ?? v['matricule'] ?? '').toString();
+              final brand = (v['Brand'] ?? v['brand'] ?? '').toString();
+              final model = (v['Model'] ?? v['model'] ?? '').toString();
+              final km = (v['Kilometrage'] ?? v['kilometrage'] ?? 0).toString();
+              final fuel = (v['FuelLevel'] ?? v['fuelLevel'] ?? 50) as num;
+              final driver = (v['CurrentDriver'] ?? v['currentDriver'] ?? '').toString();
+              final missionDest = (v['MissionDestination'] ?? v['missionDestination'] ?? '').toString();
+              final missionPurpose = (v['MissionPurpose'] ?? v['missionPurpose'] ?? '').toString();
 
-              // Check live attendance assigned or reported at this location
-              final attendeesCount = _allEmployees.where((e) {
-                if (e['hasCheckedIn'] != true) return false;
-                final loc = (e['location'] ?? '').toString();
-                if (isMain && (loc.contains('المعبودة') || loc.contains('الرئيسي') || loc.contains('سطيف'))) return true;
-                if (hq.id.contains('airport') && (loc.contains('مطار') || loc.contains('8 ماي'))) return true;
-                if (hq.id.contains('eulma') && loc.contains('العلمة')) return true;
-                if (hq.id.contains('oulmene') && loc.contains('ولمان')) return true;
-                if (hq.id.contains('bougaa') && loc.contains('بوقاعة')) return true;
-                if (hq.id.contains('azel') && loc.contains('آزال')) return true;
-                if (hq.id.contains('kebira') && loc.contains('الكبيرة')) return true;
-                if (hq.id.contains('arnat') && loc.contains('أرنات')) return true;
-                return false;
-              }).length;
+              Color fuelColor = const Color(0xFF10B981);
+              if (fuel < 25) {
+                fuelColor = const Color(0xFFEF4444);
+              } else if (fuel < 50) {
+                fuelColor = const Color(0xFFF59E0B);
+              }
 
               return Container(
                 padding: const EdgeInsets.all(12),
@@ -662,24 +743,233 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   color: const Color(0xFF240D2D),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isMain ? const Color(0xFFD4AF37) : const Color(0xFF4A2050),
-                    width: isMain ? 1.2 : 1,
+                    color: isEnMission ? const Color(0xFFF59E0B) : const Color(0xFF4A2050),
+                    width: isEnMission ? 1.2 : 1,
                   ),
                 ),
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFD4AF37), width: 0.8),
+                          ),
+                          child: Text(
+                            matricule,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFFD4AF37)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '$brand $model',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isEnMission ? const Color(0xFFF59E0B).withValues(alpha: 0.15) : const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: isEnMission ? const Color(0xFFF59E0B) : const Color(0xFF10B981), width: 0.5),
+                          ),
+                          child: Text(
+                            isEnMission ? (isAr ? 'في مهمة تفتيشية' : 'En Mission') : (isAr ? 'جاهزة للاستعمال' : 'Disponible'),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isEnMission ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Icon(Icons.speed, size: 14, color: Colors.white60),
+                        const SizedBox(width: 4),
+                        Text('$km كم', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                        const SizedBox(width: 16),
+                        const Icon(Icons.local_gas_station, size: 14, color: Colors.white60),
+                        const SizedBox(width: 4),
+                        Text('$fuel% وقود', style: TextStyle(fontSize: 11, color: fuelColor, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: (fuel / 100.0).clamp(0.0, 1.0),
+                              backgroundColor: Colors.white12,
+                              valueColor: AlwaysStoppedAnimation<Color>(fuelColor),
+                              minHeight: 6,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isEnMission && driver.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Text(
+                          isAr
+                            ? '📋 أمر تنقل جاري • السائق المكلف: $driver • الوجهة: $missionDest ${missionPurpose.isNotEmpty ? "($missionPurpose)" : ""}'
+                            : '📋 Mission en cours • Chauffeur: $driver • Dest: $missionDest',
+                          style: const TextStyle(fontSize: 10.5, color: Colors.white70),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (!isEnMission)
+                          ElevatedButton.icon(
+                            onPressed: () => _showNewVehicleMissionDialog(v),
+                            icon: const Icon(Icons.assignment_outlined, size: 14),
+                            label: Text(isAr ? 'إصدار أمر تنقل' : 'Ordre de Mission', style: const TextStyle(fontSize: 11)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD4AF37),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                          )
+                        else
+                          ElevatedButton.icon(
+                            onPressed: () => _showCloseVehicleMissionDialog(v),
+                            icon: const Icon(Icons.assignment_turned_in_outlined, size: 14),
+                            label: Text(isAr ? 'إنهاء أمر التنقل واسترجاع' : 'Clôturer la Mission', style: const TextStyle(fontSize: 11)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEquipmentsSubTab(bool isAr) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF2D1035), Color(0xFF1E0B26)]),
+            border: Border(bottom: BorderSide(color: Color(0xFFD4AF37), width: 1)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.medical_services, color: Color(0xFFD4AF37), size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isAr ? 'جرد حقائب وأجهزة الرقابة وقمع الغش' : 'Inventaire du Matériel & Mallettes',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isAr
+                        ? 'متابعة الأجهزة الحساسة • موازين إلكترونية • محارير ليزرية • كواشف ميدانية'
+                        : 'Mallettes de contrôle • Thermomètres • Balances homologuées',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFFD4AF37)),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showNewEquipmentDialog,
+                icon: const Icon(Icons.add, size: 16),
+                label: Text(isAr ? 'إضافة عتاد' : 'Ajouter', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            isAr ? 'قائمة الأجهزة والحقائب المسجلة رسمياً' : 'Liste du Matériel Enregistré',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+          ),
+        ),
+
+        if (_equipments.isEmpty)
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF240D2D),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF4A2050)),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              isAr ? 'جاري تحميل جرد العتاد من الخادم...' : 'Chargement du matériel...',
+              style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _equipments.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (ctx, i) {
+              final eq = _equipments[i];
+              final code = (eq['Code'] ?? eq['code'] ?? '').toString();
+              final name = (eq['Name'] ?? eq['name'] ?? '').toString();
+              final cat = (eq['Category'] ?? eq['category'] ?? 'رقابة').toString();
+              final sn = (eq['SerialNumber'] ?? eq['serialNumber'] ?? '').toString();
+              final inspector = (eq['AssignedInspector'] ?? eq['assignedInspector'] ?? '').toString();
+              final status = (eq['Status'] ?? eq['status'] ?? 'operationnel').toString();
+
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF240D2D),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF4A2050)),
+                ),
+                child: Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isMain ? const Color(0xFFD4AF37).withValues(alpha: 0.15) : const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        isMain ? Icons.account_balance : Icons.location_city,
-                        color: isMain ? const Color(0xFFD4AF37) : const Color(0xFF60A5FA),
-                        size: 20,
-                      ),
+                      child: const Icon(Icons.handyman, color: Color(0xFFD4AF37), size: 18),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -688,64 +978,45 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                         children: [
                           Row(
                             children: [
-                              Expanded(
-                                child: Text(
-                                  isAr ? hq.nameAr : hq.nameFr,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                              Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.white10,
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
+                                child: Text(code, style: const TextStyle(fontSize: 9.5, color: Color(0xFFD4AF37))),
                               ),
-                              if (isMain)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: const Color(0xFFD4AF37), width: 0.5),
-                                  ),
-                                  child: Text(
-                                    isAr ? 'المقر الرئيسي' : 'Siège Principal',
-                                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
-                                  ),
-                                ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
-                            isAr
-                                ? 'الإحداثيات: ${hq.latitude.toStringAsFixed(6)}, ${hq.longitude.toStringAsFixed(6)} • نصف القطر: ${hq.radiusMeters.toInt()} متر'
-                                : 'GPS: ${hq.latitude.toStringAsFixed(6)}, ${hq.longitude.toStringAsFixed(6)} • Rayon: ${hq.radiusMeters.toInt()} m',
+                            'الصنف: $cat ${sn.isNotEmpty ? "• الرقم التسلسلي: $sn" : ""}',
                             style: const TextStyle(fontSize: 11, color: Colors.white70),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: const Color(0xFF10B981), width: 0.5),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.check_circle, size: 11, color: Color(0xFF10B981)),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      isAr ? 'الحاضرون اليوم: $attendeesCount' : 'Présents: $attendeesCount',
-                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                isAr ? '• نطاق بصمة نشط 100%' : '• Zone active 100%',
-                                style: const TextStyle(fontSize: 10, color: Colors.white54),
-                              ),
-                            ],
-                          ),
+                          if (inspector.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text('مسند إلى: $inspector', style: const TextStyle(fontSize: 10.5, color: Color(0xFF60A5FA))),
+                          ],
                         ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: status == 'operationnel'
+                          ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        status == 'operationnel' ? (isAr ? 'جاهز للاستعمال' : 'Opérationnel') : (isAr ? 'صيانة' : 'Maintenance'),
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.bold,
+                          color: status == 'operationnel' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        ),
                       ),
                     ),
                   ],
@@ -753,10 +1024,709 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
               );
             },
           ),
+      ],
+    );
+  }
 
-          const SizedBox(height: 20),
-          const AppFooter(showDivider: false),
-          const SizedBox(height: 14),
+  Widget _buildHQsSubTab(bool isAr, List<InspectorateHQ> officialHQs) {
+    int totalHqAttendance = 0;
+    for (final emp in _allEmployees) {
+      if (emp['hasCheckedIn'] == true) {
+        totalHqAttendance++;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Official Geofence Registry Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF2D1035), Color(0xFF1E0B26)]),
+            border: Border(bottom: BorderSide(color: Color(0xFFD4AF37), width: 1)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.apartment, color: Color(0xFFD4AF37), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isAr ? 'شبكة المقرات والمفتشيات الثمانية المعتمدة (8)' : 'Réseau des 8 Sièges & Inspections Régionales',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.white),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isAr
+                              ? 'منظومة القفل الجغرافي الصارم (Strict GPS Geofence) • حظر التسجيل خارج النطاق'
+                              : 'Geofencing GPS Strict • Interdiction de pointage hors zone',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFFD4AF37)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Text(
+                  isAr
+                      ? '🏛️ الضوابط الإدارية للمقرات الرسمية:\n• يلزم كافة موظفي ومفتشي المديرية بتسجيل الحضور الصباحي حصراً ضمن النطاق الجغرافي لأحد هذه المقرات الثمانية.\n• يتم رفض أي محاولة لتسجيل الحضور من المنزل أو خارج النطاق تلقائياً، ما لم تكن هناك مهمة رقابية مبرمجة سارية.'
+                      : '🏛️ Directives Administratives des Sièges:\n• Pointage matinal obligatoire dans le rayon géographique de ces 8 sièges.\n• Rejet automatique de tout pointage hors zone sans ordre de mission.',
+                  style: const TextStyle(fontSize: 11, color: Colors.white70, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildAdminStatCard(
+                    title: isAr ? 'المقرات المعتمدة' : 'Sièges Agréés',
+                    value: '${officialHQs.length}',
+                    icon: Icons.business,
+                    color: const Color(0xFFD4AF37),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildAdminStatCard(
+                    title: isAr ? 'الحضور بالبصمة اليوم' : 'Présents Aujourd\'hui',
+                    value: '$totalHqAttendance',
+                    icon: Icons.how_to_reg,
+                    color: const Color(0xFF10B981),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildAdminStatCard(
+                    title: isAr ? 'القفل الجغرافي' : 'Geofence GPS',
+                    value: '100% نشط',
+                    icon: Icons.lock_clock,
+                    color: const Color(0xFF3B82F6),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              const Icon(Icons.pin_drop, color: Color(0xFFD4AF37), size: 18),
+              const SizedBox(width: 8),
+              Text(
+                isAr ? 'بيانات المقرات والمفتشيات وإحداثيات البصمة الرسمية' : 'Détails des Sièges & Coordonnées GPS Officielles',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: officialHQs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (ctx, i) {
+            final hq = officialHQs[i];
+            final isMain = hq.isMainDirectorate;
+
+            final attendeesCount = _allEmployees.where((e) {
+              if (e['hasCheckedIn'] != true) return false;
+              final loc = (e['location'] ?? '').toString();
+              if (isMain && (loc.contains('المعبودة') || loc.contains('الرئيسي') || loc.contains('سطيف'))) return true;
+              if (hq.id.contains('airport') && (loc.contains('مطار') || loc.contains('8 ماي'))) return true;
+              if (hq.id.contains('eulma') && loc.contains('العلمة')) return true;
+              if (hq.id.contains('oulmene') && loc.contains('ولمان')) return true;
+              if (hq.id.contains('bougaa') && loc.contains('بوقاعة')) return true;
+              if (hq.id.contains('azel') && loc.contains('آزال')) return true;
+              if (hq.id.contains('kebira') && loc.contains('الكبيرة')) return true;
+              if (hq.id.contains('arnat') && loc.contains('أرنات')) return true;
+              return false;
+            }).length;
+
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF240D2D),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isMain ? const Color(0xFFD4AF37) : const Color(0xFF4A2050),
+                  width: isMain ? 1.2 : 1,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isMain ? const Color(0xFFD4AF37).withValues(alpha: 0.15) : const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isMain ? Icons.account_balance : Icons.location_city,
+                      color: isMain ? const Color(0xFFD4AF37) : const Color(0xFF60A5FA),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                isAr ? hq.nameAr : hq.nameFr,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                              ),
+                            ),
+                            if (isMain)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFFD4AF37), width: 0.5),
+                                ),
+                                child: Text(
+                                  isAr ? 'المقر الرئيسي' : 'Siège Principal',
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isAr
+                              ? 'الإحداثيات: ${hq.latitude.toStringAsFixed(6)}, ${hq.longitude.toStringAsFixed(6)} • نصف القطر: ${hq.radiusMeters.toInt()} متر'
+                              : 'GPS: ${hq.latitude.toStringAsFixed(6)}, ${hq.longitude.toStringAsFixed(6)} • Rayon: ${hq.radiusMeters.toInt()} m',
+                          style: const TextStyle(fontSize: 11, color: Colors.white70),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFF10B981), width: 0.5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.check_circle, size: 11, color: Color(0xFF10B981)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isAr ? 'الحاضرون اليوم: $attendeesCount' : 'Présents: $attendeesCount',
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isAr ? '• نطاق بصمة نشط 100%' : '• Zone active 100%',
+                              style: const TextStyle(fontSize: 10, color: Colors.white54),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  void _showNewVehicleMissionDialog(Map<String, dynamic> vehicle) {
+    final vId = vehicle['Id'] ?? vehicle['id'];
+    final plate = (vehicle['Matricule'] ?? vehicle['matricule'] ?? '').toString();
+    final model = (vehicle['Model'] ?? vehicle['model'] ?? '').toString();
+    final currentKm = (vehicle['Kilometrage'] ?? vehicle['kilometrage'] ?? 0);
+
+    final destCtrl = TextEditingController(text: 'بلدية سطيف وضواحيها');
+    final purposeCtrl = TextEditingController(text: 'خرجة رقابية وتفتيش ميداني');
+    final kmCtrl = TextEditingController(text: '$currentKm');
+    String? selectedDriver;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          backgroundColor: const Color(0xFF240D2D),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFD4AF37))),
+          title: Row(
+            children: [
+              const Icon(Icons.directions_car, color: Color(0xFFD4AF37)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('إصدار أمر تنقل للمركبة ($plate)', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('المركبة: $model • العداد الحالي: $currentKm كم', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70)),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF2D1035),
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'السائق أو المفتش المكلف بالقيادة *',
+                    prefixIcon: const Icon(Icons.person, color: Color(0xFFD4AF37), size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  items: _allEmployees.map((e) {
+                    final name = (e['name'] ?? '').toString();
+                    return DropdownMenuItem(value: name, child: Text(name));
+                  }).toList(),
+                  onChanged: (val) => setDlgState(() => selectedDriver = val),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: destCtrl,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'الوجهة الرسمية *',
+                    prefixIcon: const Icon(Icons.place, color: Color(0xFFD4AF37), size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: purposeCtrl,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'موضوع وأسباب المهمة *',
+                    prefixIcon: const Icon(Icons.assignment, color: Color(0xFFD4AF37), size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: kmCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'عداد الانطلاق (كم)',
+                    prefixIcon: const Icon(Icons.speed, color: Color(0xFFD4AF37), size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal'))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
+              onPressed: () async {
+                if (selectedDriver == null || destCtrl.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('يرجى تحديد السائق والوجهة'), backgroundColor: Colors.orange),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx);
+                try {
+                  final api = context.read<AuthService>().api;
+                  await api.createVehicleMission({
+                    'vehicleId': vId,
+                    'driverName': selectedDriver,
+                    'destination': destCtrl.text.trim(),
+                    'purpose': purposeCtrl.text.trim(),
+                    'startKm': int.tryParse(kmCtrl.text.trim()) ?? currentKm,
+                  });
+                  _loadAllData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ تم إصدار أمر التنقل بنجاح للمركبة'), backgroundColor: Color(0xFF10B981)),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: const Text('تأكيد وإصدار الأمر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCloseVehicleMissionDialog(Map<String, dynamic> vehicle) {
+    final vId = vehicle['Id'] ?? vehicle['id'];
+    final plate = (vehicle['Matricule'] ?? vehicle['matricule'] ?? '').toString();
+    final missionId = vehicle['ActiveMissionId'] ?? vehicle['activeMissionId'];
+    final currentKm = (vehicle['Kilometrage'] ?? vehicle['kilometrage'] ?? 0);
+    final endKmCtrl = TextEditingController(text: '${(currentKm as num) + 25}');
+    double returnFuel = (vehicle['FuelLevel'] ?? vehicle['fuelLevel'] ?? 50) as double;
+    final obsCtrl = TextEditingController(text: 'تمت المهمة وعادت المركبة بحالة جيدة');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          backgroundColor: const Color(0xFF240D2D),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFF10B981))),
+          title: Row(
+            children: [
+              const Icon(Icons.assignment_turned_in, color: Color(0xFF10B981)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('إنهاء أمر تنقل واسترجاع المركبة ($plate)', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13.5, fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: endKmCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'عداد الكيلومترات عند الرجوع *',
+                    prefixIcon: const Icon(Icons.speed, color: Color(0xFF10B981), size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text('مستوى الوقود المتبقي: ${returnFuel.toInt()}%', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70)),
+                Slider(
+                  value: returnFuel,
+                  min: 0,
+                  max: 100,
+                  divisions: 20,
+                  activeColor: const Color(0xFF10B981),
+                  label: '${returnFuel.toInt()}%',
+                  onChanged: (val) => setDlgState(() => returnFuel = val),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: obsCtrl,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'ملاحظات حالة المركبة عند الاسترجاع',
+                    prefixIcon: const Icon(Icons.notes, color: Color(0xFF10B981), size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal'))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  final api = context.read<AuthService>().api;
+                  final effectiveMissionId = int.tryParse('$missionId') ?? int.tryParse('$vId') ?? 1;
+                  await api.closeVehicleMission(effectiveMissionId, {
+                    'endKm': int.tryParse(endKmCtrl.text.trim()) ?? currentKm,
+                    'fuelLevel': returnFuel.toInt(),
+                    'observations': obsCtrl.text.trim(),
+                  });
+                  _loadAllData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ تم استرجاع المركبة وإغلاق أمر التنقل بنجاح'), backgroundColor: Color(0xFF10B981)),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: const Text('تأكيد الاسترجاع', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNewEquipmentDialog() {
+    final codeCtrl = TextEditingController(text: 'MAL-0${_equipments.length + 1}');
+    final nameCtrl = TextEditingController();
+    final catCtrl = TextEditingController(text: 'حقائب تفتيش وقمع الغش');
+    final snCtrl = TextEditingController();
+    String? assignedInsp;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          backgroundColor: const Color(0xFF240D2D),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFD4AF37))),
+          title: const Row(
+            children: [
+              Icon(Icons.medical_services, color: Color(0xFFD4AF37)),
+              SizedBox(width: 8),
+              Text('تسجيل عتاد أو حقيبة تفتيش جديدة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: codeCtrl,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'رمز العتاد (Code) *',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: nameCtrl,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'اسم الجهاز أو الحقيبة *',
+                    hintText: 'مثال: حقيبة تفتيش متعددة الوسائط',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: catCtrl,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'الصنف / الفئة *',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: snCtrl,
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'الرقم التسلسلي (N° Série)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF2D1035),
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'المفتش المسند إليه (اختياري)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  items: _allEmployees.map((e) {
+                    final name = (e['name'] ?? '').toString();
+                    return DropdownMenuItem(value: name, child: Text(name));
+                  }).toList(),
+                  onChanged: (val) => setDlgState(() => assignedInsp = val),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal'))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('يرجى إدخال اسم العتاد'), backgroundColor: Colors.orange),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx);
+                try {
+                  final api = context.read<AuthService>().api;
+                  await api.createEquipment({
+                    'code': codeCtrl.text.trim(),
+                    'name': nameCtrl.text.trim(),
+                    'category': catCtrl.text.trim(),
+                    'serialNumber': snCtrl.text.trim(),
+                    'assignedInspector': assignedInsp,
+                  });
+                  _loadAllData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ تم تسجيل العتاد بنجاح في قاعدة البيانات'), backgroundColor: Color(0xFF10B981)),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: const Text('حفظ العتاد', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmCancelMission(Map<String, dynamic> p) {
+    final rawId = p['Id'] ?? p['id'];
+    final id = int.tryParse('$rawId') ?? 0;
+    final title = (p['Title'] ?? p['title'] ?? '').toString();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF240D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.redAccent),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+            SizedBox(width: 8),
+            Text(
+              'إلغاء أمر المهمة الرقابية',
+              style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ],
+        ),
+        content: Text(
+          'هل أنت متأكد من رغبتك في إلغاء أمر المهمة:\n"$title"؟',
+          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('رجوع', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final api = context.read<AuthService>().api;
+                final res = await api.cancelProgram(id, title: title);
+                _loadAllData();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(res['message']?.toString() ?? 'تم إلغاء أمر المهمة بنجاح'),
+                      backgroundColor: const Color(0xFF10B981),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('خطأ في الإلغاء: $e'), backgroundColor: Colors.redAccent),
+                  );
+                }
+              }
+            },
+            child: const Text('نعم، إلغاء المهمة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteVisit(Map<String, dynamic> v) {
+    final rawId = v['Id'] ?? v['id'];
+    final id = int.tryParse('$rawId') ?? 0;
+    final shop = (v['ShopName'] ?? v['shopName'] ?? 'المحل التجاري').toString();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF240D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.redAccent),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: Colors.redAccent),
+            SizedBox(width: 8),
+            Text(
+              'حذف محضر المعاينة',
+              style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ],
+        ),
+        content: Text(
+          'هل أنت متأكد من حذف محضر المعاينة الخاص بـ:\n"$shop"؟ (سيتم إزالته من السجلات).',
+          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('رجوع', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final api = context.read<AuthService>().api;
+                await api.deleteVisit(id);
+                _loadAllData();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ تم حذف محضر المعاينة بنجاح'),
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('خطأ في الحذف: $e'), backgroundColor: Colors.redAccent),
+                  );
+                }
+              }
+            },
+            child: const Text('نعم، حذف', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
@@ -2031,6 +3001,14 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                   'اليوم',
                                   style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.TextSecondary),
                                 ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent, size: 18),
+                                  tooltip: 'إلغاء أمر المهمة',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmCancelMission(p),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 10),
@@ -2200,6 +3178,14 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                       color: hasViolation ? AppTheme.DangerColor : AppTheme.SuccessColor,
                                     ),
                                   ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                  tooltip: 'حذف المعاينة',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmDeleteVisit(v),
                                 ),
                               ],
                             ),

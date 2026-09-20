@@ -240,9 +240,10 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                     );
 
                                     if (confirm == true) {
-                                      final progId = int.tryParse(p['Id']?.toString() ?? '0') ?? 0;
+                                      final progId = int.tryParse(p['Id']?.toString() ?? p['id']?.toString() ?? '0') ?? 0;
+                                      final progTitle = (p['Title'] ?? p['title'] ?? '').toString();
                                       try {
-                                        await api.deleteProgram(progId);
+                                        await api.deleteProgram(progId, title: progTitle);
                                         nav.pop();
                                         _load();
                                         messenger.showSnackBar(

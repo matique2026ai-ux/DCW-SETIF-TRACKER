@@ -1161,4 +1161,125 @@ class ApiService {
       throw _handleNetworkException(e, 'فشل في إلغاء الاستفسار');
     }
   }
+
+  // ==========================================
+  // MEANS & VEHICLE FLEET MANAGEMENT (الوسائل وحظيرة السيارات)
+  // ==========================================
+
+  Future<List<Map<String, dynamic>>> getVehicles() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/means/vehicles'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> createVehicleMission(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/means/missions'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'فشل إصدار أمر تنقل بالسيارة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إصدار أمر تنقل بالسيارة');
+    }
+  }
+
+  Future<void> closeVehicleMission(int missionId, Map<String, dynamic> data) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/means/missions/$missionId/close'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) return;
+      throw Exception(_parseError(response, 'فشل إنهاء أمر التنقل واسترجاع المركبة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إنهاء أمر التنقل واسترجاع المركبة');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getEquipments() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/means/equipment'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeList(response.body);
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> createEquipment(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/means/equipment'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'فشل تسجيل العتاد'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تسجيل العتاد');
+    }
+  }
+
+  Future<void> deleteVisit(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/visits/$id'),
+        headers: _headers,
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) return;
+      throw Exception(_parseError(response, 'فشل في حذف المعاينة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في حذف المعاينة');
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelProgram(int id, {String? title}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/programs/cancel'),
+        headers: _headers,
+        body: jsonEncode({
+          'id': id,
+          if (title != null) 'title': title,
+        }),
+      ).timeout(defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return _safeDecodeMap(response.body);
+      }
+      throw Exception(_parseError(response, 'فشل في إلغاء أمر المهمة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل في إلغاء أمر المهمة');
+    }
+  }
 }
+
+
