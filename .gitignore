@@ -29,9 +29,10 @@ bin/
 .packages
 .pub-cache/
 .pub/
-/build/*
-!/build/web/
-!/build/web/**
+build/app/
+build/flutter_plugin_android_lifecycle/
+build/*.apk
+build/*.aab
 pubspec.lock
 
 # Symbolication related
