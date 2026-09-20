@@ -3,13 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
-import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
-import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
+import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 
 class BureauScreen extends StatefulWidget {
   const BureauScreen({super.key});
@@ -34,6 +33,9 @@ class _BureauScreenState extends State<BureauScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadAll();
   }
 
@@ -745,104 +747,31 @@ class _BureauScreenState extends State<BureauScreen>
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          automaticallyImplyLeading: false,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF260D2E), Color(0xFF16061D)],
-              ),
-              border: const Border(
-                bottom: BorderSide(
-                  color: Color(0x33D4AF37),
-                  width: 0.8,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        appBar: ModernExecutiveNavbar(
+          title: loc.roleBureau,
+          badgeText: 'الموارد البشرية والرواتب',
+          subtitle: 'تسيير الموظفين والمسار المهني • مديرية التجارة سطيف',
+          selectedIndex: _tabController.index,
+          onTabSelected: (idx) {
+            _tabController.animateTo(idx);
+            setState(() {});
+          },
+          tabs: [
+            ModernNavTabItem(
+              icon: Icons.people_alt,
+              label: 'الموظفون (${_employees.length})',
             ),
-          ),
-          titleSpacing: 16,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const GoldenEmblemCoin(
-                size: 36,
-                showOuterGlow: false,
-                enableFloating: false,
-                animateGleam: false,
-              ),
-              const SizedBox(width: 12),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          loc.roleBureau,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: const Text(
-                          'الموارد البشرية والرواتب',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 1),
-                  const Text(
-                    'تسيير الموظفين والمسار المهني • مديرية التجارة سطيف',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 10.5,
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
+            ModernNavTabItem(
+              icon: Icons.gavel,
+              label: 'الانضباط والاستفسارات (${_inquiries.length})',
+              badgeCount: _inquiries.where((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent').length,
+            ),
+            const ModernNavTabItem(
+              icon: Icons.assignment_turned_in,
+              label: 'التبريرات والشهادات',
+            ),
+          ],
+          additionalActions: [
             ElevatedButton.icon(
               onPressed: _showAddEmployeeDialog,
               style: ElevatedButton.styleFrom(
@@ -862,93 +791,17 @@ class _BureauScreenState extends State<BureauScreen>
                 ),
               ),
             ),
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: Colors.black38,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
-                    tooltip: 'تغيير كلمة المرور',
-                    onPressed: () => ChangePasswordDialog.show(context),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 18),
-                    tooltip: 'تحديث البيانات',
-                    onPressed: _loadAll,
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.language, color: Colors.white70, size: 18),
-                    tooltip: 'تغيير اللغة',
-                    onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
-                    tooltip: 'تسجيل الخروج',
-                    onPressed: () {
-                      context.read<AuthService>().logout();
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(width: 8),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 580),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: const Color(0xFFD4AF37),
-                  indicatorWeight: 3,
-                  labelColor: const Color(0xFFD4AF37),
-                  unselectedLabelColor: Colors.white60,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  tabs: [
-                    Tab(
-                      icon: const Icon(Icons.people_alt, size: 20),
-                      text: 'الموظفون (${_employees.length})',
-                    ),
-                    Tab(
-                      icon: Badge(
-                        isLabelVisible: _inquiries.any((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent'),
-                        label: Text('${_inquiries.where((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent').length}'),
-                        child: const Icon(Icons.gavel, size: 20),
-                      ),
-                      text: 'الانضباط والاستفسارات (${_inquiries.length})',
-                    ),
-                    const Tab(
-                      icon: Icon(Icons.assignment_turned_in, size: 20),
-                      text: 'التبريرات والشهادات',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          onRefresh: _loadAll,
+          onPasswordChange: () => ChangePasswordDialog.show(context),
+          onLogout: () {
+            context.read<AuthService>().logout();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+            );
+          },
         ),
         body: _isLoading
             ? const Center(

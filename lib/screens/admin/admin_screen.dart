@@ -14,7 +14,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:drh_setif_tracker/services/inspectorate_service.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
-import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
+import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -37,6 +37,9 @@ class _AdminScreenState extends State<AdminScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadData();
   }
 
@@ -767,178 +770,30 @@ class _AdminScreenState extends State<AdminScreen>
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          automaticallyImplyLeading: false,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF260D2E), Color(0xFF16061D)],
-              ),
-              border: const Border(
-                bottom: BorderSide(
-                  color: Color(0x33D4AF37),
-                  width: 0.8,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-          ),
-          titleSpacing: 12,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const GoldenEmblemCoin(
-                size: 36,
-                showOuterGlow: false,
-                enableFloating: false,
-                animateGleam: false,
-              ),
-              const SizedBox(width: 10),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Flexible(
-                        child: Text(
-                          'الإدارة التقنية للمنظومة',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: const Text(
-                          'Admin',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 1),
-                  const Text(
-                    'التحكم في الخوادم وقواعد البيانات والمستخدمين',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 10,
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: Colors.black38,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 18),
-                    tooltip: 'تحديث البيانات',
-                    onPressed: _loadData,
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
-                    tooltip: 'تغيير كلمة المرور',
-                    onPressed: () => ChangePasswordDialog.show(context),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.language, color: Colors.white70, size: 18),
-                    tooltip: 'تغيير اللغة',
-                    onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
-                    tooltip: 'تسجيل الخروج',
-                    onPressed: () {
-                      context.read<AuthService>().logout();
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+        appBar: ModernExecutiveNavbar(
+          title: 'الإدارة التقنية للمنظومة',
+          badgeText: 'Admin',
+          subtitle: 'التحكم في الخوادم وقواعد البيانات والمستخدمين',
+          selectedIndex: _tabController.index,
+          onTabSelected: (idx) {
+            _tabController.animateTo(idx);
+            setState(() {});
+          },
+          tabs: const [
+            ModernNavTabItem(icon: Icons.people_alt, label: 'المستخدمين والحسابات'),
+            ModernNavTabItem(icon: Icons.location_on, label: 'المقرات والبصمة الجغرافية'),
+            ModernNavTabItem(icon: Icons.dns, label: 'حالة النظام والسيرفر'),
+            ModernNavTabItem(icon: Icons.preview, label: 'معاينة شاشات الأدوار'),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.center,
-                  indicatorColor: const Color(0xFFD4AF37),
-                  indicatorWeight: 3,
-                  labelColor: const Color(0xFFD4AF37),
-                  unselectedLabelColor: Colors.white60,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
-                  unselectedLabelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
-                  tabs: const [
-                    Tab(icon: Icon(Icons.people_alt, size: 18), text: 'المستخدمين والحسابات'),
-                    Tab(icon: Icon(Icons.location_on, size: 18), text: 'المقرات والبصمة الجغرافية'),
-                    Tab(icon: Icon(Icons.dns, size: 18), text: 'حالة النظام والسيرفر'),
-                    Tab(icon: Icon(Icons.preview, size: 18), text: 'معاينة شاشات الأدوار'),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          onRefresh: _loadData,
+          onPasswordChange: () => ChangePasswordDialog.show(context),
+          onLogout: () {
+            context.read<AuthService>().logout();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+            );
+          },
         ),
         body: TabBarView(
           controller: _tabController,

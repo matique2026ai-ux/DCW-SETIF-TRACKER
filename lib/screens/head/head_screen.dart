@@ -6,7 +6,7 @@ import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
-import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
+import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 
 class HeadScreen extends StatefulWidget {
@@ -3510,210 +3510,144 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF2D1035),
-          elevation: 0,
-          toolbarHeight: 64,
-          centerTitle: true,
-          leading: Navigator.canPop(context)
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37)),
-                  tooltip: 'الرجوع للوحة السابقة',
-                  onPressed: () => Navigator.pop(context),
-                )
-              : null,
-          title: Row(
+        appBar: ModernExecutiveNavbar(
+          title: _departmentName,
+          subtitle: 'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
+          badgeText: 'رئيس مصلحة',
+          showBackButton: Navigator.canPop(context),
+          onBack: () => Navigator.pop(context),
+          customTitleWidget: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const GoldenEmblemCoin(
-                size: 36,
-                showOuterGlow: false,
-                enableFloating: false,
-                animateGleam: false,
-              ),
-              const SizedBox(width: 10),
-              Column(
+              Row(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          _departmentName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                  Flexible(
+                    child: Text(
+                      _departmentName,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 18),
+                    tooltip: 'تبديل المصلحة المعاينة',
+                    color: const Color(0xFF2D1035),
+                    onSelected: (val) {
+                      setState(() {
+                        _departmentName = val;
+                        _isLoading = true;
+                      });
+                      _loadAllData();
+                    },
+                    itemBuilder: (ctx) => const [
+                      PopupMenuItem(
+                        value: 'مصلحة الإدارة والوسائل',
+                        child: Row(
+                          children: [
+                            Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
+                            SizedBox(width: 8),
+                            Text('مصلحة الإدارة والوسائل (المستخدمين، الوسائل والرواتب)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 18),
-                        tooltip: 'تبديل المصلحة المعاينة',
-                        color: const Color(0xFF2D1035),
-                        onSelected: (val) {
-                          setState(() {
-                            _departmentName = val;
-                            _isLoading = true;
-                          });
-                          _loadAllData();
-                        },
-                        itemBuilder: (ctx) => const [
-                          PopupMenuItem(
-                            value: 'مصلحة الإدارة والوسائل',
-                            child: Row(
-                              children: [
-                                Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
-                                SizedBox(width: 8),
-                                Text('مصلحة الإدارة والوسائل (المستخدمين، الوسائل والرواتب)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'مصلحة حماية المستهلك وقمع الغش',
-                            child: Row(
-                              children: [
-                                Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
-                                SizedBox(width: 8),
-                                Text('مصلحة حماية المستهلك وقمع الغش (الرقابة الميدانية)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
-                            child: Row(
-                              children: [
-                                Icon(Icons.query_stats, color: Color(0xFF3B82F6), size: 16),
-                                SizedBox(width: 8),
-                                Text('مصلحة المنافسة والتحقيقات الاقتصادية (الأسعار والفوترة)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                            width: 0.5,
-                          ),
+                      PopupMenuItem(
+                        value: 'مصلحة حماية المستهلك وقمع الغش',
+                        child: Row(
+                          children: [
+                            Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
+                            SizedBox(width: 8),
+                            Text('مصلحة حماية المستهلك وقمع الغش (الرقابة الميدانية)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
                         ),
-                        child: const Text(
-                          'رئيس مصلحة',
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
-                          ),
+                      ),
+                      PopupMenuItem(
+                        value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
+                        child: Row(
+                          children: [
+                            Icon(Icons.query_stats, color: Color(0xFF3B82F6), size: 16),
+                            SizedBox(width: 8),
+                            Text('مصلحة المنافسة والتحقيقات الاقتصادية (الأسعار والفوترة)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                        width: 0.5,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    child: const Text(
+                      'رئيس مصلحة',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 1),
+              Text(
+                'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: Color(0xFFD4AF37),
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: Colors.black38,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!_isAdministration) ...[
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.add_task, color: AppTheme.AccentColor, size: 18),
-                      tooltip: 'إصدار أمر مهمة جديد',
-                      onPressed: _showNewMissionDialog,
-                    ),
-                    Container(width: 1, height: 16, color: Colors.white12),
-                  ],
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
-                    tooltip: 'تغيير كلمة المرور',
-                    onPressed: () => ChangePasswordDialog.show(context),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.refresh, color: AppTheme.AccentColor, size: 18),
-                    tooltip: 'تحديث البيانات',
-                    onPressed: _loadAllData,
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.language, color: Colors.white70, size: 18),
-                    tooltip: 'تغيير اللغة',
-                    onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
-                    tooltip: 'تسجيل الخروج',
-                    onPressed: () {
-                      context.read<AuthService>().logout();
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                    },
-                  ),
+          selectedIndex: _tabController.index,
+          onTabSelected: (idx) {
+            _tabController.animateTo(idx);
+            setState(() {});
+          },
+          tabs: _isAdministration
+              ? const [
+                  ModernNavTabItem(icon: Icons.badge_outlined, label: 'المستخدمين والانضباط'),
+                  ModernNavTabItem(icon: Icons.apartment_outlined, label: 'المقرات والبصمة الجغرافية'),
+                  ModernNavTabItem(icon: Icons.account_balance_wallet_outlined, label: 'المحاسبة والرواتب'),
+                ]
+              : const [
+                  ModernNavTabItem(icon: Icons.assignment, label: 'أوامر المهمة والبرامج'),
+                  ModernNavTabItem(icon: Icons.fact_check, label: 'تأشير المعاينات'),
+                  ModernNavTabItem(icon: Icons.people_alt, label: 'مفتشو المصلحة'),
                 ],
+          additionalActions: [
+            if (!_isAdministration) ...[
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.add_task, color: AppTheme.AccentColor, size: 18),
+                tooltip: 'إصدار أمر مهمة جديد',
+                onPressed: _showNewMissionDialog,
               ),
-            ),
+              const SizedBox(width: 4),
+            ],
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 580),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: const Color(0xFFD4AF37),
-                  labelColor: const Color(0xFFD4AF37),
-                  unselectedLabelColor: Colors.white60,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  tabs: _isAdministration
-                      ? const [
-                          Tab(icon: Icon(Icons.badge_outlined), text: 'المستخدمين والانضباط'),
-                          Tab(icon: Icon(Icons.apartment_outlined), text: 'المقرات والبصمة الجغرافية'),
-                          Tab(icon: Icon(Icons.account_balance_wallet_outlined), text: 'المحاسبة والرواتب'),
-                        ]
-                      : const [
-                          Tab(icon: Icon(Icons.assignment), text: 'أوامر المهمة والبرامج'),
-                          Tab(icon: Icon(Icons.fact_check), text: 'تأشير المعاينات'),
-                          Tab(icon: Icon(Icons.people_alt), text: 'مفتشو المصلحة'),
-                        ],
-                ),
-              ),
-            ),
-          ),
+          onRefresh: _loadAllData,
+          onPasswordChange: () => ChangePasswordDialog.show(context),
+          onLogout: () {
+            context.read<AuthService>().logout();
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+          },
         ),
         floatingActionButton: _isAdministration
             ? null
