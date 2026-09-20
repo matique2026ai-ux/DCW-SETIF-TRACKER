@@ -299,16 +299,26 @@ class ApiService {
     int? employeeId,
   }) async {
     try {
-      final response = await http.put(
+      final payload = jsonEncode({
+        'fullName': fullName,
+        'role': role,
+        'isActive': isActive,
+        'employeeId': employeeId,
+      });
+
+      var response = await http.put(
         Uri.parse('$baseUrl/auth/users/$id'),
         headers: _headers,
-        body: jsonEncode({
-          'fullName': fullName,
-          'role': role,
-          'isActive': isActive,
-          'employeeId': employeeId,
-        }),
+        body: payload,
       ).timeout(defaultTimeout);
+
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        response = await http.post(
+          Uri.parse('$baseUrl/users/$id/update'),
+          headers: _headers,
+          body: payload,
+        ).timeout(defaultTimeout);
+      }
 
       if (response.statusCode == 200) {
         return _safeDecodeMap(response.body);
@@ -325,11 +335,20 @@ class ApiService {
     required String newPassword,
   }) async {
     try {
-      final response = await http.post(
+      final payload = jsonEncode({'newPassword': newPassword});
+      var response = await http.post(
         Uri.parse('$baseUrl/auth/users/$id/reset-password'),
         headers: _headers,
-        body: jsonEncode({'newPassword': newPassword}),
+        body: payload,
       ).timeout(defaultTimeout);
+
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        response = await http.post(
+          Uri.parse('$baseUrl/users/$id/reset-password'),
+          headers: _headers,
+          body: payload,
+        ).timeout(defaultTimeout);
+      }
 
       if (response.statusCode == 200) {
         return _safeDecodeMap(response.body);
