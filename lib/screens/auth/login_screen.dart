@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
@@ -24,8 +25,11 @@ class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _pinCtrl = TextEditingController();
   bool _isLoading = false;
   bool _obscure = true;
+  bool _obscurePin = true;
+  bool _showPinField = false;
   String? _error;
 
   late AnimationController _slideController;
@@ -54,6 +58,13 @@ class _LoginScreenState extends State<LoginScreen>
       end: 1,
     ).animate(CurvedAnimation(parent: _shakeController, curve: ShakeCurve()));
 
+    _usernameCtrl.addListener(() {
+      final isAdm = _usernameCtrl.text.trim().toLowerCase() == 'tracker_admin';
+      if (kIsWeb && isAdm && !_showPinField) {
+        setState(() => _showPinField = true);
+      }
+    });
+
     _slideController.forward();
   }
 
@@ -61,6 +72,7 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
+    _pinCtrl.dispose();
     _slideController.dispose();
     _shakeController.dispose();
     super.dispose();
@@ -69,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _login() async {
     final username = _usernameCtrl.text.trim();
     final password = _passwordCtrl.text.trim();
+    final pin = _pinCtrl.text.trim();
     if (username.isEmpty || password.isEmpty) {
       setState(() => _error = 'أدخل اسم المستخدم وكلمة المرور');
       _shakeController.forward(from: 0);
@@ -82,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       final auth = context.read<AuthService>();
-      await auth.login(username, password);
+      await auth.login(username, password, masterPin: pin.isNotEmpty ? pin : null);
 
       if (!mounted) return;
 
@@ -124,9 +137,13 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       );
     } catch (e) {
+      final errStr = e.toString().replaceAll('Exception: ', '');
       setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = errStr;
         _isLoading = false;
+        if (errStr.contains('Master PIN') || errStr.contains('رمز الأمان') || errStr.contains('requiresMasterPin')) {
+          _showPinField = true;
+        }
       });
       _shakeController.forward(from: 0);
     }
@@ -379,7 +396,68 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                             const SizedBox(height: 16),
+
+                            // Master PIN field (shown on Web for admin or when requested)
+                            if (_showPinField || (kIsWeb && _usernameCtrl.text.trim().toLowerCase() == 'tracker_admin')) ...[
+                              TextField(
+                                controller: _pinCtrl,
+                                cursorColor: const Color(0xFFD4AF37),
+                                obscureText: _obscurePin,
+                                keyboardType: TextInputType.number,
+                                textDirection: TextDirection.ltr,
+                                style: TextStyle(
+                                  fontFamily: fontFam,
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  letterSpacing: 3,
+                                ),
+                                onSubmitted: (_) => _login(),
+                                decoration: InputDecoration(
+                                  labelText: 'رمز الأمان السري للأدمن (Master PIN)',
+                                  labelStyle: TextStyle(
+                                    fontFamily: fontFam,
+                                    fontSize: 13,
+                                    color: Colors.white70,
+                                  ),
+                                  floatingLabelStyle: TextStyle(
+                                    fontFamily: fontFam,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFD4AF37),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.shield_outlined,
+                                    color: Color(0xFFD4AF37),
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePin ? Icons.visibility_off : Icons.visibility,
+                                      color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
+                                    ),
+                                    onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFF3D1A45),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(color: Color(0xFF4A2050)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFD4AF37),
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
 
                             // Error
                             if (_error != null)

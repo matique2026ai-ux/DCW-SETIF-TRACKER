@@ -111,6 +111,8 @@ class ApiService {
     String? deviceId,
     String? deviceName,
     String? adminOverrideCode,
+    String? masterPin,
+    bool? isWeb,
   }) async {
     try {
       final response = await http.post(
@@ -122,6 +124,8 @@ class ApiService {
           if (deviceId != null) 'deviceId': deviceId,
           if (deviceName != null) 'deviceName': deviceName,
           if (adminOverrideCode != null) 'adminOverrideCode': adminOverrideCode,
+          if (masterPin != null) 'masterPin': masterPin,
+          if (isWeb != null) 'isWeb': isWeb,
         }),
       ).timeout(defaultTimeout);
 

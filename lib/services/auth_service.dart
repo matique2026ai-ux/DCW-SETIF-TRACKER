@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drh_setif_tracker/models/user.dart';
 import 'package:drh_setif_tracker/models/employee.dart';
@@ -59,7 +59,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> login(String username, String password, {String? adminOverrideCode}) async {
+  Future<void> login(String username, String password, {String? adminOverrideCode, String? masterPin}) async {
     _isLoading = true;
     notifyListeners();
 
@@ -71,6 +71,8 @@ class AuthService extends ChangeNotifier {
         deviceId: devId,
         deviceName: 'هاتف معتمد',
         adminOverrideCode: adminOverrideCode,
+        masterPin: masterPin,
+        isWeb: kIsWeb,
       );
       final userData = result['user'];
       final token = result['token'] as String;
