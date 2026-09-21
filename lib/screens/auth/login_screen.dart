@@ -60,8 +60,9 @@ class _LoginScreenState extends State<LoginScreen>
 
     _usernameCtrl.addListener(() {
       final isAdm = _usernameCtrl.text.trim().toLowerCase() == 'tracker_admin';
-      if (kIsWeb && isAdm && !_showPinField) {
-        setState(() => _showPinField = true);
+      final shouldShow = kIsWeb && isAdm;
+      if (_showPinField != shouldShow) {
+        setState(() => _showPinField = shouldShow);
       }
     });
 
