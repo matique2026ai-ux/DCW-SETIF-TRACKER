@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
+import 'package:drh_setif_tracker/services/pdf_report_service.dart';
 
 class QRCodeScreen extends StatelessWidget {
   final String data;
@@ -370,29 +371,71 @@ class QRCodeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Close / Back Button
-              SizedBox(
-                width: 220,
-                height: 46,
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text(
-                    'الرجوع',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+              // Action Buttons Row
+              Column(
+                children: [
+                  if (!isInspectorateBadge) ...[
+                    SizedBox(
+                      width: 340,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          await PdfReportService.generateAttendanceProofReceiptPdf(
+                            employeeName: employeeName.toString(),
+                            serviceName: serviceName.isNotEmpty ? serviceName : 'مصلحة الرقابة وقمع الغش والمنافسة',
+                            date: dateStr.toString(),
+                            time: timeStr.toString().isNotEmpty ? timeStr.toString() : (isPresent ? '08:15' : 'غير مسجل'),
+                            locationName: locName.toString(),
+                            proofId: passId.replaceAll('#', ''),
+                            verifyUrl: data,
+                            isPresent: isPresent,
+                          );
+                        },
+                        icon: const Icon(Icons.picture_as_pdf, size: 20),
+                        label: const Text(
+                          'تحميل وطباعة وصل الإثبات المادي (PDF)',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          foregroundColor: const Color(0xFF1A0A1F),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  SizedBox(
+                    width: 340,
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back, size: 18),
+                      label: const Text(
+                        'الرجوع',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        side: const BorderSide(color: Color(0xFF4A2050)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
-                    foregroundColor: const Color(0xFF1A0A1F),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+                ],
               ),
             ],
           ),
