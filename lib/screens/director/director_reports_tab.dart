@@ -1678,7 +1678,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           setDlgState(() => isSending = true);
                           try {
                             final auth = Provider.of<AuthService>(context, listen: false);
-                            final userId = auth.currentUser?['Id'] ?? auth.currentUser?['id'] ?? 1;
+                            final userId = auth.currentUser?.id ?? 1;
                             
                             final inquiryData = {
                               'employeeId': empId,
