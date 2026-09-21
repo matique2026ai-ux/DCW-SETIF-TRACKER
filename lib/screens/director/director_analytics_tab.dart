@@ -155,7 +155,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             const SizedBox(height: 20),
 
             // 6. Macro Cumulative Ledger & Quality Indicators
-            _buildCumulativeMacroCard(isArabic, cumulative),
+            _buildCumulativeMacroCard(isArabic, cumulative, recentVisits),
             const SizedBox(height: 20),
 
             // 7. Territorial Inspectorates & Top Inspectors Deck
@@ -1725,7 +1725,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     );
   }
 
-  Widget _buildCumulativeMacroCard(bool isArabic, Map<String, dynamic> cum) {
+  Widget _buildCumulativeMacroCard(bool isArabic, Map<String, dynamic> cum, List<dynamic> recentVisits) {
     final int totalVisits = (cum['totalVisits'] as num?)?.toInt() ?? 0;
     final int violations = (cum['violationsCount'] as num?)?.toInt() ?? 0;
     final seizures = (cum['totalSeizureValue'] as num?)?.toDouble() ?? 0.0;
@@ -1865,112 +1865,179 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
           const Divider(color: Color(0xFF2D1037), height: 1),
           const SizedBox(height: 16),
 
-          // Compact 2-column metrics grid
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
-              final crossCount = isWide ? 3 : 2;
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossCount,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: isWide ? 2.4 : 2.1,
-                ),
-                itemCount: metrics.length,
-                itemBuilder: (context, idx) {
-                  final m = metrics[idx];
-                  final color = m['color'] as Color;
-                  final icon = m['icon'] as IconData;
-                  return TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0.0, end: 1.0),
-                    duration: Duration(milliseconds: 400 + idx * 80),
-                    curve: Curves.easeOut,
-                    builder: (context, progress, child) {
-                      return Opacity(
-                        opacity: progress,
-                        child: Transform.translate(
-                          offset: Offset(0, (1 - progress) * 12),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(icon, color: color, size: 14),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  m['label'] as String,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade400),
-                                ),
-                                const SizedBox(height: 2),
-                                FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: AlignmentDirectional.centerStart,
-                                  child: Text(
-                                    m['value'] as String,
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w900,
-                                      color: color,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+          // ── COMPACT METRIC ROWS (2 per row, no wasted space) ──
+          ...List.generate((metrics.length / 2).ceil(), (rowIdx) {
+            final left = metrics[rowIdx * 2];
+            final right = rowIdx * 2 + 1 < metrics.length ? metrics[rowIdx * 2 + 1] : null;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(child: _buildCumMetricTile(left['icon'] as IconData, left['label'] as String, left['value'] as String, left['color'] as Color)),
+                  if (right != null) ...[
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildCumMetricTile(right['icon'] as IconData, right['label'] as String, right['value'] as String, right['color'] as Color)),
+                  ] else
+                    const Expanded(child: SizedBox()),
+                ],
+              ),
+            );
+          }),
 
           const SizedBox(height: 14),
           const Divider(color: Color(0xFF2D1037), height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // Bottom summary bar
+          // ── TOP RECENT INSPECTIONS (live list from data) ──
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.science_rounded, size: 12, color: Colors.grey.shade500),
-              const SizedBox(width: 5),
+              Icon(Icons.storefront_rounded, size: 14, color: Colors.grey.shade400),
+              const SizedBox(width: 6),
               Text(
-                isArabic
-                    ? 'عينات التحاليل المخبرية: $samples عينة'
-                    : 'Analyses laboratoire: $samples échantillons',
-                style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+                isArabic ? 'أحدث المعاينات الميدانية المسجلة' : 'Dernières Inspections Enregistrées',
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const Spacer(),
+              Text(
+                isArabic ? 'عينات مخبر: $samples' : 'Labo: $samples',
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade500),
               ),
             ],
           ),
+          const SizedBox(height: 8),
+
+          // Live inspection rows
+          if (recentVisits.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: Text(
+                  isArabic ? 'لا توجد معاينات مسجلة للفترة المحددة' : 'Aucune inspection enregistrée',
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.grey.shade500),
+                ),
+              ),
+            )
+          else
+            ...recentVisits.take(6).map((v) {
+              final business = v['BusinessName']?.toString() ?? v['businessname']?.toString() ?? (isArabic ? 'نشاط تجاري' : 'Commerce');
+              final sector = v['ActivityType']?.toString() ?? v['activitytype']?.toString() ?? '';
+              final hasViolation = v['ViolationFound'] == true || v['violationfound'] == true || v['ViolationFound'] == 1;
+              final date = v['InspectionDate']?.toString() ?? v['inspectiondate']?.toString() ?? '';
+              String shortDate = date;
+              if (date.contains('T')) shortDate = date.split('T').first;
+              if (shortDate.contains('-')) {
+                final p = shortDate.split('-');
+                if (p.length == 3) shortDate = '${p[2]}/${p[1]}';
+              }
+              final color = hasViolation ? const Color(0xFFEF4444) : const Color(0xFF10B981);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A0A20),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        business,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                    ),
+                    if (sector.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        sector,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade500),
+                      ),
+                    ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        hasViolation ? (isArabic ? 'مخالفة' : 'Infraction') : (isArabic ? 'مطابق' : 'Conforme'),
+                        style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, fontWeight: FontWeight.bold, color: color),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      shortDate,
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCumMetricTile(IconData icon, String label, String value, Color color) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+      builder: (context, progress, child) => Opacity(
+        opacity: progress,
+        child: child,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 13),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade400),
+                  ),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.w900, color: color),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
