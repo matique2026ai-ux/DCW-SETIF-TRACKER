@@ -20,7 +20,7 @@ class QRCodeScreen extends StatelessWidget {
 
   static void showOfficialBadge(BuildContext context, InspectorateHQ insp) {
     final now = DateTime.now().toIso8601String().split('T')[0];
-    final verifyUrl = 'https://dcw-setif-tracker.onrender.com/verify?id=${insp.id}&name=${Uri.encodeComponent(insp.nameAr)}&loc=${Uri.encodeComponent(insp.nameAr)}&lat=${insp.latitude}&lng=${insp.longitude}&rad=${insp.radiusMeters.round()}&date=$now&type=OFFICIAL_INSPECTORATE_BADGE&status=VERIFIED_OFFICIAL_HQ';
+    final verifyUrl = 'https://drh-setif-api.onrender.com/verify?id=${insp.id}&name=${Uri.encodeComponent(insp.nameAr)}&loc=${Uri.encodeComponent(insp.nameAr)}&lat=${insp.latitude}&lng=${insp.longitude}&rad=${insp.radiusMeters.round()}&date=$now&type=OFFICIAL_INSPECTORATE_BADGE&status=VERIFIED_OFFICIAL_HQ';
     final badgeData = {
       'type': 'OFFICIAL_INSPECTORATE_BADGE',
       'inspectorateId': insp.id,
@@ -402,7 +402,7 @@ class QRCodeScreen extends StatelessWidget {
     final status = record['status'] ?? 'VERIFIED_OFFICIAL';
 
     final uri = Uri.https(
-      'dcw-setif-tracker.onrender.com',
+      'drh-setif-api.onrender.com',
       '/verify',
       {
         'id': id,
