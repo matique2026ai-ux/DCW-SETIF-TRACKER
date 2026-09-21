@@ -497,91 +497,124 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     final String complianceRate = ins['complianceRate']?.toString() ?? (totalVisits > 0 ? (((totalVisits - violations) / totalVisits) * 100).toStringAsFixed(1) : '100.0');
 
     final formatter = NumberFormat('#,###', 'fr_DZ');
-    final seizureText = '${formatter.format(seizureVal)} دج';
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 900
-            ? 4
-            : constraints.maxWidth > 600
-                ? 3
-                : 2;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── TOP ROW: 4 PRIMARY STRATEGIC PILLARS (Clean, sleek, balanced height) ──
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth > 900;
+            final isTablet = constraints.maxWidth > 550;
+            final crossAxisCount = isDesktop ? 4 : (isTablet ? 2 : 1);
 
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.6,
-          children: [
-            _buildMetricTile(
-              title: isArabic ? 'إجمالي التدخلات والمعاينات' : 'Visites de Contrôle',
-              value: '$totalVisits',
-              icon: Icons.storefront_outlined,
-              accentColor: const Color(0xFF38BDF8),
-              subtitle: isArabic ? 'معاينة ميدانية (انقر للتفاصيل)' : 'Interventions (Cliquez)',
-              onTap: () => _showVisitsDetailsSheet(context, recentVisits, isArabic),
-            ),
-            _buildMetricTile(
-              title: isArabic ? 'المخالفات والمحاضر' : 'Infractions & PVs',
-              value: '$violations',
-              icon: Icons.gavel_outlined,
-              accentColor: const Color(0xFFEF4444),
-              subtitle: courtReferrals > 0 ? (isArabic ? '$courtReferrals محضر قضائي (انقر)' : '$courtReferrals PVs justice') : (isArabic ? 'مخالفات محررة (انقر)' : 'Infractions (Cliquez)'),
-              onTap: () => _showViolationsDetailsSheet(context, recentVisits, isArabic),
-            ),
-            _buildMetricTile(
-              title: isArabic ? 'المحجوزات والسلع' : 'Valeur des Saisies',
-              value: seizureVal > 0 ? seizureText : '0.00 دج',
-              icon: Icons.inventory_2_outlined,
-              accentColor: const Color(0xFFF59E0B),
-              subtitle: isArabic ? 'قيمة السلع المحجوزة (انقر)' : 'Marchandises saisies',
-              onTap: () => _showSeizuresDetailsSheet(context, recentVisits, isArabic, seizureVal),
-            ),
-            _buildMetricTile(
-              title: isArabic ? 'الجاهزية والانتشار' : 'Taux de Déploiement',
-              value: '$readinessRate%',
-              icon: Icons.people_alt_outlined,
-              accentColor: const Color(0xFF10B981),
-              subtitle: isArabic ? '${att['presentToday'] ?? 0} حاضر من ${att['totalInspectors'] ?? 5} (انقر)' : '${att['presentToday'] ?? 0} présents / ${att['totalInspectors'] ?? 5}',
-              onTap: () => _showReadinessDetailsSheet(context, att, isArabic),
-            ),
-            _buildMetricTile(
-              title: isArabic ? 'اقتراحات الغلق الإداري' : 'Fermetures Proposées',
-              value: '$closures',
-              icon: Icons.block_outlined,
-              accentColor: const Color(0xFFEC4899),
-              subtitle: isArabic ? 'اقتراح غلق رسمي (انقر)' : 'Propositions Wali (Cliquez)',
-              onTap: () => _showClosuresDetailsSheet(context, recentVisits, isArabic),
-            ),
-            _buildMetricTile(
-              title: isArabic ? 'العينات للتحاليل' : 'Échantillons Labo',
-              value: '$samples',
-              icon: Icons.science_outlined,
-              accentColor: const Color(0xFFA855F7),
-              subtitle: isArabic ? 'عينة مقتطعة للمخبر (انقر)' : 'Analyses labo (Cliquez)',
-              onTap: () => _showSamplesDetailsSheet(context, recentVisits, isArabic),
-            ),
-            _buildMetricTile(
-              title: isArabic ? 'نسبة الامتثال التجاري' : 'Taux de Conformité',
-              value: '$complianceRate%',
-              icon: Icons.verified_outlined,
-              accentColor: const Color(0xFF06B6D4),
-              subtitle: isArabic ? 'محلات مطابقة للشروط (انقر)' : 'Commerces conformes (Cliquez)',
-              onTap: () => _showComplianceDetailsSheet(context, recentVisits, isArabic, totalVisits, violations),
-            ),
-            _buildMetricTile(
-              title: isArabic ? 'المتابعات القضائية' : 'Poursuites Judiciaires',
-              value: '$courtReferrals محضر',
-              icon: Icons.balance_outlined,
-              accentColor: const Color(0xFFE11D48),
-              subtitle: isArabic ? 'إحالة لمحاكم الولاية (انقر)' : 'Dossiers justice (Cliquez)',
-              onTap: () => _showCourtReferralsDetailsSheet(context, recentVisits, isArabic),
-            ),
-          ],
-        );
-      },
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 10,
+              childAspectRatio: isDesktop ? 2.4 : (isTablet ? 2.8 : 3.2),
+              children: [
+                _buildHeroMetricCard(
+                  title: isArabic ? 'معاينات وتدخلات الرقابة' : 'Visites de Contrôle',
+                  value: '$totalVisits',
+                  unit: isArabic ? 'تدخل ميداني' : 'visites',
+                  icon: Icons.storefront_rounded,
+                  accentColor: const Color(0xFFD4AF37),
+                  badgeText: isArabic ? 'الميدان نشط' : 'Actif',
+                  badgeColor: const Color(0xFFD4AF37),
+                  onTap: () => _showVisitsDetailsSheet(context, recentVisits, isArabic),
+                ),
+                _buildHeroMetricCard(
+                  title: isArabic ? 'المخالفات والمحاضر' : 'Infractions Constatées',
+                  value: '$violations',
+                  unit: isArabic ? 'مخالفة محررة' : 'infractions',
+                  icon: Icons.gavel_rounded,
+                  accentColor: const Color(0xFFEF4444),
+                  badgeText: violations > 0 ? (isArabic ? 'متابعة' : 'Suivi') : (isArabic ? 'سليم' : 'RAS'),
+                  badgeColor: const Color(0xFFEF4444),
+                  onTap: () => _showViolationsDetailsSheet(context, recentVisits, isArabic),
+                ),
+                _buildHeroMetricCard(
+                  title: isArabic ? 'قيمة السلع المحجوزة' : 'Valeur des Saisies',
+                  value: seizureVal > 0 ? formatter.format(seizureVal) : '0',
+                  unit: 'دج',
+                  icon: Icons.inventory_2_rounded,
+                  accentColor: const Color(0xFFF59E0B),
+                  badgeText: isArabic ? 'محجوزات' : 'Saisie',
+                  badgeColor: const Color(0xFFF59E0B),
+                  onTap: () => _showSeizuresDetailsSheet(context, recentVisits, isArabic, seizureVal),
+                ),
+                _buildHeroMetricCard(
+                  title: isArabic ? 'نسبة الامتثال التجاري' : 'Taux de Conformité',
+                  value: '$complianceRate%',
+                  unit: isArabic ? 'مطابقة قانونية' : 'conforme',
+                  icon: Icons.verified_rounded,
+                  accentColor: const Color(0xFF10B981),
+                  badgeText: isArabic ? 'القانون 09-03' : 'Loi 09-03',
+                  badgeColor: const Color(0xFF10B981),
+                  onTap: () => _showComplianceDetailsSheet(context, recentVisits, isArabic, totalVisits, violations),
+                ),
+              ],
+            );
+          },
+        ),
+
+        const SizedBox(height: 10),
+
+        // ── BOTTOM ROW: 4 OPERATIONAL & LEGAL ACTION MINI-TILES ──
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth > 900;
+            final isTablet = constraints.maxWidth > 550;
+            final crossAxisCount = isDesktop ? 4 : (isTablet ? 2 : 1);
+
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 8,
+              childAspectRatio: isDesktop ? 3.6 : (isTablet ? 3.8 : 4.0),
+              children: [
+                _buildCompactActionTile(
+                  title: isArabic ? 'الجاهزية والانتشار' : 'Déploiement',
+                  value: '$readinessRate%',
+                  subtext: isArabic ? '${att['presentToday'] ?? 0} حاضر من ${att['totalInspectors'] ?? 5}' : '${att['presentToday'] ?? 0} / ${att['totalInspectors'] ?? 5}',
+                  icon: Icons.people_alt_rounded,
+                  color: const Color(0xFF10B981),
+                  onTap: () => _showReadinessDetailsSheet(context, att, isArabic),
+                ),
+                _buildCompactActionTile(
+                  title: isArabic ? 'المتابعات القضائية' : 'Poursuites',
+                  value: '$courtReferrals',
+                  subtext: isArabic ? 'محضر محال للعدالة' : 'PVs au parquet',
+                  icon: Icons.balance_rounded,
+                  color: const Color(0xFFE11D48),
+                  onTap: () => _showCourtReferralsDetailsSheet(context, recentVisits, isArabic),
+                ),
+                _buildCompactActionTile(
+                  title: isArabic ? 'اقتراح الغلق الإداري' : 'Fermetures',
+                  value: '$closures',
+                  subtext: isArabic ? 'مقترح للوالي' : 'Proposé au Wali',
+                  icon: Icons.block_rounded,
+                  color: const Color(0xFFEC4899),
+                  onTap: () => _showClosuresDetailsSheet(context, recentVisits, isArabic),
+                ),
+                _buildCompactActionTile(
+                  title: isArabic ? 'اقتطاع العينات' : 'Échantillons',
+                  value: '$samples',
+                  subtext: isArabic ? 'عينات لتحاليل المخبر' : 'Analyses labo',
+                  icon: Icons.science_rounded,
+                  color: const Color(0xFFA855F7),
+                  onTap: () => _showSamplesDetailsSheet(context, recentVisits, isArabic),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -797,7 +830,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                                             fontFamily: 'Tajawal',
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
-                                            color: isHovered ? Colors.black : const Color(0xFF38BDF8),
+                                            color: isHovered ? Colors.black : const Color(0xFFD4AF37),
                                           ),
                                         ),
                                       ),
@@ -818,7 +851,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                                                 height: height,
                                                 decoration: BoxDecoration(
                                                   gradient: const LinearGradient(
-                                                    colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                                                    colors: [Color(0xFFD4AF37), Color(0xFFB89628)],
                                                     begin: Alignment.topCenter,
                                                     end: Alignment.bottomCenter,
                                                   ),
@@ -826,7 +859,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                                                   boxShadow: isHovered
                                                       ? [
                                                           BoxShadow(
-                                                            color: const Color(0xFF38BDF8).withValues(alpha: 0.5),
+                                                            color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
                                                             blurRadius: 8,
                                                             offset: const Offset(0, -2),
                                                           ),
@@ -899,7 +932,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildLegendItem('التدخلات والمعاينات الميدانية', const Color(0xFF38BDF8)),
+                      _buildLegendItem('التدخلات والمعاينات الميدانية', const Color(0xFFD4AF37)),
                       const SizedBox(width: 24),
                       _buildLegendItem('المخالفات والمحاضر المرفوعة', const Color(0xFFEF4444)),
                     ],
@@ -1147,7 +1180,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                             minHeight: 7,
                             backgroundColor: const Color(0xFF1A0A20),
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              rate == 0.0 ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                              rate == 0.0 ? const Color(0xFF10B981) : const Color(0xFFD4AF37),
                             ),
                           ),
                         );
@@ -1225,7 +1258,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                       complianceProgress: compProgress,
                       readinessProgress: 0.85,
                       complianceColor: const Color(0xFF10B981),
-                      readinessColor: const Color(0xFF38BDF8),
+                      readinessColor: const Color(0xFFD4AF37),
                     ),
                     child: Center(
                       child: Column(
@@ -1343,32 +1376,34 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     );
   }
 
-  Widget _buildMetricTile({
+  Widget _buildHeroMetricCard({
     required String title,
     required String value,
+    required String unit,
     required IconData icon,
     required Color accentColor,
-    required String subtitle,
+    required String badgeText,
+    required Color badgeColor,
     VoidCallback? onTap,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        splashColor: accentColor.withValues(alpha: 0.2),
-        highlightColor: accentColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        splashColor: accentColor.withValues(alpha: 0.15),
+        highlightColor: accentColor.withValues(alpha: 0.08),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFF240D2D),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: accentColor.withValues(alpha: 0.35)),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 6,
-                offset: const Offset(0, 3),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -1376,9 +1411,18 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Header: Icon + Title + Tiny Status Badge
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(icon, color: accentColor, size: 15),
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       title,
@@ -1393,45 +1437,152 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
+                      color: badgeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
                     ),
-                    child: Icon(icon, color: accentColor, size: 16),
+                    child: Text(
+                      badgeText,
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: badgeColor,
+                      ),
+                    ),
                   ),
                 ],
               ),
+              // Body: Big Numeric Value + Unit + Tap indicator
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Expanded(
-                    child: Text(
-                      value,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: accentColor,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        unit,
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'تفاصيل',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(Icons.chevron_left_rounded, size: 14, color: Colors.grey.shade500),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactActionTile({
+    required String title,
+    required String value,
+    required String subtext,
+    required IconData icon,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E0A25),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 14),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtext,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'Tajawal',
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: accentColor,
+                        fontSize: 10,
+                        color: Colors.grey.shade400,
                       ),
                     ),
-                  ),
-                  const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.white24),
-                ],
-              ),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 11,
-                  color: Colors.grey.shade400,
+                  ],
                 ),
               ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.grey.shade600),
             ],
           ),
         ),
@@ -1473,7 +1624,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   children: [
                     Expanded(child: _buildDepartmentCard(isArabic, fraud, const Color(0xFF10B981), Icons.verified_user_outlined)),
                     const SizedBox(width: 14),
-                    Expanded(child: _buildDepartmentCard(isArabic, comp, const Color(0xFF38BDF8), Icons.balance_outlined)),
+                    Expanded(child: _buildDepartmentCard(isArabic, comp, const Color(0xFFF59E0B), Icons.balance_outlined)),
                   ],
                 );
               }
@@ -1481,7 +1632,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                 children: [
                   _buildDepartmentCard(isArabic, fraud, const Color(0xFF10B981), Icons.verified_user_outlined),
                   const SizedBox(height: 12),
-                  _buildDepartmentCard(isArabic, comp, const Color(0xFF38BDF8), Icons.balance_outlined),
+                  _buildDepartmentCard(isArabic, comp, const Color(0xFFF59E0B), Icons.balance_outlined),
                 ],
               );
             },
@@ -1637,7 +1788,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             spacing: 16,
             runSpacing: 10,
             children: [
-              _buildCumulativeMetric(isArabic ? 'إجمالي التدخلات التراكمية' : 'Total Visites', '$totalVisits', const Color(0xFF38BDF8)),
+              _buildCumulativeMetric(isArabic ? 'إجمالي التدخلات التراكمية' : 'Total Visites', '$totalVisits', const Color(0xFFD4AF37)),
               _buildCumulativeMetric(isArabic ? 'إجمالي المخالفات المسجلة' : 'Total Infractions', '$violations', const Color(0xFFEF4444)),
               _buildCumulativeMetric(isArabic ? 'إجمالي قيمة المحجوزات' : 'Valeur Totale Saisies', '${formatter.format(seizures)} دج', const Color(0xFFF59E0B)),
               _buildCumulativeMetric(isArabic ? 'المحاضر القضائية' : 'PVs Transmis Justice', '$courtRef', const Color(0xFF10B981)),
@@ -1767,7 +1918,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                           children: [
                             Text(
                               isArabic ? '$visitsCount معاينة' : '$visitsCount visites',
-                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF38BDF8)),
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
                             ),
                             if (violationsCount > 0) ...[
                               const SizedBox(width: 6),
@@ -1876,7 +2027,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                     ),
                     Text(
                       isArabic ? '$visits زيارة | $violations مخالفة' : '$visits v. | $violations inf.',
-                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFF38BDF8)),
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
                     ),
                   ],
                 );
@@ -2075,7 +2226,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     _showDetailsModal(
       title: isArabic ? 'قائمة المعاينات والتدخلات الميدانية المسجلة' : 'Toutes les interventions terrain',
       icon: Icons.storefront_outlined,
-      accentColor: const Color(0xFF38BDF8),
+      accentColor: const Color(0xFFD4AF37),
       items: visits,
       isArabic: isArabic,
     );
@@ -2194,7 +2345,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    Expanded(child: _buildMiniStatBox(isArabic ? 'إجمالي المفتشين' : 'Total', '$total', const Color(0xFF38BDF8))),
+                    Expanded(child: _buildMiniStatBox(isArabic ? 'إجمالي المفتشين' : 'Total', '$total', const Color(0xFFD4AF37))),
                     const SizedBox(width: 10),
                     Expanded(child: _buildMiniStatBox(isArabic ? 'حاضرون بالميدان' : 'Présents', '$present', const Color(0xFF10B981))),
                     const SizedBox(width: 10),
@@ -2363,7 +2514,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                               ],
                               if (legalAction.toString().isNotEmpty) ...[
                                 const SizedBox(height: 4),
-                                Text('⚖️ الإجراء: $legalAction', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFF38BDF8))),
+                                Text('⚖️ الإجراء: $legalAction', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37))),
                               ],
                             ],
                           ),
@@ -2395,7 +2546,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     _showDetailsModal(
       title: isArabic ? 'سجل المحلات والأنشطة الممتثلة والمطابقة للشروط' : 'Commerces Conformes aux Règles',
       icon: Icons.verified_outlined,
-      accentColor: const Color(0xFF06B6D4),
+      accentColor: const Color(0xFF10B981),
       items: compliant.isNotEmpty ? compliant : visits,
       isArabic: isArabic,
     );
