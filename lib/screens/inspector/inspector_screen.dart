@@ -616,7 +616,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
     }
 
     final now = DateTime.now();
-    final bool isEarlyHour = now.hour < 15 || (now.hour == 15 && now.minute < 30);
+    // نافذة السماح المسائية (Evening Grace Tolerance): ابتداءً من 16:00 أو بعد إتمام الدوام القانوني
+    final bool isWithinToleranceOrEndShift = now.hour >= 16 || elapsedMinutes >= 420;
     final bool isVeryShortShift = elapsedMinutes < 30;
     final bool isHalfShiftWithoutVisits = elapsedMinutes < 240 && _visitCount == 0;
 
@@ -628,9 +629,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
       _showEarlyCheckOutDialog(
         customNotice: '⚠️ تنبيه إداري: لم تكتمل 4 ساعات من الدوام القانوني (مضت $elapsedMinutes دقيقة) ولم تسجل أي زيارات أو معاينات ميدانية اليوم. يتطلب الانصراف توثيق المبرر الإداري.',
       );
-    } else if (isEarlyHour) {
+    } else if (!isWithinToleranceOrEndShift) {
       _showEarlyCheckOutDialog(
-        customNotice: '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر قبل نهاية الدوام توثيق المبرر الإداري أو المهمة المكلف بها.',
+        customNotice: '⚠️ انصراف قبل نافذة السماح (تنتهي مهام الدوام في 16:30 مع نافذة سماح تبدأ من 16:00). يتطلب الانصراف توثيق المبرر الإداري أو المهمة المكلف بها.',
       );
     } else {
       _showNormalCheckOutConfirmDialog();
