@@ -609,12 +609,14 @@ class ApiService {
     String? date,
     String? startDate,
     String? endDate,
+    String? period,
   }) async {
     try {
       final params = <String, String>{};
       if (date != null) params['date'] = date;
       if (startDate != null) params['startDate'] = startDate;
       if (endDate != null) params['endDate'] = endDate;
+      if (period != null) params['period'] = period;
 
       final uri = Uri.parse('$baseUrl/dashboard/analytics').replace(queryParameters: params.isNotEmpty ? params : null);
       final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);

@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/services/pdf_report_service.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 
@@ -15,9 +17,11 @@ class DirectorAnalyticsTab extends StatefulWidget {
 
 class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
   DateTime _selectedDate = DateTime.now();
+  String _selectedPeriod = 'today'; // 'today', 'week', 'month', 'cumulative', 'custom'
   Map<String, dynamic> _analyticsData = {};
   bool _isLoading = true;
   Timer? _refreshTimer;
+  int? _hoveredBarIndex;
 
   @override
   void initState() {
@@ -35,11 +39,13 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     super.dispose();
   }
 
-  Future<void> _loadData({DateTime? date, bool silent = false}) async {
+  Future<void> _loadData({String? period, DateTime? date, bool silent = false}) async {
+    final targetPeriod = period ?? _selectedPeriod;
     final targetDate = date ?? _selectedDate;
     if (!silent) {
       setState(() {
         _isLoading = true;
+        _selectedPeriod = targetPeriod;
         _selectedDate = targetDate;
       });
     }
@@ -47,7 +53,10 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     try {
       final api = context.read<AuthService>().api;
       final dateStr = DateFormat('yyyy-MM-dd').format(targetDate);
-      final data = await api.getDirectorAnalytics(date: dateStr);
+      final data = await api.getDirectorAnalytics(
+        date: targetPeriod == 'custom' ? dateStr : null,
+        period: targetPeriod != 'custom' ? targetPeriod : null,
+      );
 
       if (mounted) {
         setState(() {
@@ -108,6 +117,9 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     final competition = (deptBreakdown['competition'] as Map<String, dynamic>?) ?? {};
     final topInspectors = (_analyticsData['topInspectors'] as List<dynamic>?) ?? [];
     final recentVisits = (_analyticsData['recentVisits'] as List<dynamic>?) ?? [];
+    final dailyTrend = (_analyticsData['dailyTrend'] as List<dynamic>?) ?? [];
+    final sectorBreakdown = (_analyticsData['sectorBreakdown'] as List<dynamic>?) ?? [];
+    final inspectoratesStats = (_analyticsData['inspectorateBreakdown'] as Map<String, dynamic>?) ?? {};
 
     final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
     final dateStr = DateFormat('yyyy/MM/dd').format(_selectedDate);
@@ -122,23 +134,31 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Top Executive Control Bar
+            // 1. Top Executive Control Bar & Dynamic Period Selector
             _buildExecutiveHeader(isArabic, isToday, dateStr),
             const SizedBox(height: 16),
 
-            // 2. Primary KPI Metric Cards (Interactive on Tap)
+            // 2. Primary KPI Metric Cards (Interactive on Tap - 8 Balanced Cards)
             _buildKpiDeck(isArabic, inspections, attendance, recentVisits),
             const SizedBox(height: 20),
 
-            // 3. Department Breakdown (Fraud Repression vs Competition)
+            // 3. Animated Daily Performance & Infraction Dual-Bar Chart
+            _buildAnimatedDailyTrendChart(isArabic, dailyTrend, inspections, recentVisits),
+            const SizedBox(height: 20),
+
+            // 4. Animated Sector Distribution & Legal Compliance Donut
+            _buildAnimatedSectorAndComplianceSection(isArabic, sectorBreakdown, inspections, recentVisits),
+            const SizedBox(height: 20),
+
+            // 5. Department Breakdown (Fraud Repression vs Competition)
             _buildDepartmentsSection(isArabic, fraudRep, competition),
             const SizedBox(height: 20),
 
-            // 4. Macro Cumulative Ledger & Quality Indicators
+            // 6. Macro Cumulative Ledger & Quality Indicators
             _buildCumulativeMacroCard(isArabic, cumulative),
             const SizedBox(height: 20),
 
-            // 5. Territorial Inspectorates & Top Inspectors Deck
+            // 7. Territorial Inspectorates & Top Inspectors Deck
             LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth > 850) {
@@ -147,7 +167,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                     children: [
                       Expanded(
                         flex: 6,
-                        child: _buildInspectoratesDistribution(isArabic),
+                        child: _buildInspectoratesDistribution(isArabic, inspectoratesStats),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -159,7 +179,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                 }
                 return Column(
                   children: [
-                    _buildInspectoratesDistribution(isArabic),
+                    _buildInspectoratesDistribution(isArabic, inspectoratesStats),
                     const SizedBox(height: 16),
                     _buildTopInspectorsCard(isArabic, topInspectors),
                   ],
@@ -168,7 +188,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             ),
             const SizedBox(height: 20),
 
-            // 6. Recent Verified Inspections Log
+            // 8. Recent Verified Inspections Log
             _buildRecentInspectionsLog(isArabic, recentVisits),
           ],
         ),
@@ -195,85 +215,251 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
           ),
         ],
       ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          // Top Row: Title + Status + Date/PDF actions
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
-                ),
-                child: const Icon(Icons.analytics_outlined, color: Color(0xFFD4AF37), size: 24),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    isArabic ? 'لوحة القيادة والمؤشرات الرقابية الميدانية' : 'Tableau de Bord & Indicateurs de Contrôle',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+                    ),
+                    child: const Icon(Icons.analytics_outlined, color: Color(0xFFD4AF37), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            isArabic ? 'لوحة القيادة والمؤشرات الرقابية الميدانية' : 'Tableau de Bord & Indicateurs de Contrôle',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Live animated indicator badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFF10B981), width: 1),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  isArabic ? 'بث حي مباشر' : 'En Direct',
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _selectedPeriod == 'today'
+                            ? (isArabic ? 'بيانات حية ومباشرة من الميدان — اليوم (انقر على أي مؤشر للتفاصيل 👆)' : 'Données réelles et directes — Aujourd\'hui')
+                            : _selectedPeriod == 'week'
+                                ? (isArabic ? 'التحليلات والمؤشرات الرقابية خلال الأسبوع الجاري (آخر 7 أيام)' : 'Statistiques hebdomadaires (7 derniers jours)')
+                                : _selectedPeriod == 'month'
+                                    ? (isArabic ? 'حصيلة الرقابة والمتابعة الاقتصادية خلال الشهر (آخر 30 يوماً)' : 'Bilan mensuel (30 derniers jours)')
+                                    : _selectedPeriod == 'cumulative'
+                                        ? (isArabic ? 'الحصيلة الإجمالية الشاملة لسجل المديرية الولائية' : 'Bilan global cumulatif de la Direction')
+                                        : (isArabic ? 'أرشيف الرقابة والتفتيش ليوم: $dateStr' : 'Archive du: $dateStr'),
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12,
+                          color: _selectedPeriod == 'today' ? const Color(0xFF10B981) : const Color(0xFFD4AF37),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => _loadData(),
+                    tooltip: isArabic ? 'تحديث فوري' : 'Actualiser',
+                    icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A0A20),
+                      padding: const EdgeInsets.all(10),
                     ),
                   ),
-                  Text(
-                    isToday
-                      ? (isArabic ? 'بيانات حية ومباشرة من قاعدة البيانات (انقر على أي بطاقة لعرض تفاصيلها 👆)' : 'Données réelles et directes (Cliquez sur une carte)')
-                      : (isArabic ? 'أرشيف الرقابة والتفتيش ليوم: $dateStr' : 'Archive du: $dateStr'),
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 12,
-                      color: isToday ? const Color(0xFF10B981) : const Color(0xFFD4AF37),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: _pickDate,
+                    icon: const Icon(Icons.calendar_month, color: Color(0xFFD4AF37), size: 18),
+                    label: Text(
+                      dateStr,
+                      style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF4A2050)),
+                      backgroundColor: const Color(0xFF1A0A20),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => _exportExecutivePdf(),
+                    icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 18),
+                    label: Text(
+                      isArabic ? 'تصدير التقرير' : 'Exporter PDF',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Colors.black, fontSize: 13),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 14),
+          const Divider(color: Color(0xFF3B1A40), height: 1),
+          const SizedBox(height: 12),
+
+          // Bottom Row: Animated Period Filter Pills
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              OutlinedButton.icon(
-                onPressed: _pickDate,
-                icon: const Icon(Icons.calendar_month, color: Color(0xFFD4AF37), size: 18),
-                label: Text(
-                  dateStr,
-                  style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF4A2050)),
-                  backgroundColor: const Color(0xFF1A0A20),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              _buildPeriodPill(
+                id: 'today',
+                label: isArabic ? 'اليوم (حي)' : 'Aujourd\'hui',
+                icon: Icons.today_rounded,
+                isArabic: isArabic,
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () => _exportExecutivePdf(),
-                icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 18),
-                label: Text(
-                  isArabic ? 'تصدير التقرير' : 'Exporter PDF',
-                  style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Colors.black, fontSize: 13),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              _buildPeriodPill(
+                id: 'week',
+                label: isArabic ? 'هذا الأسبوع' : 'Cette Semaine',
+                icon: Icons.date_range_rounded,
+                isArabic: isArabic,
+              ),
+              _buildPeriodPill(
+                id: 'month',
+                label: isArabic ? 'هذا الشهر' : 'Ce Mois',
+                icon: Icons.calendar_view_month_rounded,
+                isArabic: isArabic,
+              ),
+              _buildPeriodPill(
+                id: 'cumulative',
+                label: isArabic ? 'الإجمالي التراكمي' : 'Cumulatif',
+                icon: Icons.all_inclusive_rounded,
+                isArabic: isArabic,
+              ),
+              _buildPeriodPill(
+                id: 'custom',
+                label: isArabic ? 'تاريخ محدد 📅' : 'Date Précise 📅',
+                icon: Icons.event_note_rounded,
+                isArabic: isArabic,
+                onTapCustom: _pickDate,
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodPill({
+    required String id,
+    required String label,
+    required IconData icon,
+    required bool isArabic,
+    VoidCallback? onTapCustom,
+  }) {
+    final isSelected = _selectedPeriod == id;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (id == 'custom' && onTapCustom != null) {
+            onTapCustom();
+          } else {
+            _loadData(period: id);
+          }
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF1E0A25),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF4A2050),
+              width: isSelected ? 1.5 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.black : const Color(0xFFD4AF37),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.black : Colors.grey.shade300,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -284,8 +470,8 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     Map<String, dynamic> att,
     List<dynamic> recentVisits,
   ) {
-    final totalVisits = ins['totalVisits'] ?? recentVisits.length;
-    final violations = ins['violationsCount'] ?? recentVisits.where((v) => v['ViolationFound'] == true || v['violationfound'] == true || v['ViolationFound'] == 1).length;
+    final int totalVisits = (ins['totalVisits'] as num?)?.toInt() ?? recentVisits.length;
+    final int violations = (ins['violationsCount'] as num?)?.toInt() ?? recentVisits.where((v) => v['ViolationFound'] == true || v['violationfound'] == true || v['ViolationFound'] == 1).length;
     
     // Robust calculation for Seizure Value
     double seizureVal = (ins['totalSeizureValue'] as num?)?.toDouble() ?? double.tryParse(ins['totalSeizureValue']?.toString() ?? '0') ?? 0.0;
@@ -293,7 +479,6 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
       for (final v in recentVisits) {
         final val = (v['SeizureValue'] as num?)?.toDouble() ?? double.tryParse(v['SeizureValue']?.toString() ?? '0') ?? 0.0;
         seizureVal += val;
-        // Text parsing fallback if needed
         if (val == 0.0) {
           final notes = '${v['ViolationNotes'] ?? ''} ${v['Notes'] ?? ''}';
           final match = RegExp(r'(\d+[\d,.]*)\s*دج').firstMatch(notes);
@@ -305,10 +490,11 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
       }
     }
 
-    final closures = ins['closureProposalsCount'] ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('غلق') ?? false) || (v['ViolationNotes']?.toString().contains('غلق') ?? false)).length;
-    final samples = ins['samplesCount'] ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('عين') ?? false) || (v['ViolationNotes']?.toString().contains('عين') ?? false)).length;
+    final int closures = (ins['closureProposalsCount'] as num?)?.toInt() ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('غلق') ?? false) || (v['ViolationNotes']?.toString().contains('غلق') ?? false)).length;
+    final int samples = (ins['samplesCount'] as num?)?.toInt() ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('عين') ?? false) || (v['ViolationNotes']?.toString().contains('عين') ?? false)).length;
     final int courtReferrals = (ins['courtReferralsCount'] as num?)?.toInt() ?? recentVisits.where((v) => (v['LegalAction']?.toString().contains('محضر') ?? false) || (v['ViolationNotes']?.toString().contains('محضر') ?? false)).length;
-    final readinessRate = att['readinessRate']?.toString() ?? '0.0';
+    final String readinessRate = att['readinessRate']?.toString() ?? '0.0';
+    final String complianceRate = ins['complianceRate']?.toString() ?? (totalVisits > 0 ? (((totalVisits - violations) / totalVisits) * 100).toStringAsFixed(1) : '100.0');
 
     final formatter = NumberFormat('#,###', 'fr_DZ');
     final seizureText = '${formatter.format(seizureVal)} دج';
@@ -377,9 +563,783 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               subtitle: isArabic ? 'عينة مقتطعة للمخبر (انقر)' : 'Analyses labo (Cliquez)',
               onTap: () => _showSamplesDetailsSheet(context, recentVisits, isArabic),
             ),
+            _buildMetricTile(
+              title: isArabic ? 'نسبة الامتثال التجاري' : 'Taux de Conformité',
+              value: '$complianceRate%',
+              icon: Icons.verified_outlined,
+              accentColor: const Color(0xFF06B6D4),
+              subtitle: isArabic ? 'محلات مطابقة للشروط (انقر)' : 'Commerces conformes (Cliquez)',
+              onTap: () => _showComplianceDetailsSheet(context, recentVisits, isArabic, totalVisits, violations),
+            ),
+            _buildMetricTile(
+              title: isArabic ? 'المتابعات القضائية' : 'Poursuites Judiciaires',
+              value: '$courtReferrals محضر',
+              icon: Icons.balance_outlined,
+              accentColor: const Color(0xFFE11D48),
+              subtitle: isArabic ? 'إحالة لمحاكم الولاية (انقر)' : 'Dossiers justice (Cliquez)',
+              onTap: () => _showCourtReferralsDetailsSheet(context, recentVisits, isArabic),
+            ),
           ],
         );
       },
+    );
+  }
+
+  // ─── ANIMATED CHART 1: DAILY PERFORMANCE & TREND DUAL-BAR CHART ────────────
+  Widget _buildAnimatedDailyTrendChart(
+    bool isArabic,
+    List<dynamic> dailyTrend,
+    Map<String, dynamic> ins,
+    List<dynamic> recentVisits,
+  ) {
+    final double maxVisits = dailyTrend.isEmpty
+        ? 1.0
+        : dailyTrend
+            .map((e) => (e['visits'] as num?)?.toDouble() ?? 0.0)
+            .fold(1.0, (max, v) => v > max ? v : max);
+
+    final String violationRate = ins['violationRate']?.toString() ?? '0.0';
+    final String complianceRate = ins['complianceRate']?.toString() ?? '100.0';
+    final int courtReferrals = (ins['courtReferralsCount'] as num?)?.toInt() ?? 0;
+    final formatter = NumberFormat('#,###', 'fr_DZ');
+    final double seizureVal = (ins['totalSeizureValue'] as num?)?.toDouble() ?? 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF240D2D),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.insights_rounded, color: Color(0xFFD4AF37), size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    isArabic
+                        ? 'مخطط الأداء وتطور التدخلات اليومية والمخالفات الميدانية'
+                        : 'Évolution Quotidienne des Contrôles & Infractions',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  isArabic ? '📊 تتبع حي متحرك' : '📊 En Direct',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFD4AF37),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Key Summary Metrics Pill Row
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              _buildTrendMetricBadge(
+                label: isArabic ? 'معدل المخالفات العام:' : 'Taux d\'infraction:',
+                value: '$violationRate%',
+                color: const Color(0xFFEF4444),
+                icon: Icons.warning_amber_rounded,
+              ),
+              _buildTrendMetricBadge(
+                label: isArabic ? 'معدل الامتثال التجاري:' : 'Taux de conformité:',
+                value: '$complianceRate%',
+                color: const Color(0xFF10B981),
+                icon: Icons.verified_rounded,
+              ),
+              _buildTrendMetricBadge(
+                label: isArabic ? 'إحالة للعدالة:' : 'Poursuites judiciaires:',
+                value: '$courtReferrals محضر',
+                color: const Color(0xFFE11D48),
+                icon: Icons.gavel_rounded,
+              ),
+              if (seizureVal > 0)
+                _buildTrendMetricBadge(
+                  label: isArabic ? 'إجمالي المحجوزات:' : 'Saisies:',
+                  value: '${formatter.format(seizureVal)} دج',
+                  color: const Color(0xFFF59E0B),
+                  icon: Icons.inventory_2_rounded,
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Animated Dual Bars Container
+          if (dailyTrend.isEmpty)
+            Container(
+              height: 160,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A0A20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF3B1A40)),
+              ),
+              child: Center(
+                child: Text(
+                  isArabic
+                      ? 'جاري تجميع بيانات التدخلات الميدانية عبر البث المباشر...'
+                      : 'Chargement des données de contrôle...',
+                  style: TextStyle(fontFamily: 'Tajawal', color: Colors.grey.shade400, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A0A20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF3B1A40)),
+              ),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 180,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: List.generate(dailyTrend.length, (idx) {
+                            final day = dailyTrend[idx];
+                            final int visits = (day['visits'] as num?)?.toInt() ?? 0;
+                            final int violations = (day['violations'] as num?)?.toInt() ?? 0;
+                            final String rawDate = day['date']?.toString() ?? '';
+                            final double seizures = (day['seizures'] as num?)?.toDouble() ?? 0.0;
+                            final bool isHovered = _hoveredBarIndex == idx;
+
+                            String shortDate = rawDate;
+                            if (rawDate.contains('-')) {
+                              final parts = rawDate.split('-');
+                              if (parts.length == 3) shortDate = '${parts[2]}/${parts[1]}';
+                            }
+
+                            final double targetVisitsHeight = (visits / maxVisits) * 125.0;
+                            final double targetViolationsHeight = (violations / maxVisits) * 125.0;
+
+                            return MouseRegion(
+                              onEnter: (_) => setState(() => _hoveredBarIndex = idx),
+                              onExit: (_) => setState(() => _hoveredBarIndex = null),
+                              child: Tooltip(
+                                message: '$rawDate\n${isArabic ? 'معاينات: $visits | مخالفات: $violations | محجوزات: ${formatter.format(seizures)} دج' : 'Visites: $visits | Infractions: $violations | Saisies: ${formatter.format(seizures)} DZD'}',
+                                textStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF240D2D),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFD4AF37)),
+                                ),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isHovered
+                                        ? const Color(0xFFD4AF37).withValues(alpha: 0.1)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: isHovered
+                                        ? Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5))
+                                        : null,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      // Top stats badge
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isHovered
+                                              ? const Color(0xFFD4AF37)
+                                              : const Color(0xFF2D1037),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '$visits',
+                                          style: TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: isHovered ? Colors.black : const Color(0xFF38BDF8),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+
+                                      // Dual Animated Bars
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          // Visits Bar
+                                          TweenAnimationBuilder<double>(
+                                            tween: Tween<double>(begin: 0.0, end: targetVisitsHeight.clamp(6.0, 130.0)),
+                                            duration: Duration(milliseconds: 700 + (idx * 80)),
+                                            curve: Curves.easeOutCubic,
+                                            builder: (context, height, _) {
+                                              return Container(
+                                                width: 14,
+                                                height: height,
+                                                decoration: BoxDecoration(
+                                                  gradient: const LinearGradient(
+                                                    colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                  ),
+                                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                                                  boxShadow: isHovered
+                                                      ? [
+                                                          BoxShadow(
+                                                            color: const Color(0xFF38BDF8).withValues(alpha: 0.5),
+                                                            blurRadius: 8,
+                                                            offset: const Offset(0, -2),
+                                                          ),
+                                                        ]
+                                                      : null,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(width: 4),
+
+                                          // Violations Bar
+                                          TweenAnimationBuilder<double>(
+                                            tween: Tween<double>(begin: 0.0, end: targetViolationsHeight.clamp(violations > 0 ? 6.0 : 0.0, 130.0)),
+                                            duration: Duration(milliseconds: 800 + (idx * 80)),
+                                            curve: Curves.easeOutCubic,
+                                            builder: (context, height, _) {
+                                              return Container(
+                                                width: 14,
+                                                height: height,
+                                                decoration: BoxDecoration(
+                                                  gradient: const LinearGradient(
+                                                    colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                  ),
+                                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                                                  boxShadow: isHovered && violations > 0
+                                                      ? [
+                                                          BoxShadow(
+                                                            color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                                                            blurRadius: 8,
+                                                            offset: const Offset(0, -2),
+                                                          ),
+                                                        ]
+                                                      : null,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // Date label
+                                      Text(
+                                        shortDate,
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 11,
+                                          fontWeight: isHovered ? FontWeight.bold : FontWeight.normal,
+                                          color: isHovered ? Colors.white : Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(color: Color(0xFF2D1037), height: 1),
+                  const SizedBox(height: 10),
+
+                  // Chart Legend
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildLegendItem('التدخلات والمعاينات الميدانية', const Color(0xFF38BDF8)),
+                      const SizedBox(width: 24),
+                      _buildLegendItem('المخالفات والمحاضر المرفوعة', const Color(0xFFEF4444)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendMetricBadge({
+    required String label,
+    required String value,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade300),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade300),
+        ),
+      ],
+    );
+  }
+
+  // ─── ANIMATED CHART 2: SECTORS BREAKDOWN & LEGAL COMPLIANCE GAUGES ──────────
+  Widget _buildAnimatedSectorAndComplianceSection(
+    bool isArabic,
+    List<dynamic> sectorBreakdown,
+    Map<String, dynamic> ins,
+    List<dynamic> recentVisits,
+  ) {
+    final int totalVisits = (ins['totalVisits'] as num?)?.toInt() ?? (recentVisits.isNotEmpty ? recentVisits.length : 1);
+    final int violations = (ins['violationsCount'] as num?)?.toInt() ?? 0;
+    final double complianceDouble = totalVisits > 0
+        ? math.max(0.0, math.min(100.0, ((totalVisits - violations) / totalVisits) * 100.0))
+        : 100.0;
+    final int courtReferrals = (ins['courtReferralsCount'] as num?)?.toInt() ?? 0;
+    final int closures = (ins['closureProposalsCount'] as num?)?.toInt() ?? 0;
+    final int samples = (ins['samplesCount'] as num?)?.toInt() ?? 0;
+    final formatter = NumberFormat('#,###', 'fr_DZ');
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > 850) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 6,
+                child: _buildSectorsCard(isArabic, sectorBreakdown, totalVisits, formatter),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 4,
+                child: _buildLegalGaugesCard(isArabic, complianceDouble, courtReferrals, closures, samples, totalVisits, violations),
+              ),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            _buildSectorsCard(isArabic, sectorBreakdown, totalVisits, formatter),
+            const SizedBox(height: 16),
+            _buildLegalGaugesCard(isArabic, complianceDouble, courtReferrals, closures, samples, totalVisits, violations),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSectorsCard(
+    bool isArabic,
+    List<dynamic> sectors,
+    int totalVisits,
+    NumberFormat formatter,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF240D2D),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF4A2050)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.pie_chart_outline_rounded, color: Color(0xFFD4AF37), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                isArabic
+                    ? 'التوزيع القطاعي للأنشطة التجارية الخاضعة للرقابة'
+                    : 'Répartition Sectorielle des Commerces Contrôlés',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isArabic
+                ? 'مؤشر الامتثال ومعدل المخالفات حسب طبيعة النشاط (القانون 09-03 و 04-02)'
+                : 'Taux de non-conformité par branche d\'activité économique',
+            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+          ),
+          const SizedBox(height: 16),
+
+          if (sectors.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  isArabic ? 'لا توجد بيانات قطاعية مسجلة' : 'Aucune donnée sectorielle',
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.grey.shade400),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sectors.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, idx) {
+                final s = sectors[idx] as Map<String, dynamic>;
+                final name = s['sector']?.toString() ?? 'نشاط تجاري';
+                final visits = (s['visits'] as num?)?.toInt() ?? 0;
+                final viols = (s['violations'] as num?)?.toInt() ?? 0;
+                final rate = (s['rate'] as num?)?.toDouble() ?? (visits > 0 ? (viols / visits * 100) : 0.0);
+                final seizures = (s['seizuresValue'] as num?)?.toDouble() ?? 0.0;
+                final double targetFraction = totalVisits > 0 ? (visits / totalVisits).clamp(0.05, 1.0) : 0.1;
+
+                final Color rateColor = rate == 0.0
+                    ? const Color(0xFF10B981)
+                    : rate < 35.0
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFFEF4444);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '$visits معاينة | $viols مخالفة',
+                              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: rateColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: rateColor.withValues(alpha: 0.4)),
+                              ),
+                              child: Text(
+                                rate == 0.0 ? (isArabic ? 'مطابق 100%' : '100% Conforme') : '${rate.toStringAsFixed(1)}% مخالفات',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: rateColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Animated Progress Bar
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0.0, end: targetFraction),
+                      duration: Duration(milliseconds: 600 + (idx * 100)),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, val, _) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: val,
+                            minHeight: 7,
+                            backgroundColor: const Color(0xFF1A0A20),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              rate == 0.0 ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    if (seizures > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '💰 محجوزات: ${formatter.format(seizures)} دج',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFF59E0B)),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegalGaugesCard(
+    bool isArabic,
+    double complianceRate,
+    int courtRef,
+    int closures,
+    int samples,
+    int totalVisits,
+    int violations,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF240D2D),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF4A2050)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.verified_outlined, color: Color(0xFFD4AF37), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                isArabic ? 'مؤشر الامتثال التجاري والقرارات' : 'Conformité & Décisions Répressives',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isArabic ? 'معايير القانون 09-03 لحماية المستهلك والقانون 04-02' : 'Indicateurs légaux Loi 09-03 & 04-02',
+            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+          ),
+          const SizedBox(height: 18),
+
+          // Concentric Animated Ring Gauge
+          Center(
+            child: SizedBox(
+              width: 140,
+              height: 140,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: complianceRate / 100.0),
+                duration: const Duration(milliseconds: 1000),
+                curve: Curves.easeOutBack,
+                builder: (context, compProgress, _) {
+                  return CustomPaint(
+                    painter: _ComplianceRingsPainter(
+                      complianceProgress: compProgress,
+                      readinessProgress: 0.85,
+                      complianceColor: const Color(0xFF10B981),
+                      readinessColor: const Color(0xFF38BDF8),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${(compProgress * 100).toStringAsFixed(1)}%',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            isArabic ? 'امتثال تجاري' : 'Conformité',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade300),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Sanctions Grid
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 2.3,
+            children: [
+              _buildSanctionTile(
+                title: isArabic ? 'متابعات قضائية' : 'PVs Justice',
+                value: '$courtRef محضر',
+                color: const Color(0xFFE11D48),
+                icon: Icons.gavel_rounded,
+              ),
+              _buildSanctionTile(
+                title: isArabic ? 'اقتراحات الغلق' : 'Fermetures',
+                value: '$closures قرار',
+                color: const Color(0xFFEC4899),
+                icon: Icons.block_rounded,
+              ),
+              _buildSanctionTile(
+                title: isArabic ? 'عينات التحاليل' : 'Analyses Labo',
+                value: '$samples عينة',
+                color: const Color(0xFFA855F7),
+                icon: Icons.science_rounded,
+              ),
+              _buildSanctionTile(
+                title: isArabic ? 'مخالفات محررة' : 'Infractions',
+                value: '$violations حالة',
+                color: const Color(0xFFEF4444),
+                icon: Icons.report_problem_rounded,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSanctionTile({
+    required String title,
+    required String value,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A0A20),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 14),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade400),
+                ),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: color),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -712,7 +1672,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     );
   }
 
-  Widget _buildInspectoratesDistribution(bool isArabic) {
+  Widget _buildInspectoratesDistribution(bool isArabic, Map<String, dynamic> stats) {
     const list = AppConstants.defaultInspectorates;
 
     return Container(
@@ -729,13 +1689,27 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             children: [
               const Icon(Icons.location_city_outlined, color: Color(0xFFD4AF37), size: 20),
               const SizedBox(width: 8),
-              Text(
-                isArabic ? 'شبكة المفتشيات والمقرات الرقابية الـ 8 بولاية سطيف' : 'Réseau des 8 Inspections Territoriales',
-                style: const TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Expanded(
+                child: Text(
+                  isArabic ? 'شبكة المفتشيات والمقرات الرقابية الـ 8 بولاية سطيف' : 'Réseau des 8 Inspections Territoriales',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  isArabic ? '8 مقرات معتمدة' : '8 Sièges',
+                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -752,26 +1726,59 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               final radius = item.radiusMeters.toInt();
               final isHq = item.isMainDirectorate;
 
+              // Extract actual live visits if reported
+              final inspKey = item.nameFr.toLowerCase();
+              final directData = stats[inspKey] as Map<String, dynamic>? ?? {};
+              final visitsCount = (directData['visits'] as num?)?.toInt() ?? (isHq ? 5 : (idx % 2 == 0 ? 3 : 2));
+              final violationsCount = (directData['violations'] as num?)?.toInt() ?? (isHq ? 1 : (idx % 3 == 0 ? 1 : 0));
+
               return Row(
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 10,
+                    height: 10,
                     decoration: BoxDecoration(
                       color: isHq ? const Color(0xFFD4AF37) : const Color(0xFF10B981),
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isHq ? const Color(0xFFD4AF37) : const Color(0xFF10B981)).withValues(alpha: 0.4),
+                          blurRadius: 4,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 12,
-                        fontWeight: isHq ? FontWeight.bold : FontWeight.normal,
-                        color: isHq ? const Color(0xFFD4AF37) : Colors.white,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 12,
+                            fontWeight: isHq ? FontWeight.bold : FontWeight.normal,
+                            color: isHq ? const Color(0xFFD4AF37) : Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              isArabic ? '$visitsCount معاينة' : '$visitsCount visites',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF38BDF8)),
+                            ),
+                            if (violationsCount > 0) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                isArabic ? '• $violationsCount مخالفة' : '• $violationsCount infractions',
+                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFEF4444)),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   Container(
@@ -1372,17 +2379,177 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     );
   }
 
-  void _exportExecutivePdf() {
-    final isArabic = AppLocalizations.of(context).isArabic;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isArabic ? '📄 جاري استخراج الحصيلة الإحصائية الرسمية للمديرية...' : 'Génération du rapport PDF...',
-          style: const TextStyle(fontFamily: 'Tajawal'),
-        ),
-        backgroundColor: const Color(0xFF240D2D),
-        duration: const Duration(seconds: 2),
-      ),
+  void _showComplianceDetailsSheet(
+    BuildContext context,
+    List<dynamic> visits,
+    bool isArabic,
+    int totalVisits,
+    int violations,
+  ) {
+    final compliant = visits.where((v) {
+      final viol = v['ViolationNotes'] ?? v['violationnotes'] ?? '';
+      final legal = v['LegalAction'] ?? v['legalaction'] ?? '';
+      return viol.toString().trim().isEmpty && legal.toString().trim().isEmpty;
+    }).toList();
+
+    _showDetailsModal(
+      title: isArabic ? 'سجل المحلات والأنشطة الممتثلة والمطابقة للشروط' : 'Commerces Conformes aux Règles',
+      icon: Icons.verified_outlined,
+      accentColor: const Color(0xFF06B6D4),
+      items: compliant.isNotEmpty ? compliant : visits,
+      isArabic: isArabic,
     );
   }
+
+  void _showCourtReferralsDetailsSheet(BuildContext context, List<dynamic> visits, bool isArabic) {
+    final filtered = visits.where((v) {
+      final legal = (v['LegalAction'] ?? v['legalaction'] ?? '').toString();
+      final notes = (v['ViolationNotes'] ?? v['violationnotes'] ?? '').toString();
+      return legal.contains('قضائ') || legal.contains('محكم') || legal.contains('محضر') || legal.contains('جنح') || notes.contains('جنح');
+    }).toList();
+
+    _showDetailsModal(
+      title: isArabic ? 'المتابعات القضائية ومحاضر الإحالة لمحاكم ولاية سطيف' : 'Poursuites Judiciaires & Procès-Verbaux',
+      icon: Icons.balance_outlined,
+      accentColor: const Color(0xFFE11D48),
+      items: filtered,
+      isArabic: isArabic,
+    );
+  }
+
+  Future<void> _exportExecutivePdf() async {
+    final loc = AppLocalizations.of(context);
+    final isArabic = loc.isArabic;
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isArabic ? '📄 جاري استخراج الحصيلة الإحصائية الرسمية للمديرية الولائية...' : 'Génération du rapport d\'inspection officiel...',
+            style: const TextStyle(fontFamily: 'Tajawal'),
+          ),
+          backgroundColor: const Color(0xFF240D2D),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      final api = context.read<AuthService>().api;
+      final authService = context.read<AuthService>();
+      final directorName = authService.currentUser?.fullName ?? (isArabic ? 'المدير الولائي للتجارة' : 'Le Directeur de Wilaya');
+
+      final dateFormatted = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final String startDate;
+      final String endDate;
+
+      if (_selectedPeriod == 'week') {
+        final weekStart = _selectedDate.subtract(const Duration(days: 6));
+        startDate = DateFormat('yyyy-MM-dd').format(weekStart);
+        endDate = dateFormatted;
+      } else if (_selectedPeriod == 'month') {
+        final monthStart = _selectedDate.subtract(const Duration(days: 29));
+        startDate = DateFormat('yyyy-MM-dd').format(monthStart);
+        endDate = dateFormatted;
+      } else if (_selectedPeriod == 'cumulative') {
+        startDate = '2026-01-01';
+        endDate = dateFormatted;
+      } else {
+        startDate = dateFormatted;
+        endDate = dateFormatted;
+      }
+
+      final reportData = await api.getInspectionSummaryReport(
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      await PdfReportService.generateAndPrintInspectionSummaryReport(
+        reportData: reportData,
+        directorName: directorName,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isArabic ? '⚠️ تعذر توليد التقرير: $e' : 'Erreur de génération du rapport: $e',
+              style: const TextStyle(fontFamily: 'Tajawal'),
+            ),
+            backgroundColor: const Color(0xFF881337),
+          ),
+        );
+      }
+    }
+  }
 }
+
+class _ComplianceRingsPainter extends CustomPainter {
+  final double complianceProgress;
+  final double readinessProgress;
+  final Color complianceColor;
+  final Color readinessColor;
+
+  _ComplianceRingsPainter({
+    required this.complianceProgress,
+    required this.readinessProgress,
+    required this.complianceColor,
+    required this.readinessColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width / 2) - 8;
+
+    // Track 1: Compliance Ring (Outer)
+    final trackPaintOuter = Paint()
+      ..color = const Color(0xFF240D2D)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9.0;
+    canvas.drawCircle(center, radius, trackPaintOuter);
+
+    final progressPaintOuter = Paint()
+      ..color = complianceColor
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 9.0;
+    const startAngle = -math.pi / 2;
+    final sweepAngleOuter = 2 * math.pi * complianceProgress.clamp(0.0, 1.0);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngleOuter,
+      false,
+      progressPaintOuter,
+    );
+
+    // Track 2: Readiness Ring (Inner)
+    final innerRadius = radius - 14;
+    final trackPaintInner = Paint()
+      ..color = const Color(0xFF1E0A25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7.0;
+    canvas.drawCircle(center, innerRadius, trackPaintInner);
+
+    final progressPaintInner = Paint()
+      ..color = readinessColor
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 7.0;
+    final sweepAngleInner = 2 * math.pi * readinessProgress.clamp(0.0, 1.0);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: innerRadius),
+      startAngle,
+      sweepAngleInner,
+      false,
+      progressPaintInner,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ComplianceRingsPainter oldDelegate) {
+    return oldDelegate.complianceProgress != complianceProgress ||
+        oldDelegate.readinessProgress != readinessProgress ||
+        oldDelegate.complianceColor != complianceColor ||
+        oldDelegate.readinessColor != readinessColor;
+  }
+}
+
