@@ -7,11 +7,15 @@ class ModernNavTabItem {
   final IconData icon;
   final String label;
   final int? badgeCount;
+  final Color? badgeColor;
+  final bool isAlert;
 
   const ModernNavTabItem({
     required this.icon,
     required this.label,
     this.badgeCount,
+    this.badgeColor,
+    this.isAlert = false,
   });
 }
 
@@ -259,18 +263,53 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
                             if (tab.badgeCount != null && tab.badgeCount! > 0) ...[
                               const SizedBox(width: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFF16061D) : const Color(0xFFEF4444),
+                                  color: tab.badgeColor ?? (tab.isAlert ? const Color(0xFFEF4444) : (isSelected ? const Color(0xFF16061D) : const Color(0xFFD97706))),
                                   borderRadius: BorderRadius.circular(8),
+                                  boxShadow: tab.isAlert
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xFFEF4444).withValues(alpha: 0.6),
+                                            blurRadius: 6,
+                                            spreadRadius: 1,
+                                          )
+                                        ]
+                                      : null,
                                 ),
-                                child: Text(
-                                  '${tab.badgeCount}',
-                                  style: TextStyle(
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: isSelected ? const Color(0xFFD4AF37) : Colors.white,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (tab.isAlert) ...[
+                                      const Icon(Icons.notifications_active, size: 9, color: Colors.white),
+                                      const SizedBox(width: 2),
+                                    ],
+                                    Text(
+                                      '${tab.badgeCount}',
+                                      style: TextStyle(
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected && tab.badgeColor == null && !tab.isAlert ? const Color(0xFFD4AF37) : Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else if (tab.isAlert) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFEF4444).withValues(alpha: 0.8),
+                                      blurRadius: 6,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -435,20 +474,55 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
                                 ),
                               ),
                               if (tab.badgeCount != null && tab.badgeCount! > 0) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: tab.badgeColor ?? (tab.isAlert ? const Color(0xFFEF4444) : (isSelected ? const Color(0xFF16061D) : const Color(0xFFD97706))),
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: tab.isAlert
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFFEF4444).withValues(alpha: 0.6),
+                                              blurRadius: 8,
+                                              spreadRadius: 1,
+                                            )
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (tab.isAlert) ...[
+                                        const Icon(Icons.notifications_active, size: 10, color: Colors.white),
+                                        const SizedBox(width: 3),
+                                      ],
+                                      Text(
+                                        '${tab.badgeCount}',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected && tab.badgeColor == null && !tab.isAlert ? const Color(0xFFD4AF37) : Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ] else if (tab.isAlert) ...[
                                 const SizedBox(width: 5),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  width: 9,
+                                  height: 9,
                                   decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFF16061D) : const Color(0xFFEF4444),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    '${tab.badgeCount}',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected ? const Color(0xFFD4AF37) : Colors.white,
-                                    ),
+                                    color: const Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFEF4444).withValues(alpha: 0.8),
+                                        blurRadius: 6,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],

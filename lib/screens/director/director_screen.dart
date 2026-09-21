@@ -22,6 +22,8 @@ class DirectorScreen extends StatefulWidget {
 class _DirectorScreenState extends State<DirectorScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _pendingDecisionsCount = 0;
+  int _activeSentInquiriesCount = 0;
 
   @override
   void initState() {
@@ -30,6 +32,24 @@ class _DirectorScreenState extends State<DirectorScreen>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInquiriesSummary();
+    });
+  }
+
+  Future<void> _loadInquiriesSummary() async {
+    try {
+      final api = context.read<AuthService>().api;
+      final inqs = await api.getInquiries();
+      final answered = inqs.where((i) => i['Status'] == 'answered').length;
+      final sent = inqs.where((i) => i['Status'] == 'sent').length;
+      if (mounted) {
+        setState(() {
+          _pendingDecisionsCount = answered;
+          _activeSentInquiriesCount = sent;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -42,6 +62,11 @@ class _DirectorScreenState extends State<DirectorScreen>
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
 
+    final int? badgeNum = _pendingDecisionsCount > 0
+        ? _pendingDecisionsCount
+        : (_activeSentInquiriesCount > 0 ? _activeSentInquiriesCount : null);
+    final bool hasUrgentDecision = _pendingDecisionsCount > 0;
+
     return Directionality(
       textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -51,9 +76,11 @@ class _DirectorScreenState extends State<DirectorScreen>
           badgeText: loc.isArabic ? 'الآمر بالصرف' : 'Ordonnateur',
           subtitle: loc.isArabic ? 'مديرية التجارة — ولاية سطيف' : 'Direction du Commerce — Wilaya de Sétif',
           selectedIndex: _tabController.index,
+          onRefresh: _loadInquiriesSummary,
           onTabSelected: (idx) {
             _tabController.animateTo(idx);
             setState(() {});
+            _loadInquiriesSummary();
           },
           tabs: [
             ModernNavTabItem(
@@ -70,19 +97,76 @@ class _DirectorScreenState extends State<DirectorScreen>
             ),
             ModernNavTabItem(
               icon: Icons.gavel_outlined,
-              label: loc.navDeductions,
+              label: loc.isArabic ? 'الانضباط والاستفسارات' : 'Discipline & Explications',
+              badgeCount: badgeNum,
+              isAlert: hasUrgentDecision,
+              badgeColor: hasUrgentDecision ? const Color(0xFFEF4444) : const Color(0xFFD97706),
             ),
           ],
           onPasswordChange: () => ChangePasswordDialog.show(context),
           onLogout: _showLogoutDialog,
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: const [
-            DirectorMapTab(),
-            DirectorAnalyticsTab(),
-            DirectorReportsTab(),
-            DirectorDeductionsTab(),
+        body: Column(
+          children: [
+            if (hasUrgentDecision && _tabController.index != 3)
+              Material(
+                color: const Color(0xFF991B1B),
+                child: InkWell(
+                  onTap: () {
+                    _tabController.animateTo(3);
+                    setState(() {});
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            loc.isArabic
+                                ? '⚠️ تنبيه سيادي: يوجد ($_pendingDecisionsCount) رد على استفسار كتابي بانتظار قراركم الإداري'
+                                : '⚠️ Alerte : ($_pendingDecisionsCount) réponse(s) d\'explications en attente de votre décision',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            loc.isArabic ? 'البت فيها الآن ❯' : 'Traiter maintenant ❯',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: const [
+                  DirectorMapTab(),
+                  DirectorAnalyticsTab(),
+                  DirectorReportsTab(),
+                  DirectorDeductionsTab(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
