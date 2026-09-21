@@ -728,24 +728,29 @@ class PdfReportService {
         ),
         pw.SizedBox(height: 16),
 
-        // KPI summary grid
+        // KPI summary table (clean, sovereign, professional)
         pw.Text('أولاً — المؤشرات العامة للرقابة الميدانية',
             style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 8),
-        pw.GridView(
-          crossAxisCount: 4,
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
-          childAspectRatio: 2.2,
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.amber800, width: 0.8),
           children: [
-            _buildKpiCard('إجمالي المعاينات', '$totalVisits', PdfColors.blue800),
-            _buildKpiCard('المخالفات المحررة', '$totalViolations', PdfColors.red800),
-            _buildKpiCard('نسبة المخالفات', '$violationRate%', PdfColors.orange800),
-            _buildKpiCard('قيمة الحجز (دج)', NumberFormat('#,###').format(totalSeizure), PdfColors.purple800),
-            _buildKpiCard('معاينات مؤشرة', '$totalApproved', PdfColors.green800),
-            _buildKpiCard('نسبة التأشير', '$approvalRate%', PdfColors.teal700),
-            _buildKpiCard('عدد المفتشين', '$totalInspectors', PdfColors.brown700),
-            _buildKpiCard('أيام الفترة', daysCount.toString(), PdfColors.grey700),
+            pw.TableRow(
+              children: [
+                _buildKpiCard('إجمالي المعاينات', '$totalVisits', PdfColors.amber900),
+                _buildKpiCard('المخالفات المحررة', '$totalViolations', PdfColors.red800),
+                _buildKpiCard('نسبة المخالفات', '$violationRate%', PdfColors.deepOrange800),
+                _buildKpiCard('قيمة الحجز (دج)', NumberFormat('#,###').format(totalSeizure), PdfColors.brown800),
+              ],
+            ),
+            pw.TableRow(
+              children: [
+                _buildKpiCard('معاينات مؤشرة', '$totalApproved', PdfColors.green800),
+                _buildKpiCard('نسبة التأشير', '$approvalRate%', PdfColors.teal800),
+                _buildKpiCard('عدد المفتشين', '$totalInspectors', PdfColors.blueGrey800),
+                _buildKpiCard('أيام الفترة', '$daysCount يوم', PdfColors.grey800),
+              ],
+            ),
           ],
         ),
         pw.SizedBox(height: 16),
@@ -979,20 +984,17 @@ class PdfReportService {
 
   static pw.Widget _buildKpiCard(String label, String value, PdfColor color) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: color, width: 1),
-        borderRadius: pw.BorderRadius.circular(4),
-        color: PdfColor(color.red, color.green, color.blue, 0.08),
-      ),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      color: PdfColors.white,
       child: pw.Column(
         mainAxisAlignment: pw.MainAxisAlignment.center,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
           pw.Text(value,
-              style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: color)),
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: color)),
           pw.SizedBox(height: 3),
           pw.Text(label,
-              style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
+              style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey800),
               textAlign: pw.TextAlign.center),
         ],
       ),
