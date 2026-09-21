@@ -884,23 +884,34 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                   QRCodeScreen.show(
                     context,
                     record: {
-                      'type': 'inspector_badge',
+                      'type': isPresent ? 'checkin' : 'employee_badge',
                       'employeeName': name,
                       'service': service,
                       'date': DateTime.now().toString().split(' ')[0],
-                      'checkInTime': checkInStr,
+                      'time': isPresent ? (emp['checkInTime'] ?? '') : '',
+                      'checkInTime': isPresent ? (emp['checkInTime'] ?? 'حاضر (توقيت معتمد)') : 'لم يسجل الدخول اليوم',
+                      'isPresent': isPresent,
                       'visitsCount': visits.length,
-                      'status': 'VERIFIED_OFFICIAL_INSPECTOR',
+                      'status': isPresent ? 'VERIFIED_PRESENT' : 'NOT_CHECKED_IN_TODAY',
+                      'location': isPresent ? (emp['locationName'] ?? 'المقر الرئيسي لمديرية التجارة سطيف') : 'غير متواجد بالمقر',
                     },
-                    title: loc.isArabic ? 'البطاقة الرقمية الرسمية للمفتش' : 'Badge numérique officiel de l\'agent',
+                    title: isPresent
+                        ? (loc.isArabic ? 'إثبات الحضور الصباحي للعون (QR)' : 'Preuve de présence matinale (QR)')
+                        : (loc.isArabic ? 'البطاقة المهنية الرقمية (غير مسجل حضور اليوم)' : 'Badge professionnel (Non pointé)'),
                   );
                 },
-                icon: const Icon(Icons.qr_code_2),
+                icon: Icon(isPresent ? Icons.verified : Icons.badge_outlined),
                 label: Text(
-                  loc.isArabic ? 'فحص الإثبات الرقمي والـ QR للعون' : 'Vérifier le badge numérique (QR)',
+                  isPresent
+                      ? (loc.isArabic ? 'فحص إثبات الحضور الصباحي المعتمد' : 'Vérifier la présence matinale')
+                      : (loc.isArabic ? 'عرض البطاقة المهنية الرقمية (غير حاضر)' : 'Voir le badge professionnel (Absent)'),
                   style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isPresent ? AppTheme.AccentColor : const Color(0xFF4A1525),
+                  foregroundColor: isPresent ? Colors.black : Colors.white,
+                  side: isPresent ? null : const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                ),
               ),
             ),
             if (!isPresent) ...[

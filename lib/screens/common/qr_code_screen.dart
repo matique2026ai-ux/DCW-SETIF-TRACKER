@@ -51,14 +51,17 @@ class QRCodeScreen extends StatelessWidget {
         final uri = Uri.parse(data);
         if (uri.queryParameters.isNotEmpty) {
           final q = uri.queryParameters;
+          final isPres = q['present'] == '1' || (q['status'] != null && q['status']!.contains('PRESENT')) || q['type'] == 'checkin';
           return {
             'id': q['id'],
             'employee': q['emp'] ?? q['employee'] ?? subtitle,
+            'service': q['service'] ?? '',
             'date': q['date'] ?? DateTime.now().toIso8601String().split('T')[0],
             'time': q['time'] ?? '',
-            'location': q['loc'] ?? q['location'] ?? 'مديرية التجارة سطيف',
-            'type': q['type'] ?? 'attendance',
-            'status': q['status'] ?? 'VERIFIED_OFFICIAL',
+            'location': q['loc'] ?? q['location'] ?? (isPres ? 'المقر الرئيسي لمديرية التجارة سطيف' : 'غير متواجد بالمقر'),
+            'type': q['type'] ?? (isPres ? 'checkin' : 'employee_badge'),
+            'status': q['status'] ?? (isPres ? 'VERIFIED_PRESENT' : 'NOT_CHECKED_IN_TODAY'),
+            'isPresent': isPres,
           };
         }
       } catch (_) {}
@@ -73,6 +76,7 @@ class QRCodeScreen extends StatelessWidget {
       'date': DateTime.now().toIso8601String().split('T')[0],
       'time': DateTime.now().toString().substring(11, 16),
       'status': 'معتمد وموثق',
+      'isPresent': true,
     };
   }
 
@@ -80,20 +84,47 @@ class QRCodeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final info = _parseData();
     final isInspectorateBadge = info['type'] == 'OFFICIAL_INSPECTORATE_BADGE' || info['inspectorateId'] != null;
-    final isVisitBadge = info['type'] == 'visit';
+    final isVisitBadge = info['type'] == 'visit' || info['type'] == 'visit_evidence';
+    final isCheckOut = info['type'] == 'checkout';
+    final isPresent = info['isPresent'] == true || (info['status'] != null && info['status'].toString().contains('PRESENT')) || info['type'] == 'checkin';
+    final isNotCheckedIn = !isPresent && !isInspectorateBadge && !isVisitBadge && !isCheckOut;
 
     final employeeName = info['employee'] ?? info['employeeName'] ?? info['name'] ?? subtitle;
+    final serviceName = info['service']?.toString() ?? '';
     final dateStr = info['date'] ?? DateTime.now().toIso8601String().split('T')[0];
-    final timeStr = info['time'] ?? '';
-    final locName = info['location'] ?? info['locationName'] ?? (isInspectorateBadge ? (info['name'] ?? 'مقر إقليمي') : 'المقر الرئيسي لمديرية التجارة سطيف');
+    final timeStr = info['time'] ?? info['checkInTime'] ?? '';
+    final locName = info['location'] ?? info['locationName'] ?? (isInspectorateBadge ? (info['name'] ?? 'مقر إقليمي') : (isPresent ? 'المقر الرئيسي لمديرية التجارة سطيف' : 'غير متواجد بالمقر'));
     
     String typeStr;
+    String statusLabel;
+    Color statusColor;
+    IconData statusIcon;
+
     if (isInspectorateBadge) {
       typeStr = 'مقر رقابي إقليمي معتمد (بصمة GPS)';
+      statusLabel = 'شارة مقر إقليمي معتمد في المنظومة الجغرافية';
+      statusColor = const Color(0xFF10B981);
+      statusIcon = Icons.verified;
     } else if (isVisitBadge) {
       typeStr = 'معاينة وتفتيش ميداني رسمي';
+      statusLabel = 'إثبات معاينة ورقابة ميدانية رسمية';
+      statusColor = const Color(0xFF38BDF8);
+      statusIcon = Icons.storefront;
+    } else if (isCheckOut) {
+      typeStr = 'تسجيل انصراف نظامي (خروج)';
+      statusLabel = 'إثبات انصراف رسمي معتمد';
+      statusColor = const Color(0xFF818CF8);
+      statusIcon = Icons.logout;
+    } else if (isNotCheckedIn) {
+      typeStr = 'بطاقة مهنية رقمية (غير مسجل حضور اليوم)';
+      statusLabel = 'بطاقة مهنية — الموظف لم يسجل الحضور اليوم';
+      statusColor = const Color(0xFFF59E0B);
+      statusIcon = Icons.warning_amber_rounded;
     } else {
-      typeStr = 'إثبات حضور جغرافي معتمد';
+      typeStr = 'تسجيل حضور صباحي معتمد بالـ GPS';
+      statusLabel = 'إثبات حضور صباحي رسمي معتمد بالبصمة الجغرافية';
+      statusColor = const Color(0xFF10B981);
+      statusIcon = Icons.verified;
     }
 
     final passId = (info['id'] != null ? '#${info['id']}' : (info['inspectorateId'] != null ? '#${info['inspectorateId']}' : '#${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'));
@@ -180,71 +211,66 @@ class QRCodeScreen extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.85),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
-                    // QR Code Presentation Box
+                    // QR Code Wrapper
                     Center(
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: Colors.black45,
-                              blurRadius: 15,
-                              offset: Offset(0, 4),
+                              color: Colors.black.withValues(alpha: 0.4),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
                         child: QrImageView(
-                          data: data.isNotEmpty ? data : 'https://dcw-setif-tracker.onrender.com/verify?id=$passId',
+                          data: data,
                           version: QrVersions.auto,
-                          size: 200,
+                          size: 220,
                           backgroundColor: Colors.white,
-                          eyeStyle: const QrEyeStyle(
-                            eyeShape: QrEyeShape.square,
-                            color: Color(0xFF1E0B26),
-                          ),
-                          dataModuleStyle: const QrDataModuleStyle(
-                            dataModuleShape: QrDataModuleShape.square,
-                            color: Color(0xFF1E0B26),
-                          ),
+                          padding: const EdgeInsets.all(0),
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 16),
 
-                    // Verified Badge
+                    // Dynamic Status Ribbon
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        color: statusColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF10B981), width: 1.2),
+                        border: Border.all(color: statusColor, width: 1.2),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.verified, color: Color(0xFF10B981), size: 16),
+                          Icon(statusIcon, color: statusColor, size: 16),
                           const SizedBox(width: 6),
-                          Text(
-                            isInspectorateBadge
-                                ? 'شارة مقر إقليمي معتمد في المنظومة الجغرافية'
-                                : 'إثبات رقمي رسمي معتمد بالبصمة الجغرافية',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 11,
-                              color: Color(0xFF10B981),
-                              fontWeight: FontWeight.bold,
+                          Flexible(
+                            child: Text(
+                              statusLabel,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                color: statusColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -284,9 +310,28 @@ class QRCodeScreen extends StatelessWidget {
                                 _buildInfoRow('الموظف / المفتش', employeeName.toString(), Icons.person_outline),
                                 const Divider(color: Color(0xFF2D1035), height: 16),
                               ],
+                              if (serviceName.isNotEmpty) ...[
+                                _buildInfoRow('المصلحة / الرتبة', serviceName, Icons.badge_outlined),
+                                const Divider(color: Color(0xFF2D1035), height: 16),
+                              ],
                               _buildInfoRow('نوع الإثبات', typeStr, Icons.assignment_turned_in_outlined),
                               const Divider(color: Color(0xFF2D1035), height: 16),
-                              _buildInfoRow('التاريخ والتوقيت', '$dateStr ${timeStr.toString().isNotEmpty ? '• $timeStr' : ''}', Icons.access_time),
+                              _buildInfoRow(
+                                'حالة الحضور اليوم',
+                                isPresent
+                                    ? '🟢 حاضر ومسجل بالسيرفر الحي ✓'
+                                    : (isVisitBadge ? '🔵 في مهمة رقابية ميدانية' : '🔴 لم يسجل الحضور بعد (غائب)'),
+                                Icons.verified_outlined,
+                                valueColor: isPresent ? const Color(0xFF34D399) : (isVisitBadge ? const Color(0xFF38BDF8) : const Color(0xFFF87171)),
+                              ),
+                              const Divider(color: Color(0xFF2D1035), height: 16),
+                              _buildInfoRow(
+                                'التاريخ والتوقيت',
+                                isPresent
+                                    ? '$dateStr • ${timeStr.toString().isNotEmpty ? timeStr : "توقيت نظامي"}'
+                                    : '$dateStr • غير مسجل اليوم',
+                                Icons.access_time,
+                              ),
                               if (locName.toString().isNotEmpty) ...[
                                 const Divider(color: Color(0xFF2D1035), height: 16),
                                 _buildInfoRow('المقر / الموقع', locName.toString(), Icons.location_on_outlined),
@@ -356,7 +401,7 @@ class QRCodeScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildInfoRow(String label, String value, IconData icon) {
+  static Widget _buildInfoRow(String label, String value, IconData icon, {Color? valueColor}) {
     return Row(
       children: [
         Icon(icon, size: 16, color: const Color(0xFFD4AF37)),
@@ -373,11 +418,11 @@ class QRCodeScreen extends StatelessWidget {
         Flexible(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Tajawal',
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: valueColor ?? Colors.white,
             ),
             textAlign: TextAlign.end,
             maxLines: 2,
@@ -395,11 +440,13 @@ class QRCodeScreen extends StatelessWidget {
   }) {
     final id = record['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString().substring(6);
     final emp = record['employeeName'] ?? record['employee'] ?? record['name'] ?? '';
+    final service = record['service']?.toString() ?? '';
     final date = record['date'] ?? DateTime.now().toIso8601String().split('T')[0];
-    final time = record['time'] ?? record['checkInTime'] ?? DateTime.now().toString().substring(11, 16);
-    final loc = record['location'] ?? record['locationName'] ?? 'مديرية التجارة سطيف';
-    final type = record['type'] ?? 'attendance';
-    final status = record['status'] ?? 'VERIFIED_OFFICIAL';
+    final isPres = record['isPresent'] == true || (record['status'] != null && record['status'].toString().contains('PRESENT')) || record['type'] == 'checkin';
+    final time = record['time'] ?? record['checkInTime'] ?? (isPres ? DateTime.now().toString().substring(11, 16) : 'غير مسجل');
+    final loc = record['location'] ?? record['locationName'] ?? (isPres ? 'المقر الرئيسي لمديرية التجارة سطيف' : 'غير متواجد بالمقر');
+    final type = record['type'] ?? (isPres ? 'checkin' : 'employee_badge');
+    final status = record['status'] ?? (isPres ? 'VERIFIED_PRESENT' : 'NOT_CHECKED_IN_TODAY');
 
     final uri = Uri.https(
       'drh-setif-api.onrender.com',
@@ -407,11 +454,13 @@ class QRCodeScreen extends StatelessWidget {
       {
         'id': id,
         'emp': emp.toString(),
+        'service': service,
         'date': date.toString(),
         'time': time.toString(),
         'loc': loc.toString(),
         'type': type.toString(),
         'status': status.toString(),
+        'present': isPres ? '1' : '0',
       },
     );
 
