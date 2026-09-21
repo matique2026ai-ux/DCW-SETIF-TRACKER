@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
@@ -30,6 +29,8 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscure = true;
   bool _obscurePin = true;
   bool _showPinField = false;
+  bool _forceShowPin = false;
+  bool _isTrustedDevice = false;
   String? _error;
 
   late AnimationController _slideController;
@@ -58,10 +59,16 @@ class _LoginScreenState extends State<LoginScreen>
       end: 1,
     ).animate(CurvedAnimation(parent: _shakeController, curve: ShakeCurve()));
 
+    AuthService.getSavedMasterPin().then((savedPin) {
+      if (mounted && savedPin != null && savedPin.isNotEmpty) {
+        setState(() => _isTrustedDevice = true);
+      }
+    });
+
     _usernameCtrl.addListener(() {
       final isAdm = _usernameCtrl.text.trim().toLowerCase() == 'tracker_admin';
-      final shouldShow = kIsWeb && isAdm;
-      if (_showPinField != shouldShow) {
+      final shouldShow = isAdm && !_isTrustedDevice;
+      if (!_forceShowPin && _showPinField != shouldShow) {
         setState(() => _showPinField = shouldShow);
       }
     });
@@ -139,12 +146,17 @@ class _LoginScreenState extends State<LoginScreen>
       );
     } catch (e) {
       final errStr = e.toString().replaceAll('Exception: ', '');
+      if (errStr.contains('Master PIN') || errStr.contains('رمز الأمان') || errStr.contains('requiresMasterPin')) {
+        await AuthService.clearSavedMasterPin();
+        setState(() {
+          _isTrustedDevice = false;
+          _forceShowPin = true;
+          _showPinField = true;
+        });
+      }
       setState(() {
         _error = errStr;
         _isLoading = false;
-        if (errStr.contains('Master PIN') || errStr.contains('رمز الأمان') || errStr.contains('requiresMasterPin')) {
-          _showPinField = true;
-        }
       });
       _shakeController.forward(from: 0);
     }
@@ -399,8 +411,34 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                              const SizedBox(height: 16),
 
-                            // Master PIN field (shown on Web for admin or when requested)
-                            if (_showPinField || (kIsWeb && _usernameCtrl.text.trim().toLowerCase() == 'tracker_admin')) ...[
+                            // Master PIN / Trusted Device UI
+                            if (_isTrustedDevice && _usernameCtrl.text.trim().toLowerCase() == 'tracker_admin' && !_forceShowPin) ...[
+                              Container(
+                                margin: const EdgeInsets.only(top: 6, bottom: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.35)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.verified_user, color: Color(0xFFD4AF37), size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'هذا الجهاز موثق ومعتمد لمدير النظام ✓',
+                                      style: TextStyle(
+                                        fontFamily: fontFam,
+                                        color: const Color(0xFFD4AF37),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else if (_showPinField || _forceShowPin) ...[
                               TextField(
                                 controller: _pinCtrl,
                                 cursorColor: const Color(0xFFD4AF37),
@@ -415,7 +453,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 onSubmitted: (_) => _login(),
                                 decoration: InputDecoration(
-                                  labelText: 'رمز الأمان السري للأدمن (Master PIN)',
+                                  labelText: 'رمز الأمان السري للأدمن (Master PIN) — توثيق لأول مرة',
                                   labelStyle: TextStyle(
                                     fontFamily: fontFam,
                                     fontSize: 13,
@@ -455,6 +493,16 @@ class _LoginScreenState extends State<LoginScreen>
                                       width: 2,
                                     ),
                                   ),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '💡 يُطلب رمز الأمان مرة واحدة فقط لتوثيق جهازك/متصفحك كجهاز رسمي للمدير.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: fontFam,
+                                  color: Colors.white60,
+                                  fontSize: 11,
                                 ),
                               ),
                               const SizedBox(height: 8),

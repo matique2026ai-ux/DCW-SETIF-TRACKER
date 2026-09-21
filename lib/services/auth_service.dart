@@ -44,6 +44,30 @@ class AuthService extends ChangeNotifier {
   }
 
   static const String _deviceIdKey = 'device_unique_security_id';
+  static const String _trustedMasterPinKey = 'trusted_admin_master_pin';
+
+  static Future<String?> getSavedMasterPin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_trustedMasterPinKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> saveMasterPin(String pin) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_trustedMasterPinKey, pin.trim());
+    } catch (_) {}
+  }
+
+  static Future<void> clearSavedMasterPin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_trustedMasterPinKey);
+    } catch (_) {}
+  }
 
   static Future<String> getOrCreateDeviceId() async {
     try {
@@ -65,17 +89,27 @@ class AuthService extends ChangeNotifier {
 
     try {
       final devId = await getOrCreateDeviceId();
+      final savedPin = await getSavedMasterPin();
+      final effectivePin = (masterPin != null && masterPin.trim().isNotEmpty)
+          ? masterPin.trim()
+          : (username.trim().toLowerCase() == 'tracker_admin' ? savedPin : null);
+
       final result = await _api.login(
         username,
         password,
         deviceId: devId,
         deviceName: 'هاتف معتمد',
         adminOverrideCode: adminOverrideCode,
-        masterPin: masterPin,
+        masterPin: effectivePin,
         isWeb: kIsWeb,
       );
       final userData = result['user'];
       final token = result['token'] as String;
+
+      // If login succeeded for tracker_admin, remember this device as trusted
+      if (username.trim().toLowerCase() == 'tracker_admin' && effectivePin != null && effectivePin.isNotEmpty) {
+        await saveMasterPin(effectivePin);
+      }
 
       _currentUser = User(
         id: userData['id'] as int?,
