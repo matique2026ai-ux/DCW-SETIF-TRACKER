@@ -1441,122 +1441,326 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
             ? '${emp['NomAr']} ${emp['PrenomAr'] ?? ''}'.trim()
             : '${emp['Nom'] ?? ''} ${emp['Prenom'] ?? ''}'.trim());
     final service = (emp['Service'] ?? (loc.isArabic ? 'مصلحة حماية المستهلك وقمع الغش' : 'Service Protection Consommateur')).toString();
+    final grade = (emp['Grade'] ?? emp['grade'] ?? (loc.isArabic ? 'مفتش رئيسي للرقابة' : 'Inspecteur')).toString();
+    final empId = emp['Id'] ?? emp['id'] ?? emp['EmployeeId'] ?? emp['employeeid'];
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
     showDialog(
       context: context,
-      builder: (dlgCtx) => Directionality(
-        textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF1E1026),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Row(
-            children: [
-              const Icon(Icons.description, color: Color(0xFFD4AF37)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  loc.isArabic ? 'استفسار كتابي - Demande d\'Explications' : 'Demande d\'Explications - استفسار كتابي',
-                  style: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD4AF37),
+      builder: (dlgCtx) {
+        bool isSending = false;
+        return StatefulBuilder(
+          builder: (context, setDlgState) {
+            return Directionality(
+              textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
+              child: AlertDialog(
+                backgroundColor: const Color(0xFF1E1026),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: const Color(0xFFD4AF37).withValues(alpha: 0.5), width: 1.5),
+                ),
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.mark_email_unread_outlined, color: Color(0xFFD4AF37), size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loc.isArabic ? 'استفسار كتابي رسمي — مهلة 48 ساعة' : 'Demande d\'Explications Officielle (48h)',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFD4AF37),
+                            ),
+                          ),
+                          Text(
+                            loc.isArabic ? 'إجراء رقابي مباشر صادر عن المدير الولائي' : 'Procédure disciplinaire - Directeur de Wilaya',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              color: Colors.white60,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.black38,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Text(
+                            loc.isArabic
+                                ? 'الجمهورية الجزائرية الديمقراطية الشعبية\nوزارة التجارة الداخلية وضبط السوق الوطنية\nمديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف'
+                                : 'RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE\nMINISTÈRE DU COMMERCE INTÉRIEUR ET DE LA RÉGULATION DU MARCHÉ NATIONAL\nDIRECTION DU COMMERCE DE LA WILAYA DE SÉTIF',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                        const Divider(color: Color(0xFFD4AF37), height: 20, thickness: 1),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                loc.isArabic ? 'إلى السيد(ة): $name' : 'À Monsieur / Madame : $name',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                loc.isArabic ? 'الرتبة: $grade  |  المصلحة: $service' : 'Grade: $grade  |  Service: $service',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 11,
+                                  color: AppTheme.TextSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                loc.isArabic ? 'تاريخ الواقعة المسجلة: $dateStr' : 'Date de l\'incident: $dateStr',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 11,
+                                  color: Color(0xFFD4AF37),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          loc.isArabic
+                              ? 'الموضوع: استفسار كتابي حول الغياب عن العمل الميداني وعدم تسجيل البصمة\nالمرجع: الأمر رقم 06-03 المتضمن القانون الأساسي للوظيفة العمومية.'
+                              : 'Objet : Demande d\'explications pour absence du terrain\nRéf : Ordonnance n° 06-03 portant statut général de la fonction publique.',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: Color(0xFFD4AF37),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          loc.isArabic
+                              ? 'بناءً على المعطيات الميدانية المسجلة عبر المنصة الرقمية للرقابة والتفتيش اليوم، تبيّن عدم التحاقكم بنقطة الانطلاق أو المقر المحدد وعدم تسجيل أي نشاط أو زيارة رقابية ميدانية.\n\nوعليه، يُطلب منكم موافاة الإدارة بمبررات غيابكم مدعمة بالوثائق الثبوتية، في أجل أقصاه 48 ساعة من استلامكم هذا الاستفسار، وإلا ستُتخذ ضدكم الإجراءات القانونية المترتبة عن الخصم من الراتب وفق التشريع الساري.'
+                              : 'Sur la base des données enregistrées aujourd\'hui sur la plateforme numérique d\'inspection, il a été constaté votre non-pointage au point de départ et l\'absence d\'activités de contrôle sur le terrain.\n\nEn conséquence, il vous est demandé de fournir à l\'administration vos justifications écrites appuyées par les pièces justificatives dans un délai strict de 48 heures à compter de la réception de la présente, faute de quoi les mesures réglementaires de retenue sur salaire seront appliquées.',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 11,
+                            height: 1.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.blueAccent.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.forward_to_inbox, color: Colors.blueAccent, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    loc.isArabic ? 'إحالة آلية لرئيس مكتب المستخدمين' : 'Notification Bureau Personnel',
+                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.blueAccent),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              loc.isArabic ? 'المدير الولائي للتجارة\nولاية سطيف' : 'Le Directeur du Commerce\nWilaya de Sétif',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFD4AF37),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.black26,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Text(
-                      loc.isArabic
-                          ? 'الجمهورية الجزائرية الديمقراطية الشعبية\nوزارة التجارة الداخلية وضبط السوق الوطنية\nمديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف'
-                          : 'RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE\nMINISTÈRE DU COMMERCE INTÉRIEUR ET DE LA RÉGULATION DU MARCHÉ NATIONAL\nDIRECTION DU COMMERCE DE LA WILAYA DE SÉTIF',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 11,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold,
+                actionsAlignment: MainAxisAlignment.spaceBetween,
+                actions: [
+                  TextButton(
+                    onPressed: isSending ? null : () => Navigator.pop(dlgCtx),
+                    child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: isSending ? null : () async {
+                          final inquiryMap = {
+                            'NomAr': emp['NomAr'],
+                            'PrenomAr': emp['PrenomAr'],
+                            'Nom': emp['Nom'],
+                            'Prenom': emp['Prenom'],
+                            'EmployeeName': name,
+                            'Service': service,
+                            'Grade': grade,
+                            'IncidentDate': dateStr,
+                            'Subject': loc.isArabic
+                                ? 'استفسار كتابي حول الغياب عن العمل الميداني وعدم تسجيل البصمة'
+                                : 'Demande d\'explications pour absence du terrain',
+                            'Details': loc.isArabic
+                                ? 'عدم تسجيل حضور بالبصمة الجغرافية وعدم الالتحاق بنقطة الانطلاق أو تسجيل نشاط رقابي ميداني بتاريخ $dateStr.'
+                                : 'Absence constatée sur le terrain le $dateStr sans justification préalable.',
+                            'LateMinutes': 0,
+                            'SentBy': loc.isArabic ? 'المدير الولائي للتجارة - ولاية سطيف' : 'Directeur du Commerce - Wilaya de Sétif',
+                          };
+                          await PdfReportService.generateAndPrintInquiryLetter(inquiryMap);
+                        },
+                        icon: const Icon(Icons.print_outlined, size: 16, color: Color(0xFFD4AF37)),
+                        label: Text(
+                          loc.isArabic ? 'طباعة الاستفسار (PDF)' : 'Imprimer (PDF)',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFD4AF37)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
                       ),
-                    ),
-                  ),
-                  const Divider(color: Color(0xFFD4AF37), height: 18),
-                  Text(
-                    loc.isArabic ? 'إلى السيد(ة): $name' : 'À Monsieur / Madame : $name',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                  Text(
-                    loc.isArabic ? 'الرتبة والمصلحة: $service' : 'Grade & Service : $service',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 11,
-                      color: AppTheme.TextSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    loc.isArabic
-                        ? 'الموضوع: استفسار كتابي حول الغياب عن العمل الميداني\nالمرجع: الأمر رقم 06-03 المتضمن القانون الأساسي للوظيفة العمومية.'
-                        : 'Objet : Demande d\'explications pour absence du terrain\nRéf : Ordonnance n° 06-03 portant statut général de la fonction publique.',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      color: Color(0xFFD4AF37),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    loc.isArabic
-                        ? 'بناءً على المعطيات المسجلة عبر المنصة الرقمية للرقابة والتفتيش اليوم، تبيّن عدم التحاقكم بنقطة الانطلاق وعدم تسجيل أي نشاط أو زيارة رقابية ميدانية.\n\nوعليه، يُطلب منكم موافاة الإدارة بمبررات غيابكم مدعمة بالوثائق الثبوتية، في أجل أقصاه 48 ساعة من استلامكم هذا الاستفسار، وإلا ستُتخذ ضدكم الإجراءات القانونية المترتبة عن الخصم من الراتب.'
-                        : 'Sur la base des données enregistrées aujourd\'hui sur la plateforme numérique d\'inspection, il a été constaté votre non-pointage au point de départ et l\'absence d\'activités de contrôle sur le terrain.\n\nEn conséquence, il vous est demandé de fournir à l\'administration vos justifications écrites appuyées par les pièces justificatives dans un délai strict de 48 heures à compter de la réception de la présente, faute de quoi les mesures réglementaires de retenue sur salaire seront appliquées.',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 11,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: loc.isArabic ? Alignment.centerLeft : Alignment.centerRight,
-                    child: Text(
-                      loc.isArabic ? 'المدير الولائي للتجارة\nولاية سطيف' : 'Le Directeur du Commerce\nWilaya de Sétif',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD4AF37),
+                      ElevatedButton.icon(
+                        onPressed: isSending ? null : () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          final nav = Navigator.of(dlgCtx);
+                          final isArabic = loc.isArabic;
+                          setDlgState(() => isSending = true);
+                          try {
+                            final api = Provider.of<AuthService>(context, listen: false).api;
+                            final inquiryData = {
+                              'employeeId': empId,
+                              'type': 'unjustified_absence',
+                              'subject': isArabic
+                                  ? 'استفسار كتابي حول الغياب عن العمل الميداني وعدم تسجيل البصمة'
+                                  : 'Demande d\'explications pour absence du terrain',
+                              'incidentDate': dateStr,
+                              'lateMinutes': 0,
+                              'details': isArabic
+                                  ? 'بناءً على المعطيات المسجلة عبر المنصة الرقمية للرقابة والتفتيش بتاريخ $dateStr، تبيّن عدم التحاقكم بنقطة الانطلاق وعدم تسجيل أي نشاط أو زيارة رقابية ميدانية.'
+                                  : 'Absence constatée sur le terrain le $dateStr sans justification préalable.',
+                              'sentBy': isArabic ? 'المدير الولائي للتجارة' : 'Directeur du Commerce',
+                            };
+
+                            await api.createInquiry(inquiryData);
+
+                            nav.pop();
+                            messenger.showSnackBar(
+                              SnackBar(
+                                backgroundColor: const Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_outline, color: Colors.white, size: 22),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        isArabic
+                                            ? 'تم إرسال الاستفسار الكتابي رسمياً للموظف ($name) وإخطار مكتب المستخدمين بنجاح (مهلة الرد: 48 ساعة).'
+                                            : 'Demande d\'explications envoyée avec succès à $name et notifiée au Bureau du Personnel.',
+                                        style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                            if (mounted) {
+                              _load();
+                            }
+                          } catch (e) {
+                            setDlgState(() => isSending = false);
+                            messenger.showSnackBar(
+                              SnackBar(
+                                backgroundColor: AppTheme.DangerColor,
+                                behavior: SnackBarBehavior.floating,
+                                content: Text(
+                                  isArabic ? 'فشل إرسال الاستفسار: $e' : 'Erreur lors de l\'envoi : $e',
+                                  style: const TextStyle(fontFamily: 'Tajawal'),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: isSending
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                            : const Icon(Icons.send_rounded, size: 16, color: Colors.black),
+                        label: Text(
+                          isSending
+                              ? (loc.isArabic ? 'جاري الإرسال...' : 'Envoi en cours...')
+                              : (loc.isArabic ? 'إرسال رسمي للموظف والمستخدمين' : 'Envoyer officiellement (48h)'),
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: Colors.black,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dlgCtx),
-              child: Text(loc.isArabic ? 'إغلاق' : 'Fermer', style: const TextStyle(fontFamily: 'Tajawal')),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
