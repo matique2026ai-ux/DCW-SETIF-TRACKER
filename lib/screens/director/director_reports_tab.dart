@@ -40,12 +40,17 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       final api = context.read<AuthService>().api;
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
       final emp = await api.getEmployees();
+      final cleanEmp = emp.where((e) {
+        final nom = (e['NomAr'] ?? e['nomAr'] ?? '').toString();
+        final service = (e['Service'] ?? e['service'] ?? '').toString();
+        return !nom.contains('المدير الولائي') && !service.contains('المديرية الولائية');
+      }).toList();
       final att = await api.getAttendance(date: dateStr);
       final ded = await api.getDeductions();
       final progs = await api.getPrograms();
       if (mounted) {
         setState(() {
-          _employees = emp;
+          _employees = cleanEmp;
           _attendance = att;
           _deductions = ded;
           _programs = progs;

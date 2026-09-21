@@ -49,9 +49,15 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     try {
       final api = context.read<AuthService>().api;
       final data = await api.getMapData();
+      final cleanData = data.where((e) {
+        final name = (e['name'] ?? '').toString();
+        final service = (e['service'] ?? '').toString();
+        return !name.contains('المدير الولائي') && !service.contains('المديرية الولائية');
+      }).toList();
+
       if (mounted) {
         setState(() {
-          _mapData = data;
+          _mapData = cleanData;
           _isLoading = false;
         });
       }

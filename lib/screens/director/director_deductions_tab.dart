@@ -29,6 +29,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     try {
       final api = context.read<AuthService>().api;
       final emp = await api.getEmployees();
+      final cleanEmp = emp.where((e) {
+        final nom = (e['NomAr'] ?? e['nomAr'] ?? '').toString();
+        final service = (e['Service'] ?? e['service'] ?? '').toString();
+        return !nom.contains('المدير الولائي') && !service.contains('المديرية الولائية');
+      }).toList();
       final inqs = await api.getInquiries();
       final settings = await api.getSettings();
       final grace = (settings['morning_grace_time'] ?? '08:45').toString();
@@ -36,7 +41,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
       if (mounted) {
         setState(() {
-          _employees = emp;
+          _employees = cleanEmp;
           _inquiries = inqs;
           _morningGraceTime = grace;
           _delaysSummary = delays;
