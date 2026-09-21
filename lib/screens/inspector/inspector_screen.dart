@@ -603,11 +603,35 @@ class _InspectorScreenState extends State<InspectorScreen> {
   }
 
   void _handleSmartCheckOut() {
-    final now = DateTime.now();
-    final bool isEarly = now.hour < 15 || (now.hour == 15 && now.minute < 30);
+    int elapsedMinutes = 999;
+    if (_checkInTime != null && _checkInTime!.isNotEmpty) {
+      try {
+        final parts = _checkInTime!.split(':');
+        if (parts.length >= 2) {
+          final now = DateTime.now();
+          final checkInDt = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
+          elapsedMinutes = now.difference(checkInDt).inMinutes;
+        }
+      } catch (_) {}
+    }
 
-    if (isEarly) {
-      _showEarlyCheckOutDialog();
+    final now = DateTime.now();
+    final bool isEarlyHour = now.hour < 15 || (now.hour == 15 && now.minute < 30);
+    final bool isVeryShortShift = elapsedMinutes < 30;
+    final bool isHalfShiftWithoutVisits = elapsedMinutes < 240 && _visitCount == 0;
+
+    if (isVeryShortShift) {
+      _showEarlyCheckOutDialog(
+        customNotice: '⛔ تنبيه أمني صارم: مضت $elapsedMinutes دقيقة فقط على تسجيل الحضور الصباحي!\nيُمنع الانصراف الفوري بعد دقائق معدودة من الدخول إلا في الحالات الاستعجالية القاهرة. يرجى توثيق المبرر الإداري الطارئ للمصادقة عليه.',
+      );
+    } else if (isHalfShiftWithoutVisits) {
+      _showEarlyCheckOutDialog(
+        customNotice: '⚠️ تنبيه إداري: لم تكتمل 4 ساعات من الدوام القانوني (مضت $elapsedMinutes دقيقة) ولم تسجل أي زيارات أو معاينات ميدانية اليوم. يتطلب الانصراف توثيق المبرر الإداري.',
+      );
+    } else if (isEarlyHour) {
+      _showEarlyCheckOutDialog(
+        customNotice: '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر قبل نهاية الدوام توثيق المبرر الإداري أو المهمة المكلف بها.',
+      );
     } else {
       _showNormalCheckOutConfirmDialog();
     }
@@ -615,93 +639,119 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
   void _showNormalCheckOutConfirmDialog() {
     final loc = AppLocalizations.of(context);
+    String checkoutLocationType = 'المقر الرسمي للمديرية/المفتشية';
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.CardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            const Icon(Icons.exit_to_app, color: AppTheme.WarningColor, size: 24),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                loc.isArabic ? 'تأكيد تسجيل الانصراف الميداني' : 'Confirmation de fin de service',
-                style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.CardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: [
+              const Icon(Icons.exit_to_app, color: AppTheme.WarningColor, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  loc.isArabic ? 'تأكيد تسجيل الانصراف الميداني' : 'Confirmation de fin de service',
+                  style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.AccentColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.AccentColor.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified, color: AppTheme.AccentColor, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          loc.isArabic ? 'إحصاء النشاط الميداني لليوم:' : 'Bilan d\'activité du jour :',
-                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFCD34D)),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          loc.isArabic
-                              ? 'تم إنجاز وتوثيق $_visitCount معاينة وزيارة رقابية في الميدان.'
-                              : '$_visitCount visites de contrôle effectuées et enregistrées.',
-                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
-                        ),
-                      ],
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.AccentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.AccentColor.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified, color: AppTheme.AccentColor, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loc.isArabic ? 'إحصاء النشاط الميداني لليوم:' : 'Bilan d\'activité du jour :',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFCD34D)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            loc.isArabic
+                                ? 'تم إنجاز وتوثيق $_visitCount معاينة وزيارة رقابية في الميدان.'
+                                : '$_visitCount visites de contrôle effectuées et enregistrées.',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(height: 14),
+              const Text(
+                'نقطة الانصراف ونهاية المهام:',
+                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<String>(
+                initialValue: checkoutLocationType,
+                isExpanded: true,
+                dropdownColor: AppTheme.CardColor,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'المقر الرسمي للمديرية/المفتشية', child: Text('🏢 الرجوع للمقر الرسمي وتسجيل الانصراف', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                  DropdownMenuItem(value: 'انصراف ميداني مباشر من آخر نقطة تفتيش', child: Text('📍 انصراف ميداني مباشر من آخر نقطة تفتيش', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                ],
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => checkoutLocationType = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                loc.isArabic
+                    ? 'هل أنت متأكد من رغبتك في تسجيل الانصراف وإنهاء الدوام لليوم؟'
+                    : 'Êtes-vous sûr de vouloir enregistrer votre départ pour aujourd\'hui ?',
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                loc.isArabic
+                    ? '🔒 حماية الخصوصية: سيتم إيقاف بث موقع الـ GPS فوراً وتوثيق البصمة الجغرافية لموقع الانصراف.'
+                    : '🔒 Confidentialité : Le suivi GPS sera immédiatement désactivé après le pointage de sortie.',
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(loc.isArabic ? 'تراجع / إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
             ),
-            const SizedBox(height: 12),
-            Text(
-              loc.isArabic
-                  ? 'هل أنت متأكد من رغبتك في تسجيل الانصراف وإنهاء الدوام لليوم؟'
-                  : 'Êtes-vous sûr de vouloir enregistrer votre départ pour aujourd\'hui ?',
-              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              loc.isArabic
-                  ? '🔒 حماية الخصوصية: سيتم إيقاف بث موقع الـ GPS فوراً وتوثيق البصمة الجغرافية لموقع الانصراف.'
-                  : '🔒 Confidentialité : Le suivi GPS sera immédiatement désactivé après le pointage de sortie.',
-              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _executeCheckOut(notes: checkoutLocationType);
+              },
+              icon: const Icon(Icons.check, size: 16),
+              label: Text(loc.isArabic ? 'نعم، تأكيد الانصراف' : 'Confirmer le départ', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.WarningColor,
+                foregroundColor: Colors.black,
+              ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.isArabic ? 'تراجع / إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _executeCheckOut(notes: null);
-            },
-            icon: const Icon(Icons.check, size: 16),
-            label: Text(loc.isArabic ? 'نعم، تأكيد الانصراف' : 'Confirmer le départ', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.WarningColor,
-              foregroundColor: Colors.black,
-            ),
-          ),
-        ],
       ),
     );
   }
