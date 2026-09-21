@@ -822,6 +822,45 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                             height: 1.5,
                           ),
                         ),
+                        if (hasReply && inq['ReplyDate'] != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time, size: 13, color: Colors.cyanAccent),
+                              const SizedBox(width: 5),
+                              Text(
+                                loc.isArabic
+                                    ? 'تاريخ تسجيل الرد: ${inq['ReplyDate'].toString().substring(0, 16)}'
+                                    : 'Enregistré le : ${inq['ReplyDate'].toString().substring(0, 16)}',
+                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Colors.cyanAccent),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (hasReply && inq['ReplyAttachment'] != null && inq['ReplyAttachment'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.cyanAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.attach_file, color: Colors.cyanAccent, size: 16),
+                                const SizedBox(width: 6),
+                                Text(
+                                  loc.isArabic
+                                      ? 'مرفق إثبات رسمي: ${inq['ReplyAttachment']}'
+                                      : 'Pièce justificative : ${inq['ReplyAttachment']}',
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
