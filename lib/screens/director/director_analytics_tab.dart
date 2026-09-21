@@ -1696,7 +1696,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               _buildMiniPill(isArabic ? 'مخالفات: $violations' : 'Infractions: $violations', const Color(0xFFEF4444)),
               if (seizures > 0) _buildMiniPill(isArabic ? 'محجوزات: ${formatter.format(seizures)} دج' : 'Saisies: ${formatter.format(seizures)} DZD', const Color(0xFFF59E0B)),
               if (samples > 0) _buildMiniPill(isArabic ? 'عينات مخبر: $samples' : 'Labo: $samples', const Color(0xFFA855F7)),
-              if (courtRef > 0) _buildMiniPill(isArabic ? 'محاضر قضائية: $courtRef' : 'PV Justice: $courtRef', const Color(0xFF38BDF8)),
+              if (courtRef > 0) _buildMiniPill(isArabic ? 'محاضر قضائية: $courtRef' : 'PV Justice: $courtRef', const Color(0xFF10B981)),
               if (closures > 0) _buildMiniPill(isArabic ? 'اقتراح غلق: $closures' : 'Fermetures: $closures', const Color(0xFFEC4899)),
             ],
           ),
@@ -1726,100 +1726,252 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
   }
 
   Widget _buildCumulativeMacroCard(bool isArabic, Map<String, dynamic> cum) {
-    final totalVisits = cum['totalVisits'] ?? 0;
-    final violations = cum['violationsCount'] ?? 0;
+    final int totalVisits = (cum['totalVisits'] as num?)?.toInt() ?? 0;
+    final int violations = (cum['violationsCount'] as num?)?.toInt() ?? 0;
     final seizures = (cum['totalSeizureValue'] as num?)?.toDouble() ?? 0.0;
-    final closures = cum['closureProposalsCount'] ?? 0;
-    final samples = cum['samplesCount'] ?? 0;
-    final courtRef = cum['courtReferralsCount'] ?? 0;
-
+    final int closures = (cum['closureProposalsCount'] as num?)?.toInt() ?? 0;
+    final int samples = (cum['samplesCount'] as num?)?.toInt() ?? 0;
+    final int courtRef = (cum['courtReferralsCount'] as num?)?.toInt() ?? 0;
     final formatter = NumberFormat('#,###', 'fr_DZ');
+    final double complianceRate = totalVisits > 0
+        ? math.max(0.0, math.min(100.0, ((totalVisits - violations) / totalVisits) * 100.0))
+        : 100.0;
+
+    final metrics = [
+      {
+        'label': isArabic ? 'إجمالي التدخلات' : 'Total Visites',
+        'value': '$totalVisits',
+        'unit': isArabic ? 'معاينة' : 'Ctrl.',
+        'icon': Icons.search_rounded,
+        'color': const Color(0xFFD4AF37),
+      },
+      {
+        'label': isArabic ? 'المخالفات المسجلة' : 'Infractions',
+        'value': '$violations',
+        'unit': isArabic ? 'محضر' : 'PVs',
+        'icon': Icons.warning_amber_rounded,
+        'color': const Color(0xFFEF4444),
+      },
+      {
+        'label': isArabic ? 'قيمة المحجوزات' : 'Valeur Saisies',
+        'value': formatter.format(seizures),
+        'unit': 'دج',
+        'icon': Icons.inventory_2_rounded,
+        'color': const Color(0xFFF59E0B),
+      },
+      {
+        'label': isArabic ? 'نسبة الامتثال' : 'Conformité',
+        'value': '${complianceRate.toStringAsFixed(1)}%',
+        'unit': isArabic ? 'مطابقة' : 'conf.',
+        'icon': Icons.verified_rounded,
+        'color': const Color(0xFF10B981),
+      },
+      {
+        'label': isArabic ? 'محاضر قضائية' : 'Justice',
+        'value': '$courtRef',
+        'unit': isArabic ? 'محضر' : 'PVs',
+        'icon': Icons.gavel_rounded,
+        'color': const Color(0xFFE11D48),
+      },
+      {
+        'label': isArabic ? 'اقتراحات الغلق' : 'Fermetures',
+        'value': '$closures',
+        'unit': isArabic ? 'مؤسسة' : 'établ.',
+        'icon': Icons.block_rounded,
+        'color': const Color(0xFFEC4899),
+      },
+    ];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF1E0A25),
-            Color(0xFF15071A),
-          ],
+          colors: [Color(0xFF1E0A25), Color(0xFF15071A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.25)),
+        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.history_edu_outlined, color: Color(0xFFD4AF37), size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    isArabic ? 'الحصيلة الإجمالية التراكمية لنشاط الرقابة (سجل المديرية)' : 'Bilan Cumulé Global du Contrôle Économique',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFD4AF37),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
                     ),
+                    child: const Icon(Icons.history_edu_outlined, color: Color(0xFFD4AF37), size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isArabic ? 'الحصيلة الإجمالية التراكمية' : 'Bilan Cumulé Global',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFD4AF37),
+                        ),
+                      ),
+                      Text(
+                        isArabic ? 'سجل نشاط الرقابة الاقتصادية — مديرية سطيف' : 'Contrôle Économique — Direction de Sétif',
+                        style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+                      ),
+                    ],
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
                 ),
-                child: Text(
-                  isArabic ? 'سجل رسمي معتمد' : 'Registre Officiel',
-                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.verified_outlined, size: 12, color: Color(0xFFD4AF37)),
+                    const SizedBox(width: 4),
+                    Text(
+                      isArabic ? 'سجل رسمي' : 'Officiel',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+
+          const SizedBox(height: 16),
+          const Divider(color: Color(0xFF2D1037), height: 1),
+          const SizedBox(height: 16),
+
+          // Compact 2-column metrics grid
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+              final crossCount = isWide ? 3 : 2;
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossCount,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: isWide ? 2.4 : 2.1,
+                ),
+                itemCount: metrics.length,
+                itemBuilder: (context, idx) {
+                  final m = metrics[idx];
+                  final color = m['color'] as Color;
+                  final icon = m['icon'] as IconData;
+                  return TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.0, end: 1.0),
+                    duration: Duration(milliseconds: 400 + idx * 80),
+                    curve: Curves.easeOut,
+                    builder: (context, progress, child) {
+                      return Opacity(
+                        opacity: progress,
+                        child: Transform.translate(
+                          offset: Offset(0, (1 - progress) * 12),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(icon, color: color, size: 14),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  m['label'] as String,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade400),
+                                ),
+                                const SizedBox(height: 2),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text(
+                                    m['value'] as String,
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: color,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 16,
-            runSpacing: 10,
+          const Divider(color: Color(0xFF2D1037), height: 1),
+          const SizedBox(height: 10),
+
+          // Bottom summary bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildCumulativeMetric(isArabic ? 'إجمالي التدخلات التراكمية' : 'Total Visites', '$totalVisits', const Color(0xFFD4AF37)),
-              _buildCumulativeMetric(isArabic ? 'إجمالي المخالفات المسجلة' : 'Total Infractions', '$violations', const Color(0xFFEF4444)),
-              _buildCumulativeMetric(isArabic ? 'إجمالي قيمة المحجوزات' : 'Valeur Totale Saisies', '${formatter.format(seizures)} دج', const Color(0xFFF59E0B)),
-              _buildCumulativeMetric(isArabic ? 'المحاضر القضائية' : 'PVs Transmis Justice', '$courtRef', const Color(0xFF10B981)),
-              _buildCumulativeMetric(isArabic ? 'اقتراحات الغلق الإداري' : 'Fermetures Notifiées', '$closures', const Color(0xFFEC4899)),
-              _buildCumulativeMetric(isArabic ? 'عينات التحاليل' : 'Analyses Labo', '$samples', const Color(0xFFA855F7)),
+              Icon(Icons.science_rounded, size: 12, color: Colors.grey.shade500),
+              const SizedBox(width: 5),
+              Text(
+                isArabic
+                    ? 'عينات التحاليل المخبرية: $samples عينة'
+                    : 'Analyses laboratoire: $samples échantillons',
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+              ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildCumulativeMetric(String label, String value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
     );
   }
 
