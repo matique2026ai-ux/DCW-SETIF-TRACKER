@@ -1186,6 +1186,251 @@ class PdfReportService {
     );
   }
 
+  /// Generate and print official Periodic Discipline & Sovereign Decisions PDF Report for Director
+  static Future<void> generateAndPrintDisciplineReport({
+    required List<Map<String, dynamic>> inquiries,
+    required String periodTitle,
+    required String directorName,
+  }) async {
+    final pdf = pw.Document();
+    final now = DateTime.now();
+    final dateStr = DateFormat('yyyy/MM/dd').format(now);
+    final timeStr = DateFormat('HH:mm').format(now);
+
+    pw.Font? arabicFont;
+    try {
+      final fontData = await rootBundle.load('assets/fonts/Cairo.ttf');
+      arabicFont = pw.Font.ttf(fontData);
+    } catch (_) {
+      try {
+        final fontData = await rootBundle.load('assets/fonts/Tajawal-Regular.ttf');
+        arabicFont = pw.Font.ttf(fontData);
+      } catch (_) {}
+    }
+
+    final theme = pw.ThemeData.withFont(
+      base: arabicFont,
+      bold: arabicFont,
+    );
+
+    // KPI Counts
+    final total = inquiries.length;
+    final justifiedCount = inquiries.where((i) => i['Status'] == 'justified' || (i['DirectorDecision'] ?? '') == 'justified').length;
+    final warningCount = inquiries.where((i) => i['Status'] == 'warning' || (i['DirectorDecision'] ?? '') == 'warning').length;
+    final deductionInquiries = inquiries.where((i) => i['Status'] == 'deduction_ordered' || (i['DirectorDecision'] ?? '') == 'deduction').toList();
+    final double totalDeductionDays = deductionInquiries.fold(0.0, (acc, i) {
+      final days = double.tryParse((i['DeductionDays'] ?? i['deductiondays'] ?? '0').toString()) ?? 0.0;
+      return acc + days;
+    });
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        theme: theme,
+        textDirection: pw.TextDirection.rtl,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        header: (pw.Context context) {
+          return pw.Column(
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('الجمهورية الجزائرية الديمقراطية الشعبية', style: const pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('وزارة التجارة الداخلية وضبط السوق الوطنية', style: const pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('مديرية التجارة الداخلية لولاية سطيف', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
+                      pw.Text('مكتب المستخدمين — خلية الانضباط والمتابعة', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('الوثيقة: تقرير انضباط وقرارات سيادية', style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
+                      pw.Text('الفترة: $periodTitle', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
+                      pw.Text('تاريخ الطباعة: $dateStr $timeStr', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 6),
+              pw.Divider(color: PdfColors.amber800, thickness: 1.2),
+              pw.SizedBox(height: 4),
+            ],
+          );
+        },
+        footer: (pw.Context context) {
+          return pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('منظومة المراقبة الميدانية الرقمية DCW-SETIF-TRACKER — سجل القرارات السيادية', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+              pw.Text('صفحة ${context.pageNumber} من ${context.pagesCount}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+            ],
+          );
+        },
+        build: (pw.Context context) {
+          return [
+            // Title & KPIs Banner
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfColors.grey300),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'سجل الإجراءات الانضباطية والقرارات السيادية — $periodTitle',
+                    style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900),
+                  ),
+                  pw.Row(
+                    children: [
+                      _buildKpiChip('إجمالي الملفات', '$total', PdfColors.blueGrey800),
+                      pw.SizedBox(width: 8),
+                      _buildKpiChip('مبررات مقبولة', '$justifiedCount', PdfColors.green800),
+                      pw.SizedBox(width: 8),
+                      _buildKpiChip('إنذارات رسمية', '$warningCount', PdfColors.orange800),
+                      pw.SizedBox(width: 8),
+                      _buildKpiChip('قرارات خصم', '${deductionInquiries.length} ($totalDeductionDays يوم)', PdfColors.red800),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 10),
+
+            // Inquiries Table
+            if (inquiries.isEmpty)
+              pw.Container(
+                padding: const pw.EdgeInsets.all(20),
+                alignment: pw.Alignment.center,
+                child: pw.Text('لا توجد ملفات أو قرارات مسجلة لهذه الفترة المحددة.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+              )
+            else
+              pw.TableHelper.fromTextArray(
+                context: context,
+                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                headerStyle: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey900),
+                cellStyle: const pw.TextStyle(fontSize: 7.5),
+                cellHeight: 22,
+                cellAlignments: {
+                  0: pw.Alignment.center,
+                  1: pw.Alignment.centerRight,
+                  2: pw.Alignment.centerRight,
+                  3: pw.Alignment.centerRight,
+                  4: pw.Alignment.centerRight,
+                  5: pw.Alignment.center,
+                  6: pw.Alignment.center,
+                },
+                headers: [
+                  '#',
+                  'اسم ورتبة الموظف',
+                  'المصلحة / الفرقة',
+                  'موضوع الاستفسار',
+                  'المبرر والرد المسجل',
+                  'القرار السيادي',
+                  'تاريخ القرار',
+                ],
+                data: inquiries.asMap().entries.map((entry) {
+                  final idx = entry.key + 1;
+                  final inq = entry.value;
+                  final nom = '${inq['NomAr'] ?? inq['Nom'] ?? ''} ${inq['PrenomAr'] ?? inq['Prenom'] ?? ''}'.trim();
+                  final grade = (inq['Grade'] ?? inq['grade'] ?? '').toString();
+                  final service = (inq['Service'] ?? inq['service'] ?? '').toString();
+                  final subject = (inq['Subject'] ?? inq['subject'] ?? '').toString();
+                  final reply = (inq['EmployeeReply'] ?? inq['employeereply'] ?? 'لم يرسل رداً بعد').toString();
+                  final rawDecision = (inq['Status'] ?? inq['DirectorDecision'] ?? '').toString();
+
+                  String decisionStr = 'قيد الانتظار';
+                  if (rawDecision == 'justified') decisionStr = 'قبول التبرير (حفظ)';
+                  if (rawDecision == 'warning') decisionStr = 'إنذار رسمي';
+                  if (rawDecision == 'deduction_ordered' || rawDecision == 'executed' || rawDecision == 'deduction') {
+                    final days = inq['DeductionDays'] ?? inq['deductiondays'] ?? '1';
+                    decisionStr = 'خصم $days يوم';
+                  }
+
+                  final rawDate = (inq['DecisionDate'] ?? inq['DecisionAt'] ?? inq['CreatedAt'] ?? '').toString();
+                  final datePart = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
+
+                  return [
+                    '$idx',
+                    nom.isNotEmpty ? '$nom\n($grade)' : 'موظف #$idx',
+                    service,
+                    subject.length > 40 ? '${subject.substring(0, 40)}...' : subject,
+                    reply.length > 50 ? '${reply.substring(0, 50)}...' : reply,
+                    decisionStr,
+                    datePart,
+                  ];
+                }).toList(),
+              ),
+
+            pw.SizedBox(height: 18),
+
+            // Official Signature & Sovereign Stamp
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('رئيس مكتب المستخدمين:', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                    pw.SizedBox(height: 16),
+                    pw.Text('التأشير والتسجيل الإداري', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Text('الختم الرقمي المشفر (SHA-256)', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                    pw.SizedBox(height: 3),
+                    pw.Text('DCW-SETIF-SOVEREIGN-DECISION-2026', style: const pw.TextStyle(fontSize: 7, color: PdfColors.amber900, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 10),
+                    pw.Text('مديرية التجارة — ولاية سطيف', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('السيد المدير الولائي للتجارة — الآمر بالصرف:', style: const pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+                    pw.SizedBox(height: 4),
+                    pw.Text(directorName, style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
+                    pw.SizedBox(height: 12),
+                    pw.Text('توقيع وختم السيد المدير الولائي', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                  ],
+                ),
+              ],
+            ),
+          ];
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (_) async => pdf.save(),
+      name: 'Rapport_Discipline_Decisions_${periodTitle.replaceAll(" ", "_")}_$dateStr.pdf',
+    );
+  }
+
+  static pw.Widget _buildKpiChip(String label, String value, PdfColor color) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: pw.BoxDecoration(
+        color: color,
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Text('$label: ', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.white)),
+          pw.Text(value, style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+        ],
+      ),
+    );
+  }
+
   static pw.Widget _buildReceiptRow(String label, String value, {bool bold = false, bool isGold = false}) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 2),
@@ -1206,4 +1451,5 @@ class PdfReportService {
     );
   }
 }
+
 

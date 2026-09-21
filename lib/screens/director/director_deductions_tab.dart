@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:drh_setif_tracker/services/auth_service.dart';
+import 'package:drh_setif_tracker/services/pdf_report_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
@@ -18,6 +20,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   List<Map<String, dynamic>> _delaysSummary = [];
   String _morningGraceTime = '08:45';
   bool _isLoading = true;
+  String _archiveTimeFilter = 'all'; // 'today', 'week', 'month', 'all'
+  String _archiveDecisionFilter = 'all'; // 'all', 'justified', 'warning', 'deduction'
+  String _archiveSearchQuery = '';
+  bool _isPrintingReport = false;
 
   @override
   void initState() {
@@ -209,6 +215,38 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     );
   }
 
+  Future<void> _printDisciplineReport(List<Map<String, dynamic>> inquiriesToPrint) async {
+    final loc = AppLocalizations.of(context);
+    setState(() => _isPrintingReport = true);
+    try {
+      String periodTitle = loc.isArabic ? 'كامل السجل والأرشيف الإداري' : 'Tout l\'historique';
+      if (_archiveTimeFilter == 'today') {
+        periodTitle = loc.isArabic ? 'اليوم (${DateFormat('yyyy/MM/dd').format(DateTime.now())})' : 'Aujourd\'hui';
+      } else if (_archiveTimeFilter == 'week') {
+        periodTitle = loc.isArabic ? 'هذا الأسبوع' : 'Cette semaine';
+      } else if (_archiveTimeFilter == 'month') {
+        periodTitle = loc.isArabic ? 'شهر ${DateFormat('MM/yyyy').format(DateTime.now())}' : 'Ce mois-ci';
+      }
+
+      final auth = context.read<AuthService>();
+      final directorName = auth.currentUser?.fullName ?? (loc.isArabic ? 'المدير الولائي للتجارة' : 'Directeur du Commerce');
+
+      await PdfReportService.generateAndPrintDisciplineReport(
+        inquiries: inquiriesToPrint,
+        periodTitle: periodTitle,
+        directorName: directorName,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في الطباعة: $e'), backgroundColor: AppTheme.DangerColor),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPrintingReport = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -217,8 +255,42 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     final loc = AppLocalizations.of(context);
 
     final answeredInquiries = _inquiries.where((i) => i['Status'] == 'answered').toList();
-    final decidedInquiries = _inquiries.where((i) => ['justified', 'warning', 'deduction_ordered', 'executed'].contains(i['Status'])).toList();
+    final rawDecided = _inquiries.where((i) => ['justified', 'warning', 'deduction_ordered', 'executed'].contains(i['Status'])).toList();
     final sentInquiries = _inquiries.where((i) => i['Status'] == 'sent').toList();
+
+    final now = DateTime.now();
+    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+    final currentMonthStr = DateFormat('yyyy-MM').format(now);
+
+    final decidedInquiries = rawDecided.where((inq) {
+      // 1. Time filter
+      final rawDate = (inq['DecisionDate'] ?? inq['DecisionAt'] ?? inq['CreatedAt'] ?? '').toString();
+      if (_archiveTimeFilter == 'today') {
+        if (!rawDate.startsWith(todayStr)) return false;
+      } else if (_archiveTimeFilter == 'week') {
+        final parsed = DateTime.tryParse(rawDate);
+        if (parsed != null && now.difference(parsed).inDays > 7) return false;
+      } else if (_archiveTimeFilter == 'month') {
+        if (!rawDate.startsWith(currentMonthStr)) return false;
+      }
+
+      // 2. Decision filter
+      final status = (inq['Status'] ?? inq['DirectorDecision'] ?? '').toString();
+      if (_archiveDecisionFilter == 'justified' && status != 'justified') return false;
+      if (_archiveDecisionFilter == 'warning' && status != 'warning') return false;
+      if (_archiveDecisionFilter == 'deduction' && !['deduction_ordered', 'executed', 'deduction'].contains(status)) return false;
+
+      // 3. Search query
+      if (_archiveSearchQuery.trim().isNotEmpty) {
+        final q = _archiveSearchQuery.trim().toLowerCase();
+        final name = '${inq['NomAr'] ?? inq['Nom'] ?? ''} ${inq['PrenomAr'] ?? inq['Prenom'] ?? ''}'.toLowerCase();
+        final service = (inq['Service'] ?? inq['service'] ?? '').toString().toLowerCase();
+        final subject = (inq['Subject'] ?? inq['subject'] ?? '').toString().toLowerCase();
+        if (!name.contains(q) && !service.contains(q) && !subject.contains(q)) return false;
+      }
+
+      return true;
+    }).toList();
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -459,47 +531,197 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           ],
 
           // 5. Decided / Past Inquiries History
-          Row(
-            children: [
-              const Icon(Icons.history, color: AppTheme.SuccessColor, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  loc.isArabic
-                      ? 'أرشيف قرارات الخصم والسوابق الإدارية (${decidedInquiries.length})'
-                      : 'Historique des décisions et précédents (${decidedInquiries.length})',
-                  style: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white70,
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header & PDF Print Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.history_edu, color: Color(0xFFD4AF37), size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          loc.isArabic
+                              ? 'أرشيف قرارات الانضباط والسوابق (${decidedInquiries.length})'
+                              : 'Historique des décisions disciplinaires (${decidedInquiries.length})',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _isPrintingReport || decidedInquiries.isEmpty
+                          ? null
+                          : () => _printDisciplineReport(decidedInquiries),
+                      icon: _isPrintingReport
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                            )
+                          : const Icon(Icons.print, size: 16, color: Colors.black),
+                      label: Text(
+                        loc.isArabic ? 'طباعة تقرير القرارات (PDF)' : 'Imprimer Rapport (PDF)',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Search Bar
+                TextField(
+                  onChanged: (val) => setState(() => _archiveSearchQuery = val),
+                  style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: loc.isArabic ? 'بحث بالاسم، الرتبة أو المصلحة...' : 'Recherche par nom, grade ou service...',
+                    hintStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white38, fontSize: 12),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37), size: 20),
+                    suffixIcon: _archiveSearchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.white70, size: 18),
+                            onPressed: () => setState(() => _archiveSearchQuery = ''),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.black26,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+
+                // Filters Row 1: Time Period
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(
+                        loc.isArabic ? 'الفترة:' : 'Période :',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: loc.isArabic ? 'الكل 🗂️' : 'Tout 🗂️',
+                        isSelected: _archiveTimeFilter == 'all',
+                        onSelected: () => setState(() => _archiveTimeFilter = 'all'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: loc.isArabic ? 'اليوم 📅' : 'Aujourd\'hui 📅',
+                        isSelected: _archiveTimeFilter == 'today',
+                        onSelected: () => setState(() => _archiveTimeFilter = 'today'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: loc.isArabic ? 'هذا الأسبوع 🗓️' : 'Cette semaine 🗓️',
+                        isSelected: _archiveTimeFilter == 'week',
+                        onSelected: () => setState(() => _archiveTimeFilter = 'week'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: loc.isArabic ? 'هذا الشهر 📊' : 'Ce mois 📊',
+                        isSelected: _archiveTimeFilter == 'month',
+                        onSelected: () => setState(() => _archiveTimeFilter = 'month'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Filters Row 2: Decision Type
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(
+                        loc.isArabic ? 'القرار:' : 'Décision :',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: loc.isArabic ? 'الكل' : 'Toutes',
+                        isSelected: _archiveDecisionFilter == 'all',
+                        onSelected: () => setState(() => _archiveDecisionFilter = 'all'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: loc.isArabic ? '✅ تبرير مقبول' : '✅ Justifié',
+                        isSelected: _archiveDecisionFilter == 'justified',
+                        activeColor: AppTheme.SuccessColor,
+                        onSelected: () => setState(() => _archiveDecisionFilter = 'justified'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: loc.isArabic ? '⚠️ إنذار رسمي' : '⚠️ Avertissement',
+                        isSelected: _archiveDecisionFilter == 'warning',
+                        activeColor: AppTheme.WarningColor,
+                        onSelected: () => setState(() => _archiveDecisionFilter = 'warning'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: loc.isArabic ? '⚖️ خصم نافذ' : '⚖️ Déduction',
+                        isSelected: _archiveDecisionFilter == 'deduction',
+                        activeColor: AppTheme.DangerColor,
+                        onSelected: () => setState(() => _archiveDecisionFilter = 'deduction'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           
           if (decidedInquiries.isEmpty)
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(22),
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: Colors.black12,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white12),
               ),
               child: Center(
                 child: Text(
                   loc.isArabic
-                      ? 'سجل السوابق الإدارية نظيف 📜'
-                      : 'Le registre des précédents est vierge 📜',
+                      ? 'لا توجد قرارات تطابق خيارات الفلترة المحددة 📜'
+                      : 'Aucun dossier ne correspond aux filtres sélectionnés 📜',
                   style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
                 ),
               ),
             )
           else ...[
-            ...decidedInquiries.take(10).map((inq) => _buildInquiryCard(inq, isActionable: false)),
+            ...decidedInquiries.map((inq) => _buildInquiryCard(inq, isActionable: false)),
           ],
         ],
       ),
@@ -507,6 +729,40 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   ),
 );
 }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+    Color? activeColor,
+  }) {
+    final effectiveColor = activeColor ?? const Color(0xFFD4AF37);
+    return InkWell(
+      onTap: onSelected,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? effectiveColor.withValues(alpha: 0.25) : Colors.black26,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? effectiveColor : Colors.white12,
+            width: isSelected ? 1.3 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? (activeColor ?? const Color(0xFFD4AF37)) : Colors.white70,
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildInquiryCard(Map<String, dynamic> inq, {required bool isActionable}) {
     final loc = AppLocalizations.of(context);
