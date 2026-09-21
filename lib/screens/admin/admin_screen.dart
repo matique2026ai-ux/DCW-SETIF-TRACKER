@@ -1565,7 +1565,7 @@ class _AdminScreenState extends State<AdminScreen>
           // 2. Head of Administration & Means
           _buildPreviewCard(
             title: '2. شاشة رئيس مصلحة الإدارة والوسائل (Administration & Moyens)',
-            desc: 'تسيير وتعداد الـ 267 موظفاً، الانضباط والحضور، حظيرة السيارات (12 مركبة)، المقرات الثمانية، والرواتب طبقا للأمر 06-03.',
+            desc: 'تسيير وتعداد الموظفين المسجلين، الانضباط والحضور، متابعة المقرات والمفتشيات الثمانية، والرواتب طبقاً للأمر 06-03.',
             icon: Icons.badge_outlined,
             color: const Color(0xFF10B981),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة الإدارة والوسائل'))),
@@ -1575,7 +1575,7 @@ class _AdminScreenState extends State<AdminScreen>
           // 3. Head of Consumer Protection & Fraud
           _buildPreviewCard(
             title: '3. شاشة رئيس مصلحة قمع الغش وحماية المستهلك (Fraude & Consommation)',
-            desc: 'إصدار أوامر المهمة الرقابية، تأشير ومصادقة محاضر المعاينة والحجوزات وسحب العينات، ومتابعة فرق الرقابة الصحية.',
+            desc: 'إصدار أوامر المهمة الرقابية، تأشير ومصادقة محاضر المعاينة والمحجوزات وسحب العينات، ومتابعة فرق الرقابة الصحية.',
             icon: Icons.health_and_safety_outlined,
             color: const Color(0xFFE11D48),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة حماية المستهلك وقمع الغش'))),
@@ -1595,7 +1595,7 @@ class _AdminScreenState extends State<AdminScreen>
           // 5. Bureau Chief
           _buildPreviewCard(
             title: '5. شاشة رئيس مكتب المستخدمين (Bureau du Personnel)',
-            desc: 'السجلات الإدارية للموظفين الـ 267، متابعة الغيابات وتبريرات العطل، وحساب ساعات التأخرات التراكمية.',
+            desc: 'السجلات الإدارية للموظفين الفعليين، متابعة الانضباط والتأخرات، توجيه الاستفسارات، وتنفيذ قرارات الخصم على كشف الراتب.',
             icon: Icons.folder_shared_outlined,
             color: const Color(0xFF8B5CF6),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BureauScreen())),
@@ -1605,7 +1605,7 @@ class _AdminScreenState extends State<AdminScreen>
           // 6. Field Inspector
           _buildPreviewCard(
             title: '6. شاشة المفتش الميداني (Field Inspector View)',
-            desc: 'تسجيل الحضور الصباحي بالبصمة الجغرافية GPS والصورة، توثيق المعاينات الميدانية مع التجار بالصور، وبطاقات الـ QR.',
+            desc: 'تسجيل الحضور الصباحي بالبصمة الجغرافية GPS، توثيق المعاينات الميدانية والمخالفات، واستقبال أوامر المهمة.',
             icon: Icons.explore,
             color: const Color(0xFFF59E0B),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InspectorScreen())),
