@@ -1677,7 +1677,9 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           final isArabic = loc.isArabic;
                           setDlgState(() => isSending = true);
                           try {
-                            final api = Provider.of<AuthService>(context, listen: false).api;
+                            final auth = Provider.of<AuthService>(context, listen: false);
+                            final userId = auth.currentUser?['Id'] ?? auth.currentUser?['id'] ?? 1;
+                            
                             final inquiryData = {
                               'employeeId': empId,
                               'type': 'unjustified_absence',
@@ -1689,10 +1691,10 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               'details': isArabic
                                   ? 'بناءً على المعطيات المسجلة عبر المنصة الرقمية للرقابة والتفتيش بتاريخ $dateStr، تبيّن عدم التحاقكم بنقطة الانطلاق وعدم تسجيل أي نشاط أو زيارة رقابية ميدانية.'
                                   : 'Absence constatée sur le terrain le $dateStr sans justification préalable.',
-                              'sentBy': isArabic ? 'المدير الولائي للتجارة' : 'Directeur du Commerce',
+                              'sentBy': userId,
                             };
 
-                            await api.createInquiry(inquiryData);
+                            await auth.api.createInquiry(inquiryData);
 
                             nav.pop();
                             messenger.showSnackBar(

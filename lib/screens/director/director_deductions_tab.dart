@@ -414,53 +414,91 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           const SizedBox(height: 20),
 
           // 4. Sent Inquiries (Pending Employee Reply)
-          if (sentInquiries.isNotEmpty) ...[
-            Row(
-              children: [
-                const Icon(Icons.timer_outlined, color: AppTheme.WarningColor, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    loc.isArabic
-                        ? 'استفسارات موجهة بانتظار رد الموظف خلال 48 ساعة (${sentInquiries.length})'
-                        : 'Demandes envoyées en attente de réponse sous 48h (${sentInquiries.length})',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white70,
-                    ),
+          Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: AppTheme.WarningColor, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  loc.isArabic
+                      ? 'استفسارات موجهة بانتظار رد الموظف خلال 48 ساعة (${sentInquiries.length})'
+                      : 'Demandes envoyées en attente de réponse sous 48h (${sentInquiries.length})',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          if (sentInquiries.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(18),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Center(
+                child: Text(
+                  loc.isArabic
+                      ? 'لا توجد استفسارات قيد الانتظار حالياً ⏳'
+                      : 'Aucune demande en attente de réponse ⏳',
+                  style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
+                ),
+              ),
+            )
+          else ...[
             ...sentInquiries.map((inq) => _buildInquiryCard(inq, isActionable: false)),
             const SizedBox(height: 20),
           ],
 
           // 5. Decided / Past Inquiries History
-          if (decidedInquiries.isNotEmpty) ...[
-            Row(
-              children: [
-                const Icon(Icons.history, color: AppTheme.SuccessColor, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    loc.isArabic
-                        ? 'سجل القرارات الصادرة والأوامر المنفذة (${decidedInquiries.length})'
-                        : 'Historique des décisions et ordres exécutés (${decidedInquiries.length})',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white70,
-                    ),
+          Row(
+            children: [
+              const Icon(Icons.history, color: AppTheme.SuccessColor, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  loc.isArabic
+                      ? 'أرشيف قرارات الخصم والسوابق الإدارية (${decidedInquiries.length})'
+                      : 'Historique des décisions et précédents (${decidedInquiries.length})',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          if (decidedInquiries.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(18),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Center(
+                child: Text(
+                  loc.isArabic
+                      ? 'سجل السوابق الإدارية نظيف 📜'
+                      : 'Le registre des précédents est vierge 📜',
+                  style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
+                ),
+              ),
+            )
+          else ...[
             ...decidedInquiries.take(10).map((inq) => _buildInquiryCard(inq, isActionable: false)),
           ],
         ],
