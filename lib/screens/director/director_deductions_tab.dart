@@ -779,20 +779,20 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     String statusText = loc.isArabic ? 'بانتظار رد الموظف' : 'En attente de réponse';
     if (status == 'answered') {
       statusColor = Colors.cyan;
-      statusText = loc.isArabic ? 'تم الرد — اضغط للفصل في الملف 👈' : 'Répondu — Cliquez pour statuer 👈';
+      statusText = loc.isArabic ? 'ورد الرد — بانتظار الفصل والقرار' : 'Réponse reçue — En attente d\'arbitrage';
     } else if (status == 'justified') {
       statusColor = AppTheme.SuccessColor;
-      statusText = loc.isArabic ? '✅ تم قبول التبرير وحفظ الملف' : '✅ Justification acceptée / Classé';
+      statusText = loc.isArabic ? 'تم قبول التبرير وحفظ الملف' : 'Justification acceptée — Dossier classé';
     } else if (status == 'warning') {
       statusColor = Colors.orange;
-      statusText = loc.isArabic ? '⚠️ تم توجيه تنبيه إداري' : '⚠️ Avertissement administratif';
+      statusText = loc.isArabic ? 'تم توجيه تنبيه إداري' : 'Avertissement administratif notifié';
     } else if (status == 'deduction_ordered') {
       statusColor = AppTheme.DangerColor;
       final days = inq['DeductionDays'] ?? inq['deductiondays'] ?? 1;
-      statusText = loc.isArabic ? '❌ قرار خصم ($days يوم) محال للمستخدمين' : '❌ Déduction ($days j) transmise';
+      statusText = loc.isArabic ? 'قرار خصم ($days يوم) محال للتنفيذ' : 'Décision de retenue ($days j) transmise';
     } else if (status == 'executed') {
       statusColor = Colors.green;
-      statusText = loc.isArabic ? '✔️ تم الخصم في الراتب' : '✔️ Déduit sur la paie';
+      statusText = loc.isArabic ? 'تم تنفيذ الخصم في الراتب' : 'Retenue exécutée sur salaire';
     }
 
     return GestureDetector(

@@ -456,10 +456,10 @@ class ApiService {
       if (response.statusCode == 200) {
         return _safeDecodeMap(response.body);
       } else {
-        throw Exception(_parseError(response, 'فشل تصفير سجلات الاختبار'));
+        throw Exception(_parseError(response, 'فشل إعادة تهيئة البيانات التشغيلية'));
       }
     } catch (e) {
-      throw _handleNetworkException(e, 'فشل تصفير سجلات الاختبار');
+      throw _handleNetworkException(e, 'فشل إعادة تهيئة البيانات التشغيلية');
     }
   }
 

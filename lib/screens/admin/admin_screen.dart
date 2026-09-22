@@ -710,7 +710,7 @@ class _AdminScreenState extends State<AdminScreen>
             Icon(Icons.warning_amber_rounded, color: AppTheme.DangerColor),
             SizedBox(width: 10),
             Text(
-              'تصفير سجلات الاختبار والتجارب',
+              'إعادة تهيئة البيانات التشغيلية',
               style: TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 16,
@@ -721,7 +721,7 @@ class _AdminScreenState extends State<AdminScreen>
           ],
         ),
         content: const Text(
-          'هل أنت متأكد من رغبتك في حذف جميع سجلات الحضور، الانصراف، المعاينات، والخصومات التجريبية السابقة للبدء الميداني النظيف؟ (لن يتم المساس بقائمة الموظفين أو الحسابات).',
+          'هل أنت متأكد من رغبتك في تصفير سجلات الحضور والانصراف والتدخلات الميدانية لبدء دورة رقابية جديدة؟ (يتم الاحتفاظ ببيانات الموظفين والمستخدمين بالكامل).',
           style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 13, height: 1.4),
         ),
         actions: [
@@ -1477,12 +1477,12 @@ class _AdminScreenState extends State<AdminScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'تصفير سجلات الاختبار والتجارب السابقة',
+                        'إعادة تهيئة السجلات التشغيلية',
                         style: TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'تفريغ سجلات الحضور والمعاينات الوهمية السابقة لبدء التشغيل الميداني الفعلي من الصفر.',
+                        'تصفير سجلات الحضور والمعاينات الميدانية لبدء دورة العمل الرقابية الجديدة مع الحفاظ على قاعدة بيانات الموظفين.',
                         style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
                       ),
                     ],
@@ -1491,7 +1491,7 @@ class _AdminScreenState extends State<AdminScreen>
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.DangerColor, foregroundColor: Colors.white),
                   onPressed: _showCleanDataDialog,
-                  child: const Text('تصفير الآن', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                  child: const Text('إعادة تهيئة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
