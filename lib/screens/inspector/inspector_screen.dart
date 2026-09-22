@@ -1686,11 +1686,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
               const SizedBox(width: 12),
               Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Flexible(
                         child: Text(
@@ -1703,6 +1704,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                             letterSpacing: 0.2,
                           ),
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -1740,6 +1742,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

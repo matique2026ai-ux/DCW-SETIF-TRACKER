@@ -266,6 +266,7 @@ class _JustificationsReviewScreenState extends State<JustificationsReviewScreen>
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
           backgroundColor: const Color(0xFF2D1035),
+          centerTitle: true,
           title: const Text('مراجعة مبررات الغياب والعطل', style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold)),
           actions: [
             IconButton(icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37)), onPressed: _load),
