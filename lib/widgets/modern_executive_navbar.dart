@@ -106,95 +106,123 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Top tier: Branding + Title + Action Buttons
+        // Top tier: Branding + Title + Action Buttons (Title Centered in Screen)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          child: Row(
-            children: [
-              if (showBackButton) ...[
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37), size: 18),
-                  tooltip: isAr ? 'الرجوع' : 'Retour',
-                  onPressed: onBack ?? () => Navigator.maybePop(context),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                ),
-                const SizedBox(width: 4),
-              ],
-              const GoldenEmblemCoin(
-                size: 30,
-                showOuterGlow: false,
-                enableFloating: false,
-                animateGleam: false,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: customTitleWidget ??
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
+          child: SizedBox(
+            height: 38,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 1. True Center Title & Subtitle
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 76),
+                    child: customTitleWidget ??
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Flexible(
-                              child: Text(
-                                title,
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 0.2,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.2,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                if (badgeText != null && badgeText!.isNotEmpty) ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                                        width: 0.6,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      badgeText!,
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFD4AF37),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                            if (badgeText != null && badgeText!.isNotEmpty) ...[
-                              const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
-                                    width: 0.6,
-                                  ),
-                                ),
-                                child: Text(
-                                  badgeText!,
-                                  style: const TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFD4AF37),
-                                  ),
-                                ),
+                            const SizedBox(height: 1),
+                            Text(
+                              subtitle,
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 9.5,
+                                color: Color(0xFFD4AF37),
+                                fontWeight: FontWeight.w500,
                               ),
-                            ],
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                            ),
                           ],
                         ),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 9.5,
-                            color: Color(0xFFD4AF37),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                  ),
+                ),
+                // 2. Leading Branding (Back Button + Emblem)
+                Align(
+                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (showBackButton) ...[
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37), size: 18),
+                          tooltip: isAr ? 'الرجوع' : 'Retour',
+                          onPressed: onBack ?? () => Navigator.maybePop(context),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         ),
+                        const SizedBox(width: 4),
                       ],
-                    ),
-              ),
-              const SizedBox(width: 6),
-              if (additionalActions != null) ...additionalActions!,
-              _buildActionsCapsule(context, isAr, isCompact: true),
-            ],
+                      const GoldenEmblemCoin(
+                        size: 30,
+                        showOuterGlow: false,
+                        enableFloating: false,
+                        animateGleam: false,
+                      ),
+                    ],
+                  ),
+                ),
+                // 3. Trailing Actions
+                Align(
+                  alignment: isAr ? Alignment.centerLeft : Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (additionalActions != null) ...additionalActions!,
+                      _buildActionsCapsule(context, isAr, isCompact: true),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         // Bottom tier: Horizontally Scrollable Segmented Pill Tabs
