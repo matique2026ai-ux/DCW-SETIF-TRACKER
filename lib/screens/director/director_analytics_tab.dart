@@ -701,7 +701,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
                 ),
                 child: Text(
-                  isArabic ? '📊 تتبع حي متحرك' : '📊 En Direct',
+                  isArabic ? 'مؤشر التطور اليومي' : 'Évolution journalière',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 11,
