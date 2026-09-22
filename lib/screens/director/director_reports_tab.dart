@@ -823,8 +823,8 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           const SizedBox(height: 2),
                           Text(
                             isToday
-                                ? (loc.isArabic ? '🟢 بث حي ومباشر (اليوم الحالي)' : '🟢 En direct (Aujourd\'hui)')
-                                : (loc.isArabic ? '📜 أرشيف وسجل تاريخي معتمد بالأدلة الرقمية' : '📜 Archive historique certifiée'),
+                                ? (loc.isArabic ? '🟢 التقرير الرقابي الميداني (اليوم الجاري)' : '🟢 Rapport journalier de contrôle')
+                                : (loc.isArabic ? 'سجل التدخلات الميدانية المؤرشف' : 'Archive historique certifiée'),
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 10,

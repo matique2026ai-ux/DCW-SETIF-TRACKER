@@ -728,7 +728,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
               const SizedBox(height: 8),
               Text(
                 loc.isArabic
-                    ? '🔒 حماية الخصوصية: سيتم إيقاف بث موقع الـ GPS فوراً وتوثيق البصمة الجغرافية لموقع الانصراف.'
+                    ? '🔒 حماية الخصوصية: سيتم إيقاف التتبع الجغرافي وتوثيق البصمة الجغرافية الرسمية لموقع الانصراف.'
                     : '🔒 Confidentialité : Le suivi GPS sera immédiatement désactivé après le pointage de sortie.',
                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
               ),
@@ -2357,7 +2357,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                             ),
                             const SizedBox(height: 10),
                             const Text(
-                              '🔒 تم حجب البث المباشر للـ GPS لانتهاء الدوام الرسمي',
+                              '🔒 تم إيقاف التتبع الجغرافي لانتهاء الدوام الرسمي',
                               style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
                             ),
                             const SizedBox(height: 14),

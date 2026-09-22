@@ -279,7 +279,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                                     ),
                                     const SizedBox(width: 5),
                                     Text(
-                                      isArabic ? 'بث حي مباشر' : 'En Direct',
+                                      isArabic ? 'مُحيَّن آنياً' : 'En temps réel',
                                       style: const TextStyle(
                                         fontFamily: 'Tajawal',
                                         fontSize: 11,
@@ -295,14 +295,14 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                           const SizedBox(height: 3),
                           Text(
                             _selectedPeriod == 'today'
-                                ? (isArabic ? 'بيانات حية ومباشرة من الميدان — اليوم (انقر على أي مؤشر للتفاصيل 👆)' : 'Données réelles et directes — Aujourd\'hui')
+                                ? (isArabic ? 'حصيلة النشاط الرقابي والتفتيش الميداني — اليوم' : 'Bilan des opérations de contrôle — Aujourd\'hui')
                                 : _selectedPeriod == 'week'
-                                    ? (isArabic ? 'التحليلات والمؤشرات الرقابية خلال الأسبوع الجاري (آخر 7 أيام)' : 'Statistiques hebdomadaires (7 derniers jours)')
+                                    ? (isArabic ? 'المؤشرات الرقابية خلال الأسبوع الجاري' : 'Statistiques hebdomadaires')
                                     : _selectedPeriod == 'month'
-                                        ? (isArabic ? 'حصيلة الرقابة والمتابعة الاقتصادية خلال الشهر (آخر 30 يوماً)' : 'Bilan mensuel (30 derniers jours)')
+                                        ? (isArabic ? 'حصيلة الرقابة والمتابعة الاقتصادية خلال الشهر' : 'Bilan mensuel du contrôle')
                                         : _selectedPeriod == 'cumulative'
-                                            ? (isArabic ? 'الحصيلة الإجمالية الشاملة لسجل المديرية الولائية' : 'Bilan global cumulatif de la Direction')
-                                            : (isArabic ? 'أرشيف الرقابة والتفتيش ليوم: $dateStr' : 'Archive du: $dateStr'),
+                                            ? (isArabic ? 'الحصيلة الإجمالية التراكمية لسجل المديرية الولائية' : 'Bilan global cumulatif de la Direction')
+                                            : (isArabic ? 'سجل التدخلات الرقابية ليوم: $dateStr' : 'Registre du: $dateStr'),
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 12,
@@ -371,7 +371,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             children: [
               _buildPeriodPill(
                 id: 'today',
-                label: isArabic ? 'اليوم (حي)' : 'Aujourd\'hui',
+                label: isArabic ? 'اليوم' : 'Aujourd\'hui',
                 icon: Icons.today_rounded,
                 isArabic: isArabic,
               ),
@@ -395,7 +395,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               ),
               _buildPeriodPill(
                 id: 'custom',
-                label: isArabic ? 'تاريخ محدد 📅' : 'Date Précise 📅',
+                label: isArabic ? 'تاريخ مخصص' : 'Date Personnalisée',
                 icon: Icons.event_note_rounded,
                 isArabic: isArabic,
                 onTapCustom: _pickDate,
@@ -529,7 +529,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   unit: isArabic ? 'تدخل ميداني' : 'visites',
                   icon: Icons.storefront_rounded,
                   accentColor: const Color(0xFFD4AF37),
-                  badgeText: isArabic ? 'الميدان نشط' : 'Actif',
+                  badgeText: isArabic ? 'نشاط ميداني' : 'Opérations',
                   badgeColor: const Color(0xFFD4AF37),
                   isArabic: isArabic,
                   onTap: () => _showVisitsDetailsSheet(context, recentVisits, isArabic),
@@ -760,8 +760,8 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               child: Center(
                 child: Text(
                   isArabic
-                      ? 'جاري تجميع بيانات التدخلات الميدانية عبر البث المباشر...'
-                      : 'Chargement des données de contrôle...',
+                      ? 'جاري تحديث واسترجاع مؤشرات التدخلات الرقابية...'
+                      : 'Chargement des indicateurs de contrôle...',
                   style: TextStyle(fontFamily: 'Tajawal', color: Colors.grey.shade400, fontSize: 13),
                 ),
               ),
