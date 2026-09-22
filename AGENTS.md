@@ -1,15 +1,31 @@
 # 🏛️ DCW-SETIF — دليل الوكيل والمطور (AGENTS.md)
 ### منصة الرقابة والتفتيش الميداني — مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف
 
-> **تاريخ آخر تحديث**: 21 سبتمبر 2026 (الجلسة الثانية — مساءً)
-> **حالة المنظومة**: ✅ مكتملة ومنشورة — تم إعادة هيكلة لوحة المدير بالكامل، استئصال اللون الأزرق نهائياً، إصلاح بطاقة الحصيلة التراكمية (صفوف مضغوطة + قائمة معاينات حية)، بناء APK v1.0.4+5، وتحديث الويب على Render.
+> **تاريخ آخر تحديث**: 22 سبتمبر 2026 (الجلسة الصباحية)
+> **حالة المنظومة**: ✅ مكتملة ومنشورة — تم القضاء النهائي على تداخل النصوص فوق الرسومات والكتابة في لوحة المدير للهواتف الذكية (Responsive Overlap Fix)، وتوسيع العداد الدائري للامتثال، وتطوير مخطط الأعمدة اليومي المتحرك، وربط استعلام التطور اليومي بالفترات المخصصة في السيرفر.
 > **مستودع التطبيق (Flutter Web & Mobile)**: [DCW-SETIF-TRACKER](https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER) (الفرع الحالي: `main`)
 > **مستودع الخادم (Node.js/Express/PostgreSQL)**: [DCW-SETIF-BACKEND](https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND) (الفرع الحالي: `main`)
 > **رابط المنصة الحية (Render Web App)**: [dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)
 > **السيرفر السحابي الحي (Render Backend API)**: `https://drh-setif-api.onrender.com/api`
-> **معرف النشر الأخير على Render**: `dep-daok4ro473hc73al4aug` (Web) | `dep-daojgd2jnfac7397cc80` (API)
 > **عداد إصدارات APK للتطبيقات الميدانية**: الإصدار الحالي المبني والمُسلَّم: `v1.0.4+5` | الإصدار القادم: `v1.0.5+6`
-> **آخر commit على GitHub**: `f6fe732` — feat(dashboard): replace oversized grid with compact metric rows + live inspection list in cumulative card
+
+---
+
+## 📌 ما تم إنجازه في جلسة 22 سبتمبر 2026 — الصباح (القضاء التام على تداخل النصوص وتجاوب الهواتف):
+
+1. **📱 القضاء التام على تداخل النصوص والرسومات في الهاتف (Mobile Responsive Overlap Elimination):**
+   * **العداد الدائري للامتثال القانوني (`_ComplianceRingsPainter`)**: تكبير القطر إلى `165x165`، وتعديل سماكة الحلقات إلى `7.5` و `5.5`، وإحاطة النسبة ونص "امتثال تجاري" بـ `FittedBox` ليمنع ملامسة أو تداخل النص مع المسار الدائري تحت أي تكبير خط في الهاتف.
+   * **مخطط الأعمدة اليومي المزدوج (`_buildAnimatedDailyTrendChart`)**: زيادة ارتفاع الحاوية إلى `215px`، تقليص حد الارتفاع للأعمدة إلى `105px` كحد أقصى، تغليف نصوص التواريخ بـ `FittedBox`، وإضافة تمرير أفقي ربيعي سلس `SingleChildScrollView` عند ضيق الشاشة في الموبايل لمنع تراكب التواريخ.
+   * **بطاقات الـ KPI الرئيسية الأربعة (`_buildHeroMetricCard`)**: إحاطة الأرقام الكبيرة بـ `Flexible` و `FittedBox(fit: BoxFit.scaleDown)` وضبط نسبة الأبعاد `childAspectRatio: 2.7` لمنع تداخل كلمة "تفاصيل" مع أرقام المحجوزات المليونية.
+   * **شبكة الإجراءات الردعية (`_buildSanctionTile`)**: تعديل `childAspectRatio` إلى `1.85` واستخدام `FittedBox` لمنع انضغاط النصوص عمودياً.
+   * **شريط الترويسة العلوي (`_buildExecutiveHeader`)**: جعل العنوان وشارة البث المباشر مرنة عبر `Flexible` و `ConstrainedBox`.
+
+2. **⚙️ ربط مخطط التطور اليومي في السيرفر بالفترة الزمنية المحددة (`dashboard.js`):**
+   * تحويل استعلام `dailyTrend` ليتكيف تلقائياً مع الفترات المختارة (`week`, `month`, `custom_date`, `cumulative`) بدلاً من تثبيته على آخر 7 أيام حالية فقط.
+
+3. **✨ فحص الجودة وبناء الويب:**
+   * اجتياز `flutter analyze` بنتيجة تامة **0 Errors / 0 Warnings**.
+   * بناء نسخة الويب بنجاح: `flutter build web --release --no-tree-shake-icons`.
 
 ---
 

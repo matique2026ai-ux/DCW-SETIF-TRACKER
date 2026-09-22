@@ -225,88 +225,95 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 650),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+                      ),
+                      child: const Icon(Icons.analytics_outlined, color: Color(0xFFD4AF37), size: 24),
                     ),
-                    child: const Icon(Icons.analytics_outlined, color: Color(0xFFD4AF37), size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            isArabic ? 'لوحة القيادة والمؤشرات الرقابية الميدانية' : 'Tableau de Bord & Indicateurs de Contrôle',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                isArabic ? 'لوحة القيادة والمؤشرات الرقابية الميدانية' : 'Tableau de Bord & Indicateurs de Contrôle',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              // Live animated indicator badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFF10B981), width: 1),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF10B981),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      isArabic ? 'بث حي مباشر' : 'En Direct',
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF10B981),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          // Live animated indicator badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF10B981), width: 1),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF10B981),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  isArabic ? 'بث حي مباشر' : 'En Direct',
-                                  style: const TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF10B981),
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 3),
+                          Text(
+                            _selectedPeriod == 'today'
+                                ? (isArabic ? 'بيانات حية ومباشرة من الميدان — اليوم (انقر على أي مؤشر للتفاصيل 👆)' : 'Données réelles et directes — Aujourd\'hui')
+                                : _selectedPeriod == 'week'
+                                    ? (isArabic ? 'التحليلات والمؤشرات الرقابية خلال الأسبوع الجاري (آخر 7 أيام)' : 'Statistiques hebdomadaires (7 derniers jours)')
+                                    : _selectedPeriod == 'month'
+                                        ? (isArabic ? 'حصيلة الرقابة والمتابعة الاقتصادية خلال الشهر (آخر 30 يوماً)' : 'Bilan mensuel (30 derniers jours)')
+                                        : _selectedPeriod == 'cumulative'
+                                            ? (isArabic ? 'الحصيلة الإجمالية الشاملة لسجل المديرية الولائية' : 'Bilan global cumulatif de la Direction')
+                                            : (isArabic ? 'أرشيف الرقابة والتفتيش ليوم: $dateStr' : 'Archive du: $dateStr'),
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                              color: _selectedPeriod == 'today' ? const Color(0xFF10B981) : const Color(0xFFD4AF37),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _selectedPeriod == 'today'
-                            ? (isArabic ? 'بيانات حية ومباشرة من الميدان — اليوم (انقر على أي مؤشر للتفاصيل 👆)' : 'Données réelles et directes — Aujourd\'hui')
-                            : _selectedPeriod == 'week'
-                                ? (isArabic ? 'التحليلات والمؤشرات الرقابية خلال الأسبوع الجاري (آخر 7 أيام)' : 'Statistiques hebdomadaires (7 derniers jours)')
-                                : _selectedPeriod == 'month'
-                                    ? (isArabic ? 'حصيلة الرقابة والمتابعة الاقتصادية خلال الشهر (آخر 30 يوماً)' : 'Bilan mensuel (30 derniers jours)')
-                                    : _selectedPeriod == 'cumulative'
-                                        ? (isArabic ? 'الحصيلة الإجمالية الشاملة لسجل المديرية الولائية' : 'Bilan global cumulatif de la Direction')
-                                        : (isArabic ? 'أرشيف الرقابة والتفتيش ليوم: $dateStr' : 'Archive du: $dateStr'),
-                        style: TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 12,
-                          color: _selectedPeriod == 'today' ? const Color(0xFF10B981) : const Color(0xFFD4AF37),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -514,7 +521,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 12,
               mainAxisSpacing: 10,
-              childAspectRatio: isDesktop ? 2.4 : (isTablet ? 2.8 : 3.2),
+              childAspectRatio: isDesktop ? 2.4 : (isTablet ? 2.6 : 2.7),
               children: [
                 _buildHeroMetricCard(
                   title: isArabic ? 'معاينات وتدخلات الرقابة' : 'Visites de Contrôle',
@@ -524,6 +531,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   accentColor: const Color(0xFFD4AF37),
                   badgeText: isArabic ? 'الميدان نشط' : 'Actif',
                   badgeColor: const Color(0xFFD4AF37),
+                  isArabic: isArabic,
                   onTap: () => _showVisitsDetailsSheet(context, recentVisits, isArabic),
                 ),
                 _buildHeroMetricCard(
@@ -534,6 +542,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   accentColor: const Color(0xFFEF4444),
                   badgeText: violations > 0 ? (isArabic ? 'متابعة' : 'Suivi') : (isArabic ? 'سليم' : 'RAS'),
                   badgeColor: const Color(0xFFEF4444),
+                  isArabic: isArabic,
                   onTap: () => _showViolationsDetailsSheet(context, recentVisits, isArabic),
                 ),
                 _buildHeroMetricCard(
@@ -544,6 +553,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   accentColor: const Color(0xFFF59E0B),
                   badgeText: isArabic ? 'محجوزات' : 'Saisie',
                   badgeColor: const Color(0xFFF59E0B),
+                  isArabic: isArabic,
                   onTap: () => _showSeizuresDetailsSheet(context, recentVisits, isArabic, seizureVal),
                 ),
                 _buildHeroMetricCard(
@@ -554,6 +564,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   accentColor: const Color(0xFF10B981),
                   badgeText: isArabic ? 'القانون 09-03' : 'Loi 09-03',
                   badgeColor: const Color(0xFF10B981),
+                  isArabic: isArabic,
                   onTap: () => _showComplianceDetailsSheet(context, recentVisits, isArabic, totalVisits, violations),
                 ),
               ],
@@ -766,160 +777,171 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               child: Column(
                 children: [
                   SizedBox(
-                    height: 180,
+                    height: 215,
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: List.generate(dailyTrend.length, (idx) {
-                            final day = dailyTrend[idx];
-                            final int visits = (day['visits'] as num?)?.toInt() ?? 0;
-                            final int violations = (day['violations'] as num?)?.toInt() ?? 0;
-                            final String rawDate = day['date']?.toString() ?? '';
-                            final double seizures = (day['seizures'] as num?)?.toDouble() ?? 0.0;
-                            final bool isHovered = _hoveredBarIndex == idx;
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: List.generate(dailyTrend.length, (idx) {
+                                final day = dailyTrend[idx];
+                                final int visits = (day['visits'] as num?)?.toInt() ?? 0;
+                                final int violations = (day['violations'] as num?)?.toInt() ?? 0;
+                                final String rawDate = day['date']?.toString() ?? '';
+                                final double seizures = (day['seizures'] as num?)?.toDouble() ?? 0.0;
+                                final bool isHovered = _hoveredBarIndex == idx;
 
-                            String shortDate = rawDate;
-                            if (rawDate.contains('-')) {
-                              final parts = rawDate.split('-');
-                              if (parts.length == 3) shortDate = '${parts[2]}/${parts[1]}';
-                            }
+                                String shortDate = rawDate;
+                                if (rawDate.contains('-')) {
+                                  final parts = rawDate.split('-');
+                                  if (parts.length == 3) shortDate = '${parts[2]}/${parts[1]}';
+                                }
 
-                            final double targetVisitsHeight = (visits / maxVisits) * 125.0;
-                            final double targetViolationsHeight = (violations / maxVisits) * 125.0;
+                                final double targetVisitsHeight = (visits / maxVisits) * 105.0;
+                                final double targetViolationsHeight = (violations / maxVisits) * 105.0;
 
-                            return MouseRegion(
-                              onEnter: (_) => setState(() => _hoveredBarIndex = idx),
-                              onExit: (_) => setState(() => _hoveredBarIndex = null),
-                              child: Tooltip(
-                                message: '$rawDate\n${isArabic ? 'معاينات: $visits | مخالفات: $violations | محجوزات: ${formatter.format(seizures)} دج' : 'Visites: $visits | Infractions: $violations | Saisies: ${formatter.format(seizures)} DZD'}',
-                                textStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF240D2D),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFD4AF37)),
-                                ),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: isHovered
-                                        ? const Color(0xFFD4AF37).withValues(alpha: 0.1)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: isHovered
-                                        ? Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5))
-                                        : null,
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      // Top stats badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: isHovered
-                                              ? const Color(0xFFD4AF37)
-                                              : const Color(0xFF2D1037),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          '$visits',
-                                          style: TextStyle(
-                                            fontFamily: 'Tajawal',
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: isHovered ? Colors.black : const Color(0xFFD4AF37),
-                                          ),
-                                        ),
+                                return MouseRegion(
+                                  onEnter: (_) => setState(() => _hoveredBarIndex = idx),
+                                  onExit: (_) => setState(() => _hoveredBarIndex = null),
+                                  child: Tooltip(
+                                    message: '$rawDate\n${isArabic ? 'معاينات: $visits | مخالفات: $violations | محجوزات: ${formatter.format(seizures)} دج' : 'Visites: $visits | Infractions: $violations | Saisies: ${formatter.format(seizures)} DZD'}',
+                                    textStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF240D2D),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFD4AF37)),
+                                    ),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isHovered
+                                            ? const Color(0xFFD4AF37).withValues(alpha: 0.1)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: isHovered
+                                            ? Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5))
+                                            : null,
                                       ),
-                                      const SizedBox(height: 6),
-
-                                      // Dual Animated Bars
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          // Visits Bar
-                                          TweenAnimationBuilder<double>(
-                                            tween: Tween<double>(begin: 0.0, end: targetVisitsHeight.clamp(6.0, 130.0)),
-                                            duration: Duration(milliseconds: 700 + (idx * 80)),
-                                            curve: Curves.easeOutCubic,
-                                            builder: (context, height, _) {
-                                              return Container(
-                                                width: 14,
-                                                height: height,
-                                                decoration: BoxDecoration(
-                                                  gradient: const LinearGradient(
-                                                    colors: [Color(0xFFD4AF37), Color(0xFFB89628)],
-                                                    begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                  ),
-                                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
-                                                  boxShadow: isHovered
-                                                      ? [
-                                                          BoxShadow(
-                                                            color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
-                                                            blurRadius: 8,
-                                                            offset: const Offset(0, -2),
-                                                          ),
-                                                        ]
-                                                      : null,
-                                                ),
-                                              );
-                                            },
+                                          // Top stats badge
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isHovered
+                                                  ? const Color(0xFFD4AF37)
+                                                  : const Color(0xFF2D1037),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              '$visits',
+                                              style: TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: isHovered ? Colors.black : const Color(0xFFD4AF37),
+                                              ),
+                                            ),
                                           ),
-                                          const SizedBox(width: 4),
+                                          const SizedBox(height: 6),
 
-                                          // Violations Bar
-                                          TweenAnimationBuilder<double>(
-                                            tween: Tween<double>(begin: 0.0, end: targetViolationsHeight.clamp(violations > 0 ? 6.0 : 0.0, 130.0)),
-                                            duration: Duration(milliseconds: 800 + (idx * 80)),
-                                            curve: Curves.easeOutCubic,
-                                            builder: (context, height, _) {
-                                              return Container(
-                                                width: 14,
-                                                height: height,
-                                                decoration: BoxDecoration(
-                                                  gradient: const LinearGradient(
-                                                    colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
-                                                    begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                  ),
-                                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
-                                                  boxShadow: isHovered && violations > 0
-                                                      ? [
-                                                          BoxShadow(
-                                                            color: const Color(0xFFEF4444).withValues(alpha: 0.5),
-                                                            blurRadius: 8,
-                                                            offset: const Offset(0, -2),
-                                                          ),
-                                                        ]
-                                                      : null,
-                                                ),
-                                              );
-                                            },
+                                          // Dual Animated Bars
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              // Visits Bar
+                                              TweenAnimationBuilder<double>(
+                                                tween: Tween<double>(begin: 0.0, end: targetVisitsHeight.clamp(6.0, 105.0)),
+                                                duration: Duration(milliseconds: 700 + (idx * 80)),
+                                                curve: Curves.easeOutCubic,
+                                                builder: (context, height, _) {
+                                                  return Container(
+                                                    width: 14,
+                                                    height: height,
+                                                    decoration: BoxDecoration(
+                                                      gradient: const LinearGradient(
+                                                        colors: [Color(0xFFD4AF37), Color(0xFFB89628)],
+                                                        begin: Alignment.topCenter,
+                                                        end: Alignment.bottomCenter,
+                                                      ),
+                                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                                                      boxShadow: isHovered
+                                                          ? [
+                                                              BoxShadow(
+                                                                color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                                                                blurRadius: 8,
+                                                                offset: const Offset(0, -2),
+                                                              ),
+                                                            ]
+                                                          : null,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                              const SizedBox(width: 4),
+
+                                              // Violations Bar
+                                              TweenAnimationBuilder<double>(
+                                                tween: Tween<double>(begin: 0.0, end: targetViolationsHeight.clamp(violations > 0 ? 6.0 : 0.0, 105.0)),
+                                                duration: Duration(milliseconds: 800 + (idx * 80)),
+                                                curve: Curves.easeOutCubic,
+                                                builder: (context, height, _) {
+                                                  return Container(
+                                                    width: 14,
+                                                    height: height,
+                                                    decoration: BoxDecoration(
+                                                      gradient: const LinearGradient(
+                                                        colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                                                        begin: Alignment.topCenter,
+                                                        end: Alignment.bottomCenter,
+                                                      ),
+                                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                                                      boxShadow: isHovered && violations > 0
+                                                          ? [
+                                                              BoxShadow(
+                                                                color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                                                                blurRadius: 8,
+                                                                offset: const Offset(0, -2),
+                                                              ),
+                                                            ]
+                                                          : null,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+
+                                          // Date label
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              shortDate,
+                                              style: TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 11,
+                                                fontWeight: isHovered ? FontWeight.bold : FontWeight.normal,
+                                                color: isHovered ? Colors.white : Colors.grey.shade400,
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-
-                                      // Date label
-                                      Text(
-                                        shortDate,
-                                        style: TextStyle(
-                                          fontFamily: 'Tajawal',
-                                          fontSize: 11,
-                                          fontWeight: isHovered ? FontWeight.bold : FontWeight.normal,
-                                          color: isHovered ? Colors.white : Colors.grey.shade400,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                            );
-                          }),
+                                );
+                              }),
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -1246,8 +1268,8 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
           // Concentric Animated Ring Gauge
           Center(
             child: SizedBox(
-              width: 140,
-              height: 140,
+              width: 165,
+              height: 165,
               child: TweenAnimationBuilder<double>(
                 tween: Tween<double>(begin: 0.0, end: complianceRate / 100.0),
                 duration: const Duration(milliseconds: 1000),
@@ -1261,23 +1283,31 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                       readinessColor: const Color(0xFFD4AF37),
                     ),
                     child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${(compProgress * 100).toStringAsFixed(1)}%',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${(compProgress * 100).toStringAsFixed(1)}%',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isArabic ? 'امتثال تجاري' : 'Conformité',
+                                style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade300),
+                              ),
+                            ],
                           ),
-                          Text(
-                            isArabic ? 'امتثال تجاري' : 'Conformité',
-                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade300),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   );
@@ -1294,31 +1324,35 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 2.3,
+            childAspectRatio: 1.85,
             children: [
               _buildSanctionTile(
                 title: isArabic ? 'متابعات قضائية' : 'PVs Justice',
                 value: '$courtRef محضر',
                 color: const Color(0xFFE11D48),
                 icon: Icons.gavel_rounded,
+                isArabic: isArabic,
               ),
               _buildSanctionTile(
                 title: isArabic ? 'اقتراحات الغلق' : 'Fermetures',
                 value: '$closures قرار',
                 color: const Color(0xFFEC4899),
                 icon: Icons.block_rounded,
+                isArabic: isArabic,
               ),
               _buildSanctionTile(
                 title: isArabic ? 'عينات التحاليل' : 'Analyses Labo',
                 value: '$samples عينة',
                 color: const Color(0xFFA855F7),
                 icon: Icons.science_rounded,
+                isArabic: isArabic,
               ),
               _buildSanctionTile(
                 title: isArabic ? 'مخالفات محررة' : 'Infractions',
                 value: '$violations حالة',
                 color: const Color(0xFFEF4444),
                 icon: Icons.report_problem_rounded,
+                isArabic: isArabic,
               ),
             ],
           ),
@@ -1332,6 +1366,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     required String value,
     required Color color,
     required IconData icon,
+    bool isArabic = true,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1362,11 +1397,15 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade400),
                 ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: color),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: color),
+                  ),
                 ),
               ],
             ),
@@ -1384,6 +1423,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     required Color accentColor,
     required String badgeText,
     required Color badgeColor,
+    bool isArabic = true,
     VoidCallback? onTap,
   }) {
     return Material(
@@ -1461,32 +1501,40 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        value,
-                        style: TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: accentColor,
-                          letterSpacing: 0.2,
-                        ),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            value,
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: accentColor,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            unit,
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        unit,
-                        style: TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
+                  const SizedBox(width: 6),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -2873,14 +2921,14 @@ class _ComplianceRingsPainter extends CustomPainter {
     final trackPaintOuter = Paint()
       ..color = const Color(0xFF240D2D)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 9.0;
+      ..strokeWidth = 7.5;
     canvas.drawCircle(center, radius, trackPaintOuter);
 
     final progressPaintOuter = Paint()
       ..color = complianceColor
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 9.0;
+      ..strokeWidth = 7.5;
     const startAngle = -math.pi / 2;
     final sweepAngleOuter = 2 * math.pi * complianceProgress.clamp(0.0, 1.0);
     canvas.drawArc(
@@ -2892,18 +2940,18 @@ class _ComplianceRingsPainter extends CustomPainter {
     );
 
     // Track 2: Readiness Ring (Inner)
-    final innerRadius = radius - 14;
+    final innerRadius = radius - 12;
     final trackPaintInner = Paint()
       ..color = const Color(0xFF1E0A25)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 7.0;
+      ..strokeWidth = 5.5;
     canvas.drawCircle(center, innerRadius, trackPaintInner);
 
     final progressPaintInner = Paint()
       ..color = readinessColor
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 7.0;
+      ..strokeWidth = 5.5;
     final sweepAngleInner = 2 * math.pi * readinessProgress.clamp(0.0, 1.0);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: innerRadius),
