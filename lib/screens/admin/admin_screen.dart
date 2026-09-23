@@ -670,7 +670,7 @@ class _AdminScreenState extends State<AdminScreen>
             Icon(Icons.warning_amber_rounded, color: AppTheme.DangerColor),
             SizedBox(width: 10),
             Text(
-              'إعادة تهيئة البيانات التشغيلية',
+              'تصفير شامل للمنظومة وقاعدة البيانات',
               style: TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 16,
@@ -681,7 +681,7 @@ class _AdminScreenState extends State<AdminScreen>
           ],
         ),
         content: const Text(
-          'هل أنت متأكد من رغبتك في تصفير سجلات الحضور والانصراف والتدخلات الميدانية لبدء دورة رقابية جديدة؟ (يتم الاحتفاظ ببيانات الموظفين والمستخدمين بالكامل).',
+          'هل أنت متأكد من رغبتك في تصفير المنظومة وقاعدة البيانات بالكامل؟\n\n• سيتم حذف كافة حسابات المستخدمين (يبقى فقط حساب مدير النظام التقني tracker_admin).\n• سيتم تفريغ سجل الموظفين وكافة سجلات الحضور والانصراف والتدخلات الميدانية.\n• تصبح قاعدة البيانات بيضاء وجاهزة 100% لبدء دورة العمل الحقيقية.',
           style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 13, height: 1.4),
         ),
         actions: [
@@ -704,7 +704,7 @@ class _AdminScreenState extends State<AdminScreen>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(res['message']?.toString() ?? 'تم تصفير السجلات بنجاح'),
+                      content: Text(res['message']?.toString() ?? 'تم تصفير المنظومة بنجاح'),
                       backgroundColor: const Color(0xFF10B981),
                     ),
                   );
@@ -718,7 +718,7 @@ class _AdminScreenState extends State<AdminScreen>
                 }
               }
             },
-            child: const Text('نعم، تصفير السجلات', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            child: const Text('نعم، تصفير شامل للمنظومة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
