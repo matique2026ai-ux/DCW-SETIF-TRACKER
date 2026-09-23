@@ -12,6 +12,8 @@ import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 
 
+import 'package:drh_setif_tracker/screens/common/app_footer.dart';
+
 class DirectorScreen extends StatefulWidget {
   const DirectorScreen({super.key});
 
@@ -167,6 +169,7 @@ class _DirectorScreenState extends State<DirectorScreen>
                 ],
               ),
             ),
+            const AppFooter(),
           ],
         ),
       ),
