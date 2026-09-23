@@ -91,47 +91,7 @@ class _AdminScreenState extends State<AdminScreen>
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
-    final effectiveUsers = _users.isNotEmpty
-        ? _users
-        : _employees.map((e) {
-            final id = e['Id'] ?? e['id'] ?? 0;
-            final nomAr = e['NomAr'] ?? e['nomar'] ?? e['Nom'] ?? '';
-            final prenomAr = e['PrenomAr'] ?? e['prenomar'] ?? e['Prenom'] ?? '';
-            final nom = (e['Nom'] ?? e['nom'] ?? '').toString().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-            final prenom = (e['Prenom'] ?? e['prenom'] ?? '').toString().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-            final username = prenom.isNotEmpty && nom.isNotEmpty ? '$prenom.$nom' : 'emp.$id';
-            final fonction = (e['FonctionExercee'] ?? e['fonctionexercee'] ?? '').toString().trim();
-            final service = (e['Service'] ?? e['service'] ?? '').toString();
-            final grade = (e['Grade'] ?? e['grade'] ?? '').toString();
-
-            // Accurate administrative role mapping:
-            // - "رئيس مصلحة" -> Head of Department
-            // - "رئيس مكتب" -> Bureau Chief
-            // - "مدير ولائي" / "مدير التجارة" -> Director
-            // - "رئيس فرقة" / "عضو فرقة" / "مفتش رئيسي" / "مفتش رئيسي لقمع الغش" -> Inspector (مفتش ميداني)
-            String role = 'inspector';
-            if (fonction.contains('رئيس مصلحة') || fonction.contains('chef de service')) {
-              role = 'head_of_department';
-            } else if (fonction.contains('رئيس مكتب') || fonction.contains('chef de bureau')) {
-              role = 'bureau_chief';
-            } else if (fonction.contains('مدير ولائي') || fonction.contains('مدير التجارة') || fonction == 'مدير') {
-              role = 'director';
-            }
-
-            return {
-              'id': id,
-              'username': username,
-              'fullName': '$nomAr $prenomAr'.trim().isNotEmpty ? '$nomAr $prenomAr'.trim() : 'موظف $id',
-              'role': role,
-              'isActive': true,
-              'employeeId': id,
-              'empNom': e['Nom'] ?? e['nom'],
-              'empPrenom': e['Prenom'] ?? e['prenom'],
-              'empService': service,
-              'empGrade': grade,
-              'fonction': fonction,
-            };
-          }).toList();
+    final effectiveUsers = _users;
 
     return effectiveUsers.where((u) {
       final matchesSearch = _searchQuery.isEmpty ||
