@@ -193,8 +193,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
       final visits = (emp['visits'] as List?) ?? [];
       for (final v in visits) {
         if (v['latitude'] != null && v['longitude'] != null) {
-          final double vLat = (v['latitude'] as num).toDouble();
-          final double vLng = (v['longitude'] as num).toDouble();
+          final double? vLat = (v['latitude'] is num) ? (v['latitude'] as num).toDouble() : double.tryParse(v['latitude']?.toString() ?? '');
+          final double? vLng = (v['longitude'] is num) ? (v['longitude'] as num).toDouble() : double.tryParse(v['longitude']?.toString() ?? '');
+          if (vLat == null || vLng == null) continue;
           final visitMap = Map<String, dynamic>.from(v as Map);
           final String empName = emp['name']?.toString() ?? 'مفتش ميداني';
           visitMarkers.add(
@@ -348,8 +349,12 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                           e['isCheckedOut'] != true,
                     )
                     .map((emp) {
-                      final lat = (emp['latitude'] as num).toDouble();
-                      final lng = (emp['longitude'] as num).toDouble();
+                      final double lat = (emp['latitude'] is num)
+                          ? (emp['latitude'] as num).toDouble()
+                          : (double.tryParse(emp['latitude']?.toString() ?? '') ?? 0.0);
+                      final double lng = (emp['longitude'] is num)
+                          ? (emp['longitude'] as num).toDouble()
+                          : (double.tryParse(emp['longitude']?.toString() ?? '') ?? 0.0);
                       final isOut = emp['isCheckedOut'] == true;
                       final int vCount = (emp['visitsCount'] as num?)?.toInt() ?? 0;
 
@@ -1300,8 +1305,8 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                             final bool hasCheckedIn = emp['hasCheckedIn'] == true;
                             final bool isCheckedOut = emp['isCheckedOut'] == true;
                             final visits = (emp['visits'] as List?) ?? [];
-                            final double? lat = (emp['latitude'] as num?)?.toDouble();
-                            final double? lng = (emp['longitude'] as num?)?.toDouble();
+                            final double? lat = (emp['latitude'] is num) ? (emp['latitude'] as num).toDouble() : double.tryParse(emp['latitude']?.toString() ?? '');
+                            final double? lng = (emp['longitude'] is num) ? (emp['longitude'] as num).toDouble() : double.tryParse(emp['longitude']?.toString() ?? '');
 
                             final statusStr = hasCheckedIn
                                 ? (isCheckedOut
@@ -1734,15 +1739,15 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
     final loc = AppLocalizations.of(context);
     final assignedEmps = _mapData.where((e) {
       final isAssigned = _isEmployeeAssignedToHQ(e, insp);
-      final lat = (e['latitude'] as num?)?.toDouble();
-      final lng = (e['longitude'] as num?)?.toDouble();
+      final double? lat = (e['latitude'] is num) ? (e['latitude'] as num).toDouble() : double.tryParse(e['latitude']?.toString() ?? '');
+      final double? lng = (e['longitude'] is num) ? (e['longitude'] as num).toDouble() : double.tryParse(e['longitude']?.toString() ?? '');
       final isPhysicallyHere = (lat != null && lng != null && AppConstants.distanceBetween(lat, lng, insp.latitude, insp.longitude) <= insp.radiusMeters);
       return isAssigned || isPhysicallyHere;
     }).toList();
 
     final presentInHQ = assignedEmps.where((e) {
-      final lat = (e['latitude'] as num?)?.toDouble();
-      final lng = (e['longitude'] as num?)?.toDouble();
+      final double? lat = (e['latitude'] is num) ? (e['latitude'] as num).toDouble() : double.tryParse(e['latitude']?.toString() ?? '');
+      final double? lng = (e['longitude'] is num) ? (e['longitude'] as num).toDouble() : double.tryParse(e['longitude']?.toString() ?? '');
       if (lat == null || lng == null) return false;
       return AppConstants.distanceBetween(lat, lng, insp.latitude, insp.longitude) <= insp.radiusMeters;
     }).toList();
