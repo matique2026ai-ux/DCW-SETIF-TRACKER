@@ -734,19 +734,19 @@ class _AdminScreenState extends State<AdminScreen>
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: ModernExecutiveNavbar(
-          title: 'الإدارة التقنية للمنظومة',
+          title: isAr ? 'الإدارة التقنية للمنظومة' : 'Administration Technique du Système',
           badgeText: 'Admin',
-          subtitle: 'التحكم في الخوادم وقواعد البيانات والمستخدمين',
+          subtitle: isAr ? 'التحكم في الخوادم وقواعد البيانات والمستخدمين' : 'Contrôle des serveurs, bases de données et utilisateurs',
           selectedIndex: _tabController.index,
           onTabSelected: (idx) {
             _tabController.animateTo(idx);
             setState(() {});
           },
-          tabs: const [
-            ModernNavTabItem(icon: Icons.people_alt, label: 'المستخدمين والحسابات'),
-            ModernNavTabItem(icon: Icons.location_on, label: 'المقرات والبصمة الجغرافية'),
-            ModernNavTabItem(icon: Icons.dns, label: 'حالة النظام والسيرفر'),
-            ModernNavTabItem(icon: Icons.preview, label: 'معاينة شاشات الأدوار'),
+          tabs: [
+            ModernNavTabItem(icon: Icons.people_alt, label: isAr ? 'المستخدمين والحسابات' : 'Utilisateurs & Comptes'),
+            ModernNavTabItem(icon: Icons.location_on, label: isAr ? 'المقرات والبصمة الجغرافية' : 'Sièges & Géolocalisation'),
+            ModernNavTabItem(icon: Icons.dns, label: isAr ? 'حالة النظام والسيرفر' : 'État du Système & Serveur'),
+            ModernNavTabItem(icon: Icons.preview, label: isAr ? 'معاينة شاشات الأدوار' : 'Aperçu des Rôles'),
           ],
           onRefresh: _loadData,
           onPasswordChange: () => ChangePasswordDialog.show(context),
@@ -762,17 +762,17 @@ class _AdminScreenState extends State<AdminScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
-            _buildUsersTab(),
-            _buildInspectoratesTab(),
-            _buildSystemHealthTab(),
-            _buildRolePreviewTab(),
+            _buildUsersTab(isAr),
+            _buildInspectoratesTab(isAr),
+            _buildSystemHealthTab(isAr),
+            _buildRolePreviewTab(isAr),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUsersTab() {
+  Widget _buildUsersTab(bool isAr) {
     if (_isLoading && _users.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
     }
@@ -1292,7 +1292,7 @@ class _AdminScreenState extends State<AdminScreen>
   }
 
 
-  Widget _buildSystemHealthTab() {
+  Widget _buildSystemHealthTab(bool isAr) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1464,28 +1464,32 @@ class _AdminScreenState extends State<AdminScreen>
     );
   }
 
-  Widget _buildRolePreviewTab() {
+  Widget _buildRolePreviewTab(bool isAr) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.preview, color: Color(0xFFD4AF37), size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.preview, color: Color(0xFFD4AF37), size: 20),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'معاينة الشاشات بمختلف الأدوار والصلاحيات (Role Previews):',
-                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                  isAr
+                      ? 'معاينة الشاشات بمختلف الأدوار والصلاحيات (Role Previews):'
+                      : 'Aperçu des Écrans selon les Rôles et Permissions (Role Previews):',
+                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
-            'تتيح لك هذه الميزة تجربة أي واجهة في المنظومة بكل صلاحياتها الحقيقية لمعاينة تسلسل وسير العمل (Workflow):',
-            style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70),
+          Text(
+            isAr
+                ? 'تتيح لك هذه الميزة تجربة أي واجهة في المنظومة بكل صلاحياتها الحقيقية لمعاينة تسلسل وسير العمل (Workflow):'
+                : 'Cette fonctionnalité vous permet de prévisualiser chaque interface avec ses autorisations réelles pour tester le workflow:',
+            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70),
           ),
           const SizedBox(height: 14),
 
@@ -1497,14 +1501,16 @@ class _AdminScreenState extends State<AdminScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.account_tree, color: Color(0xFFD4AF37), size: 22),
-                SizedBox(width: 10),
+                const Icon(Icons.account_tree, color: Color(0xFFD4AF37), size: 22),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'تسلسل الأدوار الإدارية: المفتش الميداني يوثق المهمة والمعاينة ⬅️ رئيس المصلحة المعني يؤشر ويصادق ⬅️ رئيس مصلحة الإدارة والوسائل يتابع تعداد الموظفين واللوجستيك ⬅️ المدير الولائي يشرف على كامل الولاية ويعتمد الخصومات كآمر بالصرف الوحيد.',
-                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
+                    isAr
+                        ? 'تسلسل الأدوار الإدارية: المفتش الميداني يوثق المهمة والمعاينة ⬅️ رئيس المصلحة المعني يؤشر ويصادق ⬅️ رئيس مصلحة الإدارة والوسائل يتابع تعداد الموظفين واللوجستيك ⬅️ المدير الولائي يشرف على كامل الولاية ويعتمد الخصومات كآمر بالصرف الوحيد.'
+                        : 'Hiérarchie administrative: L\'inspecteur documente la mission ⬅️ Le chef de service vise et valide ⬅️ Le chef de service administration suit les effectifs ⬅️ Le Directeur de Wilaya supervise et valide les déductions.',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
                   ),
                 ),
               ],
@@ -1514,8 +1520,10 @@ class _AdminScreenState extends State<AdminScreen>
 
           // 1. Director
           _buildPreviewCard(
-            title: '1. شاشة المدير الولائي (Director View)',
-            desc: 'القيادة الإشرافية العامة، الخريطة الحية للمفتشين، إحصائيات المعاينات، وجداول الخصم المالي (الآمر بالصرف الوحيد).',
+            title: isAr ? '1. شاشة المدير الولائي (Director View)' : '1. Écran du Directeur de Wilaya (Director View)',
+            desc: isAr
+                ? 'القيادة الإشرافية العامة، الخريطة الحية للمفتشين، إحصائيات المعاينات، وجداول الخصم المالي (الآمر بالصرف الوحيد).'
+                : 'Supervision générale, carte en direct des inspecteurs, statistiques des visites et retenues sur salaire (Ordonnateur unique).',
             icon: Icons.shield_outlined,
             color: const Color(0xFFD4AF37),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DirectorScreen())),
@@ -1524,8 +1532,12 @@ class _AdminScreenState extends State<AdminScreen>
 
           // 2. Head of Administration & Means
           _buildPreviewCard(
-            title: '2. شاشة رئيس مصلحة الإدارة والوسائل (Administration & Moyens)',
-            desc: 'تسيير وتعداد الموظفين المسجلين، الانضباط والحضور، متابعة المقرات والمفتشيات الثمانية، والرواتب طبقاً للأمر 06-03.',
+            title: isAr
+                ? '2. شاشة رئيس مصلحة الإدارة والوسائل (Administration & Moyens)'
+                : '2. Écran Chef de Service Administration & Moyens',
+            desc: isAr
+                ? 'تسيير وتعداد الموظفين المسجلين، الانضباط والحضور، متابعة المقرات والمفتشيات الثمانية، والرواتب طبقاً للأمر 06-03.'
+                : 'Gestion des effectifs, présence et discipline, suivi des 8 sièges et contrôle de la paie selon l\'ordonnance 06-03.',
             icon: Icons.badge_outlined,
             color: const Color(0xFF10B981),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة الإدارة والوسائل'))),
@@ -1534,8 +1546,12 @@ class _AdminScreenState extends State<AdminScreen>
 
           // 3. Head of Consumer Protection & Fraud
           _buildPreviewCard(
-            title: '3. شاشة رئيس مصلحة قمع الغش وحماية المستهلك (Fraude & Consommation)',
-            desc: 'إصدار أوامر المهمة الرقابية، تأشير ومصادقة محاضر المعاينة والمحجوزات وسحب العينات، ومتابعة فرق الرقابة الصحية.',
+            title: isAr
+                ? '3. شاشة رئيس مصلحة قمع الغش وحماية المستهلك (Fraude & Consommation)'
+                : '3. Écran Chef de Service Repression des Fraudes & Consommation',
+            desc: isAr
+                ? 'إصدار أوامر المهمة الرقابية، تأشير ومصادقة محاضر المعاينة والمحجوزات وسحب العينات، ومتابعة فرق الرقابة الصحية.'
+                : 'Ordres de mission, validation des procès-verbaux, saisies, prélèvements d\'échantillons et contrôle sanitaire.',
             icon: Icons.health_and_safety_outlined,
             color: const Color(0xFFE11D48),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة حماية المستهلك وقمع الغش'))),
@@ -1544,8 +1560,12 @@ class _AdminScreenState extends State<AdminScreen>
 
           // 4. Head of Competition & Economic Inquiries
           _buildPreviewCard(
-            title: '4. شاشة رئيس مصلحة المنافسة والتحقيقات (Concurrence & Enquêtes)',
-            desc: 'برامج مراقبة الأسعار المقننة، تتبع سلاسل التوزيع، فواتير التوزيع والبيع، ومكافحة المضاربة غير المشروعة وتفريغ المخازن.',
+            title: isAr
+                ? '4. شاشة رئيس مصلحة المنافسة والتحقيقات (Concurrence & Enquêtes)'
+                : '4. Écran Chef de Service Concurrence & Enquêtes Économiques',
+            desc: isAr
+                ? 'برامج مراقبة الأسعار المقننة، تتبع سلاسل التوزيع، فواتير التوزيع والبيع، ومكافحة المضاربة غير المشروعة وتفريغ المخازن.'
+                : 'Contrôle des prix réglementés, suivi de la distribution, facturation, lutte contre la spéculation et vérification des stocks.',
             icon: Icons.query_stats,
             color: const Color(0xFF3B82F6),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة المنافسة والتحقيقات الاقتصادية'))),
@@ -1554,8 +1574,12 @@ class _AdminScreenState extends State<AdminScreen>
 
           // 5. Bureau Chief
           _buildPreviewCard(
-            title: '5. شاشة رئيس مكتب المستخدمين (Bureau du Personnel)',
-            desc: 'السجلات الإدارية للموظفين الفعليين، متابعة الانضباط والتأخرات، توجيه الاستفسارات، وتنفيذ قرارات الخصم على كشف الراتب.',
+            title: isAr
+                ? '5. شاشة رئيس مكتب المستخدمين (Bureau du Personnel)'
+                : '5. Écran Chef de Bureau du Personnel',
+            desc: isAr
+                ? 'السجلات الإدارية للموظفين الفعليين، متابعة الانضباط والتأخرات، توجيه الاستفسارات، وتنفيذ قرارات الخصم على كشف الراتب.'
+                : 'Registres du personnel, suivi de la discipline et retards, demandes d\'explication et exécution des retenues.',
             icon: Icons.folder_shared_outlined,
             color: const Color(0xFF8B5CF6),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BureauScreen())),
@@ -1564,8 +1588,12 @@ class _AdminScreenState extends State<AdminScreen>
 
           // 6. Field Inspector
           _buildPreviewCard(
-            title: '6. شاشة المفتش الميداني (Field Inspector View)',
-            desc: 'تسجيل الحضور الصباحي بالبصمة الجغرافية GPS، توثيق المعاينات الميدانية والمخالفات، واستقبال أوامر المهمة.',
+            title: isAr
+                ? '6. شاشة المفتش الميداني (Field Inspector View)'
+                : '6. Écran Inspecteur de Terrain (Field Inspector)',
+            desc: isAr
+                ? 'تسجيل الحضور الصباحي بالبصمة الجغرافية GPS، توثيق المعاينات الميدانية والمخالفات، واستقبال أوامر المهمة.'
+                : 'Pointage matinal par géolocalisation GPS, enregistrement des visites et réceptions des ordres de mission.',
             icon: Icons.explore,
             color: const Color(0xFFF59E0B),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InspectorScreen())),
@@ -1703,7 +1731,7 @@ class _AdminScreenState extends State<AdminScreen>
     }
   }
 
-  Widget _buildInspectoratesTab() {
+  Widget _buildInspectoratesTab(bool isAr) {
     final list = InspectorateService.instance.inspectorates;
 
     return RefreshIndicator(
