@@ -11,6 +11,7 @@ import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/admin/admin_screen.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
+import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -106,6 +107,18 @@ class _LoginScreenState extends State<LoginScreen>
       await auth.login(username, password, masterPin: pin.isNotEmpty ? pin : null);
 
       if (!mounted) return;
+
+      // 🛡️ Check if official must change credentials (first-time login or administrative reset)
+      if (auth.currentUser?.mustChangeCredentials == true) {
+        final setupCompleted = await MandatorySecuritySetupDialog.show(context);
+        if (!setupCompleted || !mounted) {
+          setState(() {
+            _isLoading = false;
+            _error = 'يجب استكمال تأمين وتفعيل الحساب بتغيير كلمة المرور ورمز الأمان للمتابعة';
+          });
+          return;
+        }
+      }
 
       Widget nextScreen;
       switch (auth.currentUser?.role) {

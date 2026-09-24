@@ -9,6 +9,8 @@ import 'package:drh_setif_tracker/screens/director/director_analytics_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_reports_tab.dart';
 import 'package:drh_setif_tracker/screens/director/director_deductions_tab.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/change_master_pin_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog.dart';
 import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 
 
@@ -36,6 +38,10 @@ class _DirectorScreenState extends State<DirectorScreen>
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInquiriesSummary();
+      final auth = context.read<AuthService>();
+      if (auth.currentUser?.mustChangeCredentials == true) {
+        MandatorySecuritySetupDialog.show(context);
+      }
     });
   }
 
@@ -106,6 +112,7 @@ class _DirectorScreenState extends State<DirectorScreen>
             ),
           ],
           onPasswordChange: () => ChangePasswordDialog.show(context),
+          onMasterPinChange: () => ChangeMasterPinDialog.show(context),
           onLogout: _showLogoutDialog,
         ),
         body: Column(

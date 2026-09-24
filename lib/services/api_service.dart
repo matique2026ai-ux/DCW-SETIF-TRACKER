@@ -281,6 +281,34 @@ class ApiService {
     throw Exception(_parseError(response, 'فشل تحديث رمز الأمان السري (Master PIN)'));
   }
 
+  Future<Map<String, dynamic>> setupCredentials({
+    required String newPassword,
+    required String newPin,
+  }) async {
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/auth/setup-credentials'),
+          headers: _headers,
+          body: jsonEncode({
+            'newPassword': newPassword,
+            'newPin': newPin,
+          }),
+        )
+        .timeout(defaultTimeout);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final resBody = response.body.trim();
+      if (resBody.isNotEmpty && !resBody.startsWith('<')) {
+        try {
+          final data = jsonDecode(resBody);
+          if (data is Map<String, dynamic>) return data;
+        } catch (_) {}
+      }
+      return {'success': true, 'message': 'تم اعتماد كلمة المرور ورمز الأمان الجديدين بنجاح ✅'};
+    }
+    throw Exception(_parseError(response, 'فشل تحديث واعتماد بيانات الحساب الجديدة'));
+  }
+
   Future<List<Map<String, dynamic>>> getSystemUsers() async {
     try {
       final response = await http.get(
@@ -400,6 +428,41 @@ class ApiService {
       }
     } catch (e) {
       throw _handleNetworkException(e, 'فشل إعادة تعيين كلمة المرور');
+    }
+  }
+
+  Future<Map<String, dynamic>> resetUserPin(int userId, {String? newPin}) async {
+    try {
+      final body = <String, dynamic>{};
+      if (newPin != null && newPin.trim().isNotEmpty) {
+        body['newPin'] = newPin.trim();
+      }
+      final payload = jsonEncode(body);
+      var response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/users/$userId/reset-pin'),
+            headers: _headers,
+            body: payload,
+          )
+          .timeout(defaultTimeout);
+
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        response = await http
+            .post(
+              Uri.parse('$baseUrl/users/$userId/reset-pin'),
+              headers: _headers,
+              body: payload,
+            )
+            .timeout(defaultTimeout);
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل إعادة ضبط رمز الأمان للمستخدم'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إعادة ضبط رمز الأمان للمستخدم');
     }
   }
 

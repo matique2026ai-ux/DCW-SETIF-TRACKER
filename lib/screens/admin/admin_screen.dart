@@ -112,6 +112,7 @@ class _AdminScreenState extends State<AdminScreen>
     final usernameCtrl = TextEditingController();
     final passwordCtrl = TextEditingController(text: '123456');
     final fullNameCtrl = TextEditingController();
+    final pinCtrl = TextEditingController(text: '202600');
     String selectedRole = 'inspector';
     int? selectedEmpId;
 
@@ -309,6 +310,7 @@ class _AdminScreenState extends State<AdminScreen>
                     fullName: fullNameCtrl.text.trim().isNotEmpty ? fullNameCtrl.text.trim() : usernameCtrl.text.trim(),
                     role: selectedRole,
                     employeeId: selectedEmpId,
+                    masterPin: pinCtrl.text.trim(),
                   );
                   _loadData();
                   messenger.showSnackBar(
@@ -650,6 +652,120 @@ class _AdminScreenState extends State<AdminScreen>
             },
 
             child: const Text('حفظ كلمة المرور', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetPinDialog(Map<String, dynamic> user) {
+    if (user['username'] == 'tracker_admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حساب مدير النظام التقني (tracker_admin) محمي سيادياً وممنوع إعادة ضبط رمزه من هنا'),
+          backgroundColor: AppTheme.DangerColor,
+        ),
+      );
+      return;
+    }
+
+    final newPinCtrl = TextEditingController(text: '202600');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF240D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFD4AF37)),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.pin, color: Color(0xFFD4AF37)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'إعادة ضبط رمز الأمان (PIN): ${user['username']}',
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'المسؤول: ${user['fullName'] ?? user['username']}',
+              style: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'الرمز الافتراضي لإعادة الضبط هو: 202600. عند تسجيل دخول المسؤول مجدداً، سيُفرض عليه تغيير رمزه وكلمة مروره.',
+              style: TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Tajawal', fontSize: 11),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newPinCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', letterSpacing: 2),
+              decoration: const InputDecoration(
+                labelText: 'رمز الأمان (PIN) الجديد',
+                labelStyle: TextStyle(color: Colors.white70, letterSpacing: 0),
+                prefixIcon: Icon(Icons.pin_outlined, color: Color(0xFFD4AF37)),
+                filled: true,
+                fillColor: Color(0xFF1E0B26),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white60, fontFamily: 'Tajawal')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: const Color(0xFF1A0A1F),
+            ),
+            onPressed: () async {
+              final pin = newPinCtrl.text.trim();
+              if (pin.length < 4) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('يجب ألا يقل الرمز عن 4 أرقام'), backgroundColor: AppTheme.DangerColor),
+                );
+                return;
+              }
+              Navigator.pop(ctx);
+              try {
+                final api = context.read<AuthService>().api;
+                final res = await api.resetUserPin(
+                  user['id'] as int,
+                  newPin: pin,
+                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(res['message']?.toString() ?? 'تم إعادة تعيين رمز الأمان بنجاح'),
+                      backgroundColor: const Color(0xFF10B981),
+                    ),
+                  );
+                  _loadData();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                  );
+                }
+              }
+            },
+            child: const Text('إعادة ضبط الرمز', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1235,6 +1351,15 @@ class _AdminScreenState extends State<AdminScreen>
                             onPressed: () => _showResetPasswordDialog(u),
                           ),
                           if (u['username'] != 'tracker_admin') ...[
+                            const SizedBox(width: 4),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              icon: const Icon(Icons.pin_outlined, color: Color(0xFF10B981), size: 18),
+                              tooltip: 'إعادة ضبط رمز الأمان (PIN)',
+                              onPressed: () => _showResetPinDialog(u),
+                            ),
                             const SizedBox(width: 4),
                             IconButton(
                               visualDensity: VisualDensity.compact,

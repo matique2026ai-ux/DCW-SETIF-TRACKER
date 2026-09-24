@@ -34,6 +34,8 @@ class AuthService extends ChangeNotifier {
           role: (userData['role'] ?? 'inspector') as String,
           employeeId: userData['employeeId'] as int?,
           fullName: (userData['fullName'] ?? userData['full_name'] ?? '') as String?,
+          deviceId: userData['deviceId'] as String?,
+          mustChangeCredentials: userData['mustChangeCredentials'] == true || userData['must_change_credentials'] == true,
         );
         _api.setToken(token);
         notifyListeners();
@@ -134,6 +136,7 @@ class AuthService extends ChangeNotifier {
         fullName:
             (userData['fullName'] ?? userData['full_name'] ?? '') as String?,
         deviceId: userData['deviceId'] as String? ?? devId,
+        mustChangeCredentials: userData['mustChangeCredentials'] == true || userData['must_change_credentials'] == true,
       );
 
       // Save for offline session persistence
@@ -141,6 +144,47 @@ class AuthService extends ChangeNotifier {
       await prefs.setString(_authUserKey, jsonEncode(userData));
       await prefs.setString(_authTokenKey, token);
 
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> completeMandatoryCredentialsSetup({
+    required String newPassword,
+    required String newPin,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _api.setupCredentials(newPassword: newPassword, newPin: newPin);
+      if (_currentUser != null) {
+        _currentUser = User(
+          id: _currentUser!.id,
+          username: _currentUser!.username,
+          passwordHash: '',
+          role: _currentUser!.role,
+          employeeId: _currentUser!.employeeId,
+          fullName: _currentUser!.fullName,
+          serviceName: _currentUser!.serviceName,
+          deviceId: _currentUser!.deviceId,
+          mustChangeCredentials: false,
+        );
+        final prefs = await SharedPreferences.getInstance();
+        final userStr = prefs.getString(_authUserKey);
+        if (userStr != null) {
+          try {
+            final map = jsonDecode(userStr) as Map<String, dynamic>;
+            map['mustChangeCredentials'] = false;
+            map['must_change_credentials'] = false;
+            await prefs.setString(_authUserKey, jsonEncode(map));
+          } catch (_) {}
+        }
+        await saveMasterPin(newPin);
+      }
       _isLoading = false;
       notifyListeners();
     } catch (e) {

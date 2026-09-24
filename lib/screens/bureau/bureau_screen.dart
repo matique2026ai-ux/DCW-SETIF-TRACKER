@@ -7,6 +7,8 @@ import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/change_master_pin_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 
@@ -37,6 +39,12 @@ class _BureauScreenState extends State<BureauScreen>
       if (mounted) setState(() {});
     });
     _loadAll();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthService>();
+      if (auth.currentUser?.mustChangeCredentials == true) {
+        MandatorySecuritySetupDialog.show(context);
+      }
+    });
   }
 
   @override
@@ -837,6 +845,7 @@ class _BureauScreenState extends State<BureauScreen>
           ],
           onRefresh: _loadAll,
           onPasswordChange: () => ChangePasswordDialog.show(context),
+          onMasterPinChange: () => ChangeMasterPinDialog.show(context),
           onLogout: () {
             context.read<AuthService>().logout();
             Navigator.pushReplacement(
