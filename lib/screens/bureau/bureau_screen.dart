@@ -275,19 +275,27 @@ class _BureauScreenState extends State<BureauScreen>
     final nomFrCtrl = TextEditingController();
     final prenomFrCtrl = TextEditingController();
     final brigadeCtrl = TextEditingController();
+    final customPositionCtrl = TextEditingController();
 
     String selectedDept = _departments.isNotEmpty
         ? _departments.first
-        : 'مصلحة حماية المستهلك وقمع الغش';
+        : 'مصلحة الإدارة والوسائل';
 
     final defaultDepts = [
+      'مصلحة الإدارة والوسائل',
+      'مكتب المستخدمين',
+      'مكتب المنازعات والشؤون القانونية',
+      'مكتب المحاسبة والوسائل',
       'مصلحة حماية المستهلك وقمع الغش',
       'مصلحة ملاحظة السوق ومراقبة الممارسات التجارية والمنافسة',
-      'مصلحة الإدارة والوسائل',
+      'المقر الرئيسي للمديرية الولائية سطيف',
+      'المفتشية الحدودية لمراقبة الجودة - مطار 8 ماي 1945',
       'المفتشية الإقليمية للتجارة - العلمة',
       'المفتشية الإقليمية للتجارة - عين ولمان',
       'المفتشية الإقليمية للتجارة - بوقاعة',
       'المفتشية الإقليمية للتجارة - عين الكبيرة',
+      'الملحقة التجارية - عين آزال',
+      'الملحقة التجارية - عين أرنات',
     ];
 
     final deptOptions = [
@@ -301,6 +309,9 @@ class _BureauScreenState extends State<BureauScreen>
     }
 
     final gradeOptions = [
+      'متصرف رئيسي',
+      'متصرف مستشار',
+      'متصرف',
       'مفتش رئيسي لقمع الغش',
       'محقق رئيسي للمنافسة والتحقيقات الاقتصادية',
       'مفتش رئيسي للنوعية وقمع الغش',
@@ -309,19 +320,32 @@ class _BureauScreenState extends State<BureauScreen>
       'محقق اقتصادي',
       'عون مراقبة الجودة وقمع الغش',
       'عون معاينة الممارسات التجارية',
-      'متصرف رئيسي',
-      'متصرف',
+      'مهندس دولة في الإعلام الآلي',
       'مهندس دولة',
       'ملحق رئيسي للإدارة',
+      'محاسب إداري رئيسي',
+      'كاتب مديرية رئيسي',
+      'عون إدارة',
     ];
     String selectedGrade = gradeOptions.first;
 
     final positionOptions = [
-      'مفتش ميداني',
+      'رئيس مكتب المستخدمين',
+      'رئيس مكتب المنازعات والشؤون القانونية',
+      'رئيس مكتب المحاسبة والوسائل',
+      'رئيس مكتب ملاحظة السوق',
+      'رئيس مكتب حماية المستهلك',
+      'رئيس مصلحة الإدارة والوسائل',
+      'رئيس مصلحة حماية المستهلك وقمع الغش',
+      'رئيس مصلحة المنافسة والتحقيقات الاقتصادية',
+      'المدير الولائي',
       'رئيس فرقة رقابية',
+      'مفتش ميداني',
+      'محقق ميداني',
       'عون مراقبة وتفتيش',
       'عضو فرقة تحقيق',
       'إداري / تسيير',
+      'أخرى (كتابة يدوية مخصصة)...',
     ];
     String selectedPosition = positionOptions.first;
 
@@ -546,8 +570,8 @@ class _BureauScreenState extends State<BureauScreen>
                     dropdownColor: const Color(0xFF26123A),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
                     decoration: InputDecoration(
-                      labelText: 'الوظيفة أو الصفة الممارسة',
-                      labelStyle: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 12),
+                      labelText: 'الوظيفة أو الصفة الممارسة *',
+                      labelStyle: const TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Tajawal', fontSize: 12),
                       prefixIcon: const Icon(Icons.work_outline, color: Color(0xFFD4AF37)),
                       filled: true,
                       fillColor: Colors.black26,
@@ -561,6 +585,22 @@ class _BureauScreenState extends State<BureauScreen>
                       if (v != null) setDlgState(() => selectedPosition = v);
                     },
                   ),
+                  if (selectedPosition == 'أخرى (كتابة يدوية مخصصة)...') ...[
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: customPositionCtrl,
+                      textDirection: TextDirection.rtl,
+                      style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
+                      decoration: InputDecoration(
+                        labelText: 'اكتب المسمى الوظيفي الممارس *',
+                        labelStyle: const TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Tajawal', fontSize: 12),
+                        prefixIcon: const Icon(Icons.edit_note, color: Color(0xFFD4AF37)),
+                        filled: true,
+                        fillColor: Colors.black26,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
 
                   // Brigade Name
@@ -569,7 +609,7 @@ class _BureauScreenState extends State<BureauScreen>
                     textDirection: TextDirection.rtl,
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
                     decoration: InputDecoration(
-                      labelText: 'اسم الفرقة التابع لها (مثال: فرقة قمع الغش 01)',
+                      labelText: 'اسم الفرقة التابع لها (اختياري للفرق الرقابية)',
                       labelStyle: const TextStyle(color: Colors.white70, fontFamily: 'Tajawal', fontSize: 12),
                       prefixIcon: const Icon(Icons.groups_outlined, color: Color(0xFFD4AF37)),
                       filled: true,
@@ -622,7 +662,9 @@ class _BureauScreenState extends State<BureauScreen>
                 final prenomFr = prenomFrCtrl.text.trim().isNotEmpty ? prenomFrCtrl.text.trim() : null;
                 final dept = selectedDept;
                 final grade = selectedGrade;
-                final position = selectedPosition;
+                final position = (selectedPosition == 'أخرى (كتابة يدوية مخصصة)...' && customPositionCtrl.text.trim().isNotEmpty)
+                    ? customPositionCtrl.text.trim()
+                    : selectedPosition;
                 final brigade = brigadeCtrl.text.trim().isNotEmpty ? brigadeCtrl.text.trim() : null;
                 final leader = isBrigadeLeader;
 
