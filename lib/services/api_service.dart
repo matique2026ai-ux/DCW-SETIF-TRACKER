@@ -113,6 +113,8 @@ class ApiService {
     String? adminOverrideCode,
     String? masterPin,
     bool? isWeb,
+    bool? isIOS,
+    bool? isDesktop,
   }) async {
     try {
       final response = await http.post(
@@ -126,6 +128,8 @@ class ApiService {
           if (adminOverrideCode != null) 'adminOverrideCode': adminOverrideCode,
           if (masterPin != null) 'masterPin': masterPin,
           if (isWeb != null) 'isWeb': isWeb,
+          if (isIOS != null) 'isIOS': isIOS,
+          if (isDesktop != null) 'isDesktop': isDesktop,
         }),
       ).timeout(defaultTimeout);
 
@@ -302,6 +306,7 @@ class ApiService {
     required String fullName,
     required String role,
     int? employeeId,
+    String? masterPin,
   }) async {
     try {
       final response = await http.post(
@@ -313,6 +318,7 @@ class ApiService {
           'fullName': fullName,
           'role': role,
           'employeeId': employeeId,
+          if (masterPin != null) 'masterPin': masterPin,
         }),
       ).timeout(defaultTimeout);
 
@@ -332,6 +338,7 @@ class ApiService {
     required String role,
     required bool isActive,
     int? employeeId,
+    String? masterPin,
   }) async {
     try {
       final payload = jsonEncode({
@@ -339,6 +346,7 @@ class ApiService {
         'role': role,
         'isActive': isActive,
         'employeeId': employeeId,
+        if (masterPin != null) 'masterPin': masterPin,
       });
 
       var response = await http.put(

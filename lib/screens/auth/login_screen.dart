@@ -146,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen>
       );
     } catch (e) {
       final errStr = e.toString().replaceAll('Exception: ', '');
-      if (errStr.contains('Master PIN') || errStr.contains('رمز الأمان') || errStr.contains('requiresMasterPin')) {
+      if (errStr.contains('Master PIN') || errStr.contains('رمز الأمان') || errStr.contains('requiresMasterPin') || errStr.contains('PIN')) {
         await AuthService.clearSavedMasterPin();
         setState(() {
           _isTrustedDevice = false;
@@ -412,7 +412,7 @@ class _LoginScreenState extends State<LoginScreen>
                              const SizedBox(height: 16),
 
                             // Master PIN / Trusted Device UI
-                            if (_isTrustedDevice && _usernameCtrl.text.trim().toLowerCase() == 'tracker_admin' && !_forceShowPin) ...[
+                            if (_isTrustedDevice && !_forceShowPin) ...[
                               Container(
                                 margin: const EdgeInsets.only(top: 6, bottom: 4),
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -427,7 +427,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     const Icon(Icons.verified_user, color: Color(0xFFD4AF37), size: 16),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'هذا الجهاز موثق ومعتمد لمدير النظام ✓',
+                                      'هذا الجهاز موثق ومعتمد للمسؤول ✓',
                                       style: TextStyle(
                                         fontFamily: fontFam,
                                         color: const Color(0xFFD4AF37),
@@ -453,7 +453,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 onSubmitted: (_) => _login(),
                                 decoration: InputDecoration(
-                                  labelText: 'رمز الأمان السري للأدمن (Master PIN) — توثيق لأول مرة',
+                                  labelText: 'رمز الأمان السري (PIN Code) — تأكيد الهوية',
                                   labelStyle: TextStyle(
                                     fontFamily: fontFam,
                                     fontSize: 13,

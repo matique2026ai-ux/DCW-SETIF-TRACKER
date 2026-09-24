@@ -74,7 +74,10 @@ class AuthService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       String? id = prefs.getString(_deviceIdKey);
       if (id == null || id.isEmpty) {
-        id = 'DCW-DEV-${DateTime.now().millisecondsSinceEpoch}-${1000 + (DateTime.now().microsecond % 9000)}';
+        final prefix = kIsWeb
+            ? (defaultTargetPlatform == TargetPlatform.iOS ? 'DCW-IOS' : 'DCW-WEB')
+            : 'DCW-DEV';
+        id = '$prefix-${DateTime.now().millisecondsSinceEpoch}-${1000 + (DateTime.now().microsecond % 9000)}';
         await prefs.setString(_deviceIdKey, id);
       }
       return id;
@@ -88,26 +91,37 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final devId = kIsWeb ? null : await getOrCreateDeviceId();
+      final isIOSWeb = kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS);
+      final isMobileWeb = kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android);
+      final isDesktopWeb = kIsWeb && !isMobileWeb;
+
+      // On Desktop Web, do NOT send mobile deviceId. On iPhone / Mobile Web, generate/read persistent hardware fingerprint!
+      final devId = isDesktopWeb ? null : await getOrCreateDeviceId();
       final savedPin = await getSavedMasterPin();
       final effectivePin = (masterPin != null && masterPin.trim().isNotEmpty)
           ? masterPin.trim()
-          : (username.trim().toLowerCase() == 'tracker_admin' ? savedPin : null);
+          : savedPin;
+
+      final deviceName = isIOSWeb
+          ? 'هاتف iPhone معتمد (Safari)'
+          : (isDesktopWeb ? 'متصفح كمبيوتر مكتبي' : 'هاتف معتمد');
 
       final result = await _api.login(
         username,
         password,
         deviceId: devId,
-        deviceName: kIsWeb ? 'متصفح ويب إداري' : 'هاتف معتمد',
+        deviceName: deviceName,
         adminOverrideCode: adminOverrideCode,
         masterPin: effectivePin,
         isWeb: kIsWeb,
+        isIOS: isIOSWeb,
+        isDesktop: isDesktopWeb,
       );
       final userData = result['user'];
       final token = result['token'] as String;
 
-      // If login succeeded for tracker_admin, remember this device as trusted
-      if (username.trim().toLowerCase() == 'tracker_admin' && effectivePin != null && effectivePin.isNotEmpty) {
+      // If login succeeded with effective PIN, remember on this device
+      if (effectivePin != null && effectivePin.isNotEmpty) {
         await saveMasterPin(effectivePin);
       }
 
