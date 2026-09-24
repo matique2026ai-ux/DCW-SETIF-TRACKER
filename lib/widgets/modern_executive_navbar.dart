@@ -106,120 +106,107 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Top tier: Branding + Title + Action Buttons (Title Centered in Screen)
+        // Top tier: Branding + Title + Action Buttons (Row layout preventing overlap)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: SizedBox(
             height: 38,
-            child: Stack(
-              alignment: Alignment.center,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 1. True Center Title & Subtitle
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 76),
-                    child: customTitleWidget ??
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(
+                // 1. Leading Branding (Back Button + Emblem)
+                if (showBackButton) ...[
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37), size: 18),
+                    tooltip: isAr ? 'الرجوع' : 'Retour',
+                    onPressed: onBack ?? () => Navigator.maybePop(context),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                const GoldenEmblemCoin(
+                  size: 26,
+                  showOuterGlow: false,
+                  enableFloating: false,
+                  animateGleam: false,
+                ),
+                const SizedBox(width: 6),
+
+                // 2. Middle Title & Subtitle (Expanded so it CAN NEVER overlap buttons)
+                Expanded(
+                  child: customTitleWidget ??
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.1,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              if (badgeText != null && badgeText!.isNotEmpty) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                                      width: 0.6,
+                                    ),
+                                  ),
                                   child: Text(
-                                    title,
+                                    badgeText!,
                                     style: const TextStyle(
                                       fontFamily: 'Tajawal',
-                                      fontSize: 13,
+                                      fontSize: 8,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 0.2,
+                                      color: Color(0xFFD4AF37),
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
                                   ),
                                 ),
-                                if (badgeText != null && badgeText!.isNotEmpty) ...[
-                                  const SizedBox(width: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(
-                                        color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
-                                        width: 0.6,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      badgeText!,
-                                      style: const TextStyle(
-                                        fontFamily: 'Tajawal',
-                                        fontSize: 8.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFFD4AF37),
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
+                            ],
+                          ),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 9,
+                              color: Color(0xFFD4AF37),
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(height: 1),
-                            Text(
-                              subtitle,
-                              style: const TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 9.5,
-                                color: Color(0xFFD4AF37),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                  ),
-                ),
-                // 2. Leading Branding (Back Button + Emblem)
-                Align(
-                  alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (showBackButton) ...[
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37), size: 18),
-                          tooltip: isAr ? 'الرجوع' : 'Retour',
-                          onPressed: onBack ?? () => Navigator.maybePop(context),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      const GoldenEmblemCoin(
-                        size: 30,
-                        showOuterGlow: false,
-                        enableFloating: false,
-                        animateGleam: false,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                 ),
-                // 3. Trailing Actions
-                Align(
-                  alignment: isAr ? Alignment.centerLeft : Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (additionalActions != null) ...additionalActions!,
-                      _buildActionsCapsule(context, isAr, isCompact: true),
-                    ],
-                  ),
+                const SizedBox(width: 4),
+
+                // 3. Trailing Actions (Compact capsule + additional actions)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (additionalActions != null) ...additionalActions!,
+                    _buildActionsCapsule(context, isAr, isCompact: true),
+                  ],
                 ),
               ],
             ),
@@ -575,6 +562,129 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
   }
 
   Widget _buildActionsCapsule(BuildContext context, bool isAr, {required bool isCompact}) {
+    if (isCompact) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.black38,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white12, width: 0.8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onRefresh != null) ...[
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 16),
+                tooltip: isAr ? 'تحديث البيانات' : 'Actualiser',
+                onPressed: onRefresh,
+                padding: const EdgeInsets.all(2),
+                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+              ),
+              Container(width: 1, height: 12, color: Colors.white12),
+            ],
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Color(0xFFD4AF37), size: 17),
+              tooltip: isAr ? 'خيارات إضافية' : 'Options',
+              color: const Color(0xFF240D2D),
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0x66D4AF37), width: 0.8),
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+              onSelected: (val) {
+                switch (val) {
+                  case 'pin':
+                    onMasterPinChange?.call();
+                    break;
+                  case 'password':
+                    onPasswordChange?.call();
+                    break;
+                  case 'lang':
+                    context.read<LanguageProvider>().toggleLanguage();
+                    break;
+                  case 'logout':
+                    onLogout?.call();
+                    break;
+                }
+              },
+              itemBuilder: (ctx) => [
+                if (onMasterPinChange != null)
+                  PopupMenuItem<String>(
+                    value: 'pin',
+                    height: 38,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shield, color: Color(0xFFD4AF37), size: 16),
+                        const SizedBox(width: 10),
+                        Text(
+                          isAr ? 'رمز الأمان السري (Master PIN)' : 'Master PIN de sécurité',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (onPasswordChange != null)
+                  PopupMenuItem<String>(
+                    value: 'password',
+                    height: 38,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 16),
+                        const SizedBox(width: 10),
+                        Text(
+                          isAr ? 'تغيير كلمة المرور' : 'Changer mot de passe',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                PopupMenuItem<String>(
+                  value: 'lang',
+                  height: 38,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.language, color: Colors.white70, size: 16),
+                      const SizedBox(width: 10),
+                      Text(
+                        isAr ? 'تغيير اللغة (Français)' : 'Changer de langue (العربية)',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                if (onLogout != null) ...[
+                  const PopupMenuDivider(height: 1),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    height: 38,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.logout, color: Color(0xFFEF4444), size: 16),
+                        const SizedBox(width: 10),
+                        Text(
+                          isAr ? 'تسجيل الخروج' : 'Déconnexion',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 12,
+                            color: Color(0xFFEF4444),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isCompact ? 2 : 4, vertical: isCompact ? 1 : 3),
       decoration: BoxDecoration(

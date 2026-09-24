@@ -822,26 +822,48 @@ class _BureauScreenState extends State<BureauScreen>
             ),
           ],
           additionalActions: [
-            ElevatedButton.icon(
-              onPressed: _showAddEmployeeDialog,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
-              label: const Text(
-                'إدراج موظف',
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
-              ),
+            Builder(
+              builder: (ctx) {
+                final isSmall = MediaQuery.of(ctx).size.width < 600;
+                if (isSmall) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      padding: const EdgeInsets.all(4),
+                      icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
+                      tooltip: 'إدراج موظف جديد',
+                      onPressed: _showAddEmployeeDialog,
+                    ),
+                  );
+                }
+                return ElevatedButton.icon(
+                  onPressed: _showAddEmployeeDialog,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
+                  label: const Text(
+                    'إدراج موظف',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
           ],
           onRefresh: _loadAll,
           onPasswordChange: () => ChangePasswordDialog.show(context),

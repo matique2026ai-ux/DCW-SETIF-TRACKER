@@ -132,7 +132,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Container(
-          width: 440,
+          constraints: const BoxConstraints(maxWidth: 440),
+          width: double.infinity,
           padding: const EdgeInsets.all(22),
           child: Form(
             key: _formKey,

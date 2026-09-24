@@ -25,6 +25,9 @@ class AppFooter extends StatelessWidget {
         child: Center(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width - 24,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFF16081E).withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(20),
@@ -40,48 +43,52 @@ class AppFooter extends StatelessWidget {
                 ),
               ],
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Gold Engineering Seal Medallion
-                Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFD4AF37),
-                      width: 1.0,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Gold Engineering Seal Medallion
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFD4AF37),
+                        width: 1.0,
+                      ),
                     ),
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/engineering_seal.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 11,
-                        color: Color(0xFFD4AF37),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/engineering_seal.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.workspace_premium_rounded,
+                          size: 11,
+                          color: Color(0xFFD4AF37),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Crisp, elegant, and prominent copyright text
-                Text(
-                  isArabic
-                      ? 'جميع حقوق التصميم والبرمجة محفوظة © المهندس عكرور توفيق'
-                      : 'Copyright © 2026 ING Akrour ToufiK',
-                  style: TextStyle(
-                    fontFamily: isArabic ? 'Tajawal' : null,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.2,
-                    color: const Color(0xFFD4AF37),
+                  const SizedBox(width: 8),
+                  // Crisp, elegant, and prominent copyright text
+                  Text(
+                    isArabic
+                        ? 'جميع حقوق التصميم والبرمجة محفوظة © المهندس عكرور توفيق'
+                        : 'Copyright © 2026 ING Akrour ToufiK',
+                    style: TextStyle(
+                      fontFamily: isArabic ? 'Tajawal' : null,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.2,
+                      color: const Color(0xFFD4AF37),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

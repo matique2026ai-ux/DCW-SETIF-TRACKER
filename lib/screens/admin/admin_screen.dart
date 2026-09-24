@@ -982,65 +982,87 @@ class _AdminScreenState extends State<AdminScreen>
             const SizedBox(height: 10),
 
             // Master PIN Management Banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2E1236), Color(0xFF1F0926)],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+            LayoutBuilder(
+              builder: (ctx, constraints) {
+                final isNarrow = constraints.maxWidth < 580;
+                final bannerContent = Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.shield, color: Color(0xFFD4AF37), size: 20),
                     ),
-                    child: const Icon(Icons.shield, color: Color(0xFFD4AF37), size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'منظومة الدرع المزدوج: رمز الأمان السري للمتصفح (Master PIN)',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'منظومة الدرع المزدوج: رمز الأمان السري للمتصفح (Master PIN)',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'يمكنك في أي وقت تخصيص وتغيير رمز الأمان السري للدخول إلى حسابك من أي حاسوب أو متصفح ويب.',
-                          style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 11),
-                        ),
-                      ],
+                          SizedBox(height: 2),
+                          Text(
+                            'يمكنك في أي وقت تخصيص وتغيير رمز الأمان السري للدخول إلى حسابك من أي حاسوب أو متصفح ويب.',
+                            style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 11),
+                          ),
+                        ],
+                      ),
                     ),
+                  ],
+                );
+
+                final actionBtn = ElevatedButton.icon(
+                  onPressed: () => ChangeMasterPinDialog.show(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: const Color(0xFF1A0A1F),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 2,
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => ChangeMasterPinDialog.show(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      foregroundColor: const Color(0xFF1A0A1F),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 2,
-                    ),
-                    icon: const Icon(Icons.key, size: 15, color: Color(0xFF1A0A1F)),
-                    label: const Text(
-                      'تغيير الرمز الآن',
-                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A0A1F)),
-                    ),
+                  icon: const Icon(Icons.key, size: 15, color: Color(0xFF1A0A1F)),
+                  label: const Text(
+                    'تغيير الرمز الآن',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A0A1F)),
                   ),
-                ],
-              ),
+                );
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF2E1236), Color(0xFF1F0926)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
+                  ),
+                  child: isNarrow
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            bannerContent,
+                            const SizedBox(height: 10),
+                            actionBtn,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(child: bannerContent),
+                            const SizedBox(width: 12),
+                            actionBtn,
+                          ],
+                        ),
+                );
+              },
             ),
             const SizedBox(height: 14),
 
@@ -1305,8 +1327,12 @@ class _AdminScreenState extends State<AdminScreen>
                       const Divider(color: Color(0xFF381544), height: 1),
                       const SizedBox(height: 6),
 
-                      // Bottom Row: Username + Compact Action Buttons
-                      Row(
+                      // Bottom Row: Username + Compact Action Buttons (Responsive Wrap)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1330,76 +1356,78 @@ class _AdminScreenState extends State<AdminScreen>
                               ],
                             ),
                           ),
-                          const Spacer(),
-
-                          // Actions
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.all(4),
-                            constraints: const BoxConstraints(),
-                            icon: const Icon(Icons.edit_outlined, color: Color(0xFF3B82F6), size: 18),
-                            tooltip: 'تعديل الحساب والصلاحية',
-                            onPressed: () => _showEditUserDialog(u),
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.all(4),
-                            constraints: const BoxConstraints(),
-                            icon: const Icon(Icons.key_outlined, color: Color(0xFFD4AF37), size: 18),
-                            tooltip: 'إعادة تعيين كلمة المرور',
-                            onPressed: () => _showResetPasswordDialog(u),
-                          ),
-                          if (u['username'] != 'tracker_admin') ...[
-                            const SizedBox(width: 4),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(),
-                              icon: const Icon(Icons.pin_outlined, color: Color(0xFF10B981), size: 18),
-                              tooltip: 'إعادة ضبط رمز الأمان (PIN)',
-                              onPressed: () => _showResetPinDialog(u),
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(),
-                              icon: Icon(
-                                isActive ? Icons.block_outlined : Icons.check_circle_outline,
-                                color: isActive ? Colors.orangeAccent : const Color(0xFF10B981),
-                                size: 18,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.all(4),
+                                constraints: const BoxConstraints(),
+                                icon: const Icon(Icons.edit_outlined, color: Color(0xFF3B82F6), size: 18),
+                                tooltip: 'تعديل الحساب والصلاحية',
+                                onPressed: () => _showEditUserDialog(u),
                               ),
-                              tooltip: isActive ? 'تجميد / إيقاف الحساب' : 'تفعيل الحساب',
-                              onPressed: () async {
-                                final messenger = ScaffoldMessenger.of(context);
-                                try {
-                                  final api = context.read<AuthService>().api;
-                                  await api.updateSystemUser(
-                                    id: u['id'] as int,
-                                    fullName: u['fullName']?.toString() ?? u['username']?.toString() ?? '',
-                                    role: u['role']?.toString() ?? 'inspector',
-                                    isActive: !isActive,
-                                    employeeId: u['employeeId'] is int ? u['employeeId'] as int : null,
-                                  );
-                                  _loadData();
-                                } catch (e) {
-                                  messenger.showSnackBar(
-                                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(),
-                              icon: const Icon(Icons.delete_outline, color: AppTheme.DangerColor, size: 18),
-                              tooltip: 'حذف الحساب نهائياً',
-                              onPressed: () => _showDeleteUserDialog(u),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.all(4),
+                                constraints: const BoxConstraints(),
+                                icon: const Icon(Icons.key_outlined, color: Color(0xFFD4AF37), size: 18),
+                                tooltip: 'إعادة تعيين كلمة المرور',
+                                onPressed: () => _showResetPasswordDialog(u),
+                              ),
+                              if (u['username'] != 'tracker_admin') ...[
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.all(4),
+                                  constraints: const BoxConstraints(),
+                                  icon: const Icon(Icons.pin_outlined, color: Color(0xFF10B981), size: 18),
+                                  tooltip: 'إعادة ضبط رمز الأمان (PIN)',
+                                  onPressed: () => _showResetPinDialog(u),
+                                ),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.all(4),
+                                  constraints: const BoxConstraints(),
+                                  icon: Icon(
+                                    isActive ? Icons.block_outlined : Icons.check_circle_outline,
+                                    color: isActive ? Colors.orangeAccent : const Color(0xFF10B981),
+                                    size: 18,
+                                  ),
+                                  tooltip: isActive ? 'تجميد / إيقاف الحساب' : 'تفعيل الحساب',
+                                  onPressed: () async {
+                                    final messenger = ScaffoldMessenger.of(context);
+                                    try {
+                                      final api = context.read<AuthService>().api;
+                                      await api.updateSystemUser(
+                                        id: u['id'] as int,
+                                        fullName: u['fullName']?.toString() ?? u['username']?.toString() ?? '',
+                                        role: u['role']?.toString() ?? 'inspector',
+                                        isActive: !isActive,
+                                        employeeId: u['employeeId'] is int ? u['employeeId'] as int : null,
+                                      );
+                                      _loadData();
+                                    } catch (e) {
+                                      messenger.showSnackBar(
+                                        SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                                      );
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.all(4),
+                                  constraints: const BoxConstraints(),
+                                  icon: const Icon(Icons.delete_outline, color: AppTheme.DangerColor, size: 18),
+                                  tooltip: 'حذف الحساب نهائياً',
+                                  onPressed: () => _showDeleteUserDialog(u),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                     ],

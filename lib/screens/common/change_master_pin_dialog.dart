@@ -94,6 +94,8 @@ class _ChangeMasterPinDialogState extends State<ChangeMasterPinDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E0A26),
+      actionsOverflowButtonSpacing: 8,
+      actionsOverflowDirection: VerticalDirection.up,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),

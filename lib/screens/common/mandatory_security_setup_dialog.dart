@@ -151,8 +151,9 @@ class _MandatorySecuritySetupDialogState extends State<MandatorySecuritySetupDia
             ),
           ],
         ),
-        content: SizedBox(
-          width: 440,
+        content: Container(
+          constraints: const BoxConstraints(maxWidth: 440),
+          width: double.maxFinite,
           child: SingleChildScrollView(
             child: Form(
               key: _formKey,
@@ -374,48 +375,100 @@ class _MandatorySecuritySetupDialogState extends State<MandatorySecuritySetupDia
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          Row(
-            children: [
-              TextButton(
-                onPressed: _isLoading ? null : _handleLogout,
-                child: const Text(
-                  'تسجيل الخروج',
-                  style: TextStyle(
-                    fontFamily: 'Tajawal',
-                    color: Colors.white54,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  foregroundColor: const Color(0xFF1A0A1F),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: _isLoading ? null : _submit,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF1A0A1F),
+          LayoutBuilder(
+            builder: (ctx, constraints) {
+              final isNarrow = MediaQuery.of(context).size.width < 460;
+              if (isNarrow) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        foregroundColor: const Color(0xFF1A0A1F),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: _isLoading ? null : _submit,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF1A0A1F),
+                              ),
+                            )
+                          : const Icon(Icons.verified_user, size: 18),
+                      label: Text(
+                        _isLoading ? 'جارِ الاعتماد...' : 'حفظ واعتماد البيانات ومتابعة الدخول',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
                         ),
-                      )
-                    : const Icon(Icons.verified_user, size: 18),
-                label: Text(
-                  _isLoading ? 'جارِ الاعتماد...' : 'حفظ واعتماد البيانات ومتابعة الدخول',
-                  style: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextButton(
+                      onPressed: _isLoading ? null : _handleLogout,
+                      child: const Text(
+                        'تسجيل الخروج والعودة',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  TextButton(
+                    onPressed: _isLoading ? null : _handleLogout,
+                    child: const Text(
+                      'تسجيل الخروج',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  const Spacer(),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: const Color(0xFF1A0A1F),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: _isLoading ? null : _submit,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF1A0A1F),
+                            ),
+                          )
+                        : const Icon(Icons.verified_user, size: 18),
+                    label: Text(
+                      _isLoading ? 'جارِ الاعتماد...' : 'حفظ واعتماد البيانات ومتابعة الدخول',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
