@@ -88,7 +88,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final devId = await getOrCreateDeviceId();
+      final devId = kIsWeb ? null : await getOrCreateDeviceId();
       final savedPin = await getSavedMasterPin();
       final effectivePin = (masterPin != null && masterPin.trim().isNotEmpty)
           ? masterPin.trim()
@@ -98,7 +98,7 @@ class AuthService extends ChangeNotifier {
         username,
         password,
         deviceId: devId,
-        deviceName: 'هاتف معتمد',
+        deviceName: kIsWeb ? 'متصفح ويب إداري' : 'هاتف معتمد',
         adminOverrideCode: adminOverrideCode,
         masterPin: effectivePin,
         isWeb: kIsWeb,
